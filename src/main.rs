@@ -67,7 +67,8 @@ where
                                        write_data::<T>(data, channels, &mut next_value)
                                    },
                                    err_fn,
-                                   None).unwrap();
+                                   None)
+            .unwrap();
     stream.play().unwrap();
 
     // Keep the stream alive indefinitely.
