@@ -10,16 +10,21 @@ static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
 fn main() {
     let args = get_args();
-    let frequency: f32 = args[0].parse().unwrap();
+    let gen_type = args[0].clone();
+    let frequency: f32 = args[1].parse().unwrap();
 
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
 
-    run::<f32>(&device, &config.into(), frequency);
+    match gen_type.as_str() {
+        "sine" => run_sin_gen::<f32>(&device, &config.into(), frequency),
+        _ => run_sin_gen::<f32>(&device, &config.into(), frequency),
+    }
+    // run_sin_gen::<f32>(&device, &config.into(), frequency);
 }
 
-fn run<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32)
+fn run_sin_gen<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
