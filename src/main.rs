@@ -10,17 +10,18 @@ fn main() {
     let args = get_args();
     let osc_type = args[0].clone();
     let frequency: f32 = args[1].parse().unwrap();
+    let duration_ms: u64 = args[2].parse().unwrap();
 
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
 
     match osc_type.as_str() {
-        "sine" => run_sin_gen::<f32>(&device, &config.into(), frequency),
-        "triangle" => run_triangle_gen::<f32>(&device, &config.into(), frequency),
-        "square" => run_square_gen::<f32>(&device, &config.into(), frequency),
-        "saw" => run_saw_gen::<f32>(&device, &config.into(), frequency),
-        _ => run_sin_gen::<f32>(&device, &config.into(), frequency),
+        "sine" => run_sin_gen::<f32>(&device, &config.into(), frequency, duration_ms),
+        "triangle" => run_triangle_gen::<f32>(&device, &config.into(), frequency, duration_ms),
+        "square" => run_square_gen::<f32>(&device, &config.into(), frequency, duration_ms),
+        "saw" => run_saw_gen::<f32>(&device, &config.into(), frequency, duration_ms),
+        _ => run_sin_gen::<f32>(&device, &config.into(), frequency, duration_ms),
     }
 }
 
@@ -55,7 +56,8 @@ fn get_args() -> Vec<String> {
     return args;
 }
 
-fn run_sin_gen<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32)
+fn run_sin_gen<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32,
+                  duration_ms: u64)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -72,10 +74,11 @@ where
     let stream = create_stream!(device, config, channels, err_fn, &mut next_value);
     stream.play().unwrap();
     // Keep the stream alive indefinitely to play sound
-    std::thread::sleep(std::time::Duration::from_millis(10000));
+    std::thread::sleep(std::time::Duration::from_millis(duration_ms));
 }
 
-fn run_triangle_gen<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32)
+fn run_triangle_gen<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32,
+                       duration_ms: u64)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -95,10 +98,11 @@ where
     let stream = create_stream!(device, config, channels, err_fn, &mut next_value);
     stream.play().unwrap();
     // Keep the stream alive indefinitely to play sound
-    std::thread::sleep(std::time::Duration::from_millis(10000));
+    std::thread::sleep(std::time::Duration::from_millis(duration_ms));
 }
 
-fn run_square_gen<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32)
+fn run_square_gen<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32,
+                     duration_ms: u64)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -119,10 +123,11 @@ where
     let stream = create_stream!(device, config, channels, err_fn, &mut next_value);
     stream.play().unwrap();
     // Keep the stream alive indefinitely to play sound
-    std::thread::sleep(std::time::Duration::from_millis(10000));
+    std::thread::sleep(std::time::Duration::from_millis(duration_ms));
 }
 
-fn run_saw_gen<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32)
+fn run_saw_gen<T>(device: &cpal::Device, config: &cpal::StreamConfig, frequency: f32,
+                  duration_ms: u64)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -142,5 +147,5 @@ where
     let stream = create_stream!(device, config, channels, err_fn, &mut next_value);
     stream.play().unwrap();
     // Keep the stream alive indefinitely to play sound
-    std::thread::sleep(std::time::Duration::from_millis(10000));
+    std::thread::sleep(std::time::Duration::from_millis(duration_ms));
 }
