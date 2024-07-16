@@ -2,16 +2,17 @@ use std::time::Duration;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
-use crate::oscillator::{OscType, SAMPLE_RATE};
+use crate::oscillator::{get_saw_freq, get_sin_freq, get_square_freq, get_triangle_freq,
+                        OscType, SAMPLE_RATE};
 
 fn get_freq(oscillators: &Vec<OscType>, frequency: f32, sample_clock: f32) -> f32 {
     let mut freq = 0.0;
     for oscillator in oscillators {
         freq += match oscillator {
-            OscType::Sine => crate::oscillator::get_sin_freq(frequency, sample_clock),
-            OscType::Triangle => crate::oscillator::get_triangle_freq(frequency, sample_clock),
-            OscType::Square => crate::oscillator::get_square_freq(frequency, sample_clock),
-            OscType::Saw => crate::oscillator::get_saw_freq(frequency, sample_clock),
+            OscType::Sine => get_sin_freq(frequency, sample_clock),
+            OscType::Triangle => get_triangle_freq(frequency, sample_clock),
+            OscType::Square => get_square_freq(frequency, sample_clock),
+            OscType::Saw => get_saw_freq(frequency, sample_clock),
         };
     }
     freq
