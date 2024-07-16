@@ -11,9 +11,10 @@ fn main() {
     let args = get_args();
     let osc_types_arg = args[0].clone();
     let frequency: f32 = args[1].parse().unwrap();
-    let duration_ms: u64 = args[2].parse().unwrap();
+    let volume: f32 = args[2].parse().unwrap();
+    let duration_ms: u64 = args[3].parse().unwrap();
     let oscillators = get_osc_types(&osc_types_arg);
     let instrument = Instrument::from_oscillators(oscillators);
 
-    instrument.play_note(frequency, duration_ms);
+    instrument.play_note(frequency, volume, duration_ms);
 }

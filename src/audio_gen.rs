@@ -42,24 +42,24 @@ impl AudioGen {
             oscillators
         }
     }
-    pub(crate) fn gen_note(self, frequency: f32, duration_ms: u64)
+    pub(crate) fn gen_note(self, frequency: f32, volume: f32, duration_ms: u64)
     {
         let host = cpal::default_host();
         let device = host.default_output_device().expect("No output device available");
         let config = device.default_output_config().unwrap();
 
-        self.gen_note_impl::<f32>(&device, &config.into(), frequency, duration_ms);
+        self.gen_note_impl::<f32>(&device, &config.into(), frequency, volume, duration_ms);
     }
 
     fn gen_note_impl<T>(self, device: &cpal::Device, config: &cpal::StreamConfig,
-                        frequency: f32, duration_ms: u64)
+                        frequency: f32, volume: f32, duration_ms: u64)
     where
         T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
     {
         let mut sample_clock = 0f32;
         let mut next_value = move || {
             sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
-            get_freq(&self.oscillators, frequency, sample_clock)
+            volume * get_freq(&self.oscillators, frequency, sample_clock)
         };
 
         let channels = config.channels as usize;

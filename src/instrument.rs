@@ -13,7 +13,7 @@ impl Instrument {
         }
     }
 
-    pub fn play_note(self, frequency: f32, duration_ms: u64) {
-        self.audio_gen.gen_note(frequency, duration_ms);
+    pub fn play_note(self, frequency: f32, volume: f32, duration_ms: u64) {
+        self.audio_gen.gen_note(frequency, volume, duration_ms);
     }
 }
