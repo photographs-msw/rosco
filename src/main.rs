@@ -1,10 +1,11 @@
 mod audio_gen;
 mod oscillator;
 mod instrument;
+mod utils;
 
-use std::env;
 use crate::instrument::Instrument;
 use crate::oscillator::get_osc_types;
+use crate::utils::get_args;
 
 fn main() {
     let args = get_args();
@@ -15,9 +16,4 @@ fn main() {
     let instrument = Instrument::from_oscillators(oscillators);
 
     instrument.play_note(frequency, duration_ms);
-}
-
-fn get_args() -> Vec<String> {
-    let args: Vec<String> = env::args().skip(1).collect();
-    return args;
 }
