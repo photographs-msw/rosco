@@ -16,7 +16,6 @@ impl Sequence {
         }
     }
 
-    // TODO REF OR MOVE?
     fn from_notes(notes: Vec<Note>) -> Self {
         Sequence {
             notes,
@@ -34,6 +33,10 @@ impl Sequence {
 
     pub(crate) fn reset_index(&mut self) {
         self.index = 0;
+    }
+
+    pub(crate) fn at_end(&self) -> bool {
+        self.index >= self.notes.len()
     }
 
     pub(crate) fn add_note(&mut self, note: Note) {

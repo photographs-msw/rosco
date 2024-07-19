@@ -51,6 +51,26 @@ impl MultiInstrument {
         }
     }
 
+    pub fn reset_all_channels(&mut self) {
+        for channel in &mut self.channels {
+            channel.sequence.reset_index();
+        }
+    }
+
+    pub fn loop_once(&mut self) {
+        self.reset_all_channels();
+        while !self.channels.iter().all(|channel| channel.sequence.at_end()) {
+            self.play_channel_notes_and_advance();
+        }
+    }
+
+    pub fn loop_n(&mut self, n: u8) {
+        self.reset_all_channels();
+        for _ in 0..n {
+            self.loop_once();
+        }
+    }
+
     pub fn add_note_to_channel(&mut self, channel_num: usize, note: Note) {
         self.channels[channel_num].sequence.add_note(note);
     }
@@ -71,9 +91,16 @@ impl MultiInstrument {
         self.channels[channel_num].volume = volume;
     }
 
+    pub fn play_notes_direct(&self, notes: Vec<Note>) {
+        gen_notes(notes, self.channel_oscillators.clone());
+    }
+
     fn get_next_notes(&self) -> Vec<Note> {
         let mut notes = Vec::new();
         for channel in &self.channels {
+            if channel.sequence.at_end() {
+                continue;
+            }
             let mut note = channel.sequence.get_note();
             note.volume *= channel.volume;
             notes.push(note);

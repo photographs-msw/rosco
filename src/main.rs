@@ -32,6 +32,9 @@ fn main() {
     multi_instrument.add_note_to_channel(1, note_1);
     multi_instrument.play_channel_notes_and_advance();
     multi_instrument.play_channel_notes();
+    multi_instrument.loop_once();
+    multi_instrument.loop_n(2);
+    multi_instrument.play_notes_direct(vec![note_1, note_2]);
 
     let mut instrument = Instrument::from_oscillators(get_osc_types(&osc_types_arg));
     let note_3 = Note::from(frequency, volume * 0.5, duration_ms);

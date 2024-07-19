@@ -30,6 +30,10 @@ impl Instrument {
         gen_note(&self.sequence.get_note_and_advance(), self.oscillators.clone());
     }
 
+    pub fn reset(&mut self) {
+        self.sequence.reset_index();
+    }
+
     pub fn loop_once(&self) {
         for note in self.sequence.iter() {
             gen_note(note, self.oscillators.clone());
