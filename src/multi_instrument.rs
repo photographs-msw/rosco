@@ -39,11 +39,11 @@ impl MultiInstrument {
         }
     }
 
-    pub fn play_channel_notes(&self) {
+    pub(crate) fn play_channel_notes(&self) {
         gen_notes(self.get_next_notes(), self.channel_oscillators.clone());
     }
 
-    pub fn play_channel_notes_and_advance(&mut self) {
+    pub(crate) fn play_channel_notes_and_advance(&mut self) {
         let notes = self.get_next_notes();
         gen_notes(notes, self.channel_oscillators.clone());
         for channel in self.channels.iter_mut() {
@@ -51,47 +51,47 @@ impl MultiInstrument {
         }
     }
 
-    pub fn reset_all_channels(&mut self) {
+    pub(crate) fn reset_all_channels(&mut self) {
         for channel in &mut self.channels {
             channel.sequence.reset_index();
         }
     }
 
-    pub fn loop_once(&mut self) {
+    pub(crate) fn loop_once(&mut self) {
         self.reset_all_channels();
         while !self.channels.iter().all(|channel| channel.sequence.at_end()) {
             self.play_channel_notes_and_advance();
         }
     }
 
-    pub fn loop_n(&mut self, n: u8) {
+    pub(crate) fn loop_n(&mut self, n: u8) {
         self.reset_all_channels();
         for _ in 0..n {
             self.loop_once();
         }
     }
 
-    pub fn add_note_to_channel(&mut self, channel_num: usize, note: Note) {
+    pub(crate) fn add_note_to_channel(&mut self, channel_num: usize, note: Note) {
         self.channels[channel_num].sequence.add_note(note);
     }
 
-    pub fn add_note_to_channels(&mut self, note: Note) {
+    pub(crate) fn add_note_to_channels(&mut self, note: Note) {
         for channel in &mut self.channels {
             channel.sequence.add_note(note);
         }
     }
 
-    pub fn set_volume_for_channels(&mut self, volume: f32) {
+    pub(crate) fn set_volume_for_channels(&mut self, volume: f32) {
         for channel in &mut self.channels {
             channel.volume = volume;
         }
     }
 
-    pub fn set_volume_for_channel(&mut self, channel_num: usize, volume: f32) {
+    pub(crate) fn set_volume_for_channel(&mut self, channel_num: usize, volume: f32) {
         self.channels[channel_num].volume = volume;
     }
 
-    pub fn play_notes_direct(&self, notes: Vec<Note>) {
+    pub(crate) fn play_notes_direct(&self, notes: Vec<Note>) {
         gen_notes(notes, self.channel_oscillators.clone());
     }
 
