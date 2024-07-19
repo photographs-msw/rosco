@@ -1,6 +1,6 @@
 use crate::audio_gen::AudioGen;
-use crate::instrument::Instrument;
 use crate::note::Note;
+use crate::oscillator::OscType;
 use crate::sequence::Sequence;
 
 pub(crate) struct Channel {
@@ -20,47 +20,38 @@ impl Channel {
 
 #[allow(dead_code)]
 pub(crate) struct MultiInstrument {
-    num_channels: usize,
     channels: Vec<Channel>,
     audio_gen: AudioGen,
-    // TODO THINK ABOUT MOVING NOTE INDEX TO SEQUENCE TO ADVANCE EACH INDEPENDENTLY. THIS WILL SUPPORT POLYPHONY
-    //  WITH DIFFERENT DURATIONS
-    //  ALSO SEMANTICALLY THIS IS WHERE IT SHOULD BE, JUST LIKE IT OWNS ITS VOLUME
-    note_index: usize
 }
 
 #[allow(dead_code)]
 impl MultiInstrument {
 
-    pub fn from_instruments(instruments: Vec<Instrument>) -> Self {
+    pub fn from_channel_oscillators(channel_oscillators: Vec<Vec<OscType>>) -> Self {
         let mut channels = Vec::new();
-        let mut channel_oscillators = Vec::new();
-        let num_channels = instruments.len();
-        for instrument in instruments {
+        let num_channels = channel_oscillators.len();
+        for _ in 0..num_channels {
             channels.push(Channel::from(Sequence::new(), 1.0 / num_channels as f32));
-            let mut oscillators = Vec::new();
-            for oscillator in &instrument.oscillators {
-                oscillators.push(oscillator.clone());
-            }
-            channel_oscillators.push(oscillators);
         }
         MultiInstrument {
-            num_channels,
             channels,
             audio_gen: AudioGen::from_channel_oscillators(channel_oscillators),
-            note_index: 0
         }
     }
 
-    pub fn play(&mut self) {
-        self.audio_gen.gen_notes(&self.get_next_notes());
-        // TODO FIGURE OUT ADVANCING SEQUENCE LOGIC HERE
-        self.note_index += 1;
+    pub fn play_channel_notes(&self) {
+        self.audio_gen.gen_notes(self.get_next_notes());
     }
 
-    // TODO MAYBE HAVE WRAPPER METHODS TO ADVANCE SEQUENCES HERE
+    pub fn play_channel_notes_and_advance(&mut self) {
+        let notes = self.get_next_notes();
+        self.audio_gen.gen_notes(notes);
+        for channel in self.channels.iter_mut() {
+            channel.sequence.advance();
+        }
+    }
 
-    pub fn add_note(&mut self, channel_num: usize, note: Note) {
+    pub fn add_note_to_channel(&mut self, channel_num: usize, note: Note) {
         self.channels[channel_num].sequence.add_note(note);
     }
 
@@ -70,20 +61,21 @@ impl MultiInstrument {
         }
     }
 
-    pub fn set_volume(&mut self, volume: f32) {
-        for channel in &mut self.channels {
-            channel.volume = volume;
-        }
-    }
+    // pub fn set_volume(&mut self, volume: f32) {
+    //     for channel in &mut self.channels {
+    //         channel.volume = volume;
+    //     }
+    // }
+    //
+    // pub fn set_channel_volume(&mut self, channel_num: usize, volume: f32) {
+    //     self.channels[channel_num].volume = volume;
+    // }
+    //
 
-    pub fn set_channel_volume(&mut self, channel_num: u8, volume: f32) {
-        self.channels[channel_num as usize].volume = volume;
-    }
-
-    pub fn get_next_notes(&self) -> Vec<Note> {
+    fn get_next_notes(&self) -> Vec<Note> {
         let mut notes = Vec::new();
         for channel in &self.channels {
-            let mut note = channel.sequence.notes[self.note_index].clone();
+            let mut note = channel.sequence.get_note();
             note.volume *= channel.volume;
             notes.push(note);
         }

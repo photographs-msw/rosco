@@ -3,6 +3,7 @@ use crate::note::Note;
 use crate::oscillator::OscType;
 use crate::sequence::Sequence;
 
+#[allow(dead_code)]
 pub(crate) struct Instrument<> {
     pub(crate) audio_gen: AudioGen,
     pub(crate) oscillators: Vec<OscType>,
@@ -32,9 +33,17 @@ impl Instrument {
         self.audio_gen.gen_note(&self.sequence.get_note_and_advance());
     }
 
-    pub fn play_all_notes(&self) {
+    pub fn loop_once(&self) {
         for note in self.sequence.iter() {
             self.audio_gen.gen_note(&note);
+        }
+    }
+
+    pub fn loop_n(&self, n: u8) {
+        for _ in 0..n {
+            for note in self.sequence.iter() {
+                self.audio_gen.gen_note(&note);
+            }
         }
     }
 
