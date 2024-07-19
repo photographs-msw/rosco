@@ -1,19 +1,44 @@
 use crate::audio_gen::AudioGen;
+use crate::note::Note;
 use crate::oscillator::OscType;
+use crate::sequence::Sequence;
 
 pub(crate) struct Instrument<> {
-    audio_gen: AudioGen,
+    pub(crate) audio_gen: AudioGen,
+    pub(crate) oscillators: Vec<OscType>,
+    sequence: Sequence,
 }
 
+#[allow(dead_code)]
 impl Instrument {
 
     pub fn from_oscillators(oscillators: Vec<OscType>) -> Self {
         Instrument {
-           audio_gen: AudioGen::from_oscillators(oscillators),
+            audio_gen: AudioGen::from_oscillators(oscillators.clone()),
+            oscillators,
+            sequence: Sequence::new()
         }
     }
 
-    pub fn play_note(self, frequency: f32, volume: f32, duration_ms: u64) {
-        self.audio_gen.gen_note(frequency, volume, duration_ms);
+    pub fn add_note(&mut self, note: Note) {
+        self.sequence.add_note(note);
+    }
+
+    pub fn play_note(&self) {
+        self.audio_gen.gen_note(&self.sequence.get_note());
+    }
+
+    pub fn play_note_and_advance(&mut self) {
+        self.audio_gen.gen_note(&self.sequence.get_note_and_advance());
+    }
+
+    pub fn play_all_notes(&self) {
+        for note in self.sequence.iter() {
+            self.audio_gen.gen_note(&note);
+        }
+    }
+
+    pub fn play_note_direct(&self, note: &Note) {
+        self.audio_gen.gen_note(&note);
     }
 }

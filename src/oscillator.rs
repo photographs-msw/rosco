@@ -3,6 +3,7 @@ extern crate cpal;
 pub(crate) static SAMPLE_RATE: f32 = 44100.0;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
+// TODO DO WE NEED THESE TRAITS? GET OWNERSHIP RIGHT
 #[derive(Clone, Copy)]
 pub(crate) enum OscType {
     Sine,
