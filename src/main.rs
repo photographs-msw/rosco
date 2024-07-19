@@ -6,7 +6,7 @@ mod oscillator;
 mod utils;
 mod sequence;
 
-// use crate::instrument::Instrument;
+use crate::instrument::Instrument;
 use crate::multi_instrument::MultiInstrument;
 use crate::note::Note;
 use crate::oscillator::get_osc_types;
@@ -30,14 +30,14 @@ fn main() {
     multi_instrument.play_channel_notes_and_advance();
     multi_instrument.play_channel_notes();
 
-    // let mut instrument = Instrument::from_oscillators(get_osc_types(&osc_types_arg));
-    // let note_1 = Note::from(frequency, volume, duration_ms);
-    // let note_2 = Note::from(frequency, volume, duration_ms);
-    // instrument.add_note(note_1);
-    // instrument.add_note(note_2);
-    // instrument.play_note_and_advance();
-    // instrument.play_note();
-    // instrument.loop_once();
-    // instrument.loop_n(2);
-    // instrument.play_note_direct(&note_1);
+    let mut instrument = Instrument::from_oscillators(get_osc_types(&osc_types_arg));
+    let note_1 = Note::from(frequency, volume * 0.5, duration_ms);
+    let note_2 = Note::from(frequency / 2.0, volume * 0.75, duration_ms);
+    instrument.add_note(note_1);
+    instrument.add_note(note_2);
+    instrument.play_note_and_advance();
+    instrument.play_note();
+    instrument.loop_once();
+    instrument.loop_n(2);
+    instrument.play_note_direct(&note_1);
 }

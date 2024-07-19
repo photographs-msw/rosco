@@ -6,43 +6,20 @@ use crate::oscillator::{get_saw_freq, get_sin_freq, get_square_freq, get_triangl
                         OscType, SAMPLE_RATE};
 use crate::note::Note;
 
-pub(crate) struct AudioGen {
-    channel_oscillators: Vec<Vec<OscType>>,
+pub(crate) fn gen_note(note: &Note, oscillators: Vec<OscType>) {
+    let host = cpal::default_host();
+    let device = host.default_output_device().expect("No output device available");
+    let config = device.default_output_config().unwrap();
+
+    gen_note_impl::<f32>(&device, &config.into(), note, oscillators);
 }
 
-impl AudioGen {
+pub(crate) fn gen_notes(notes: Vec<Note>, channel_oscillators: Vec<Vec<OscType>>) {
+    let host = cpal::default_host();
+    let device = host.default_output_device().expect("No output device available");
+    let config = device.default_output_config().unwrap();
 
-    pub(crate) fn from_oscillators(oscillators: Vec<OscType>) -> Self {
-        let mut channel_oscillators= Vec::new();
-        channel_oscillators.push(oscillators);
-        AudioGen {
-            channel_oscillators
-        }
-    }
-
-    pub(crate) fn from_channel_oscillators(channel_oscillators: Vec<Vec<OscType>>) -> Self {
-        AudioGen {
-            channel_oscillators
-        }
-    }
-
-    pub(crate) fn gen_note<'a>(&self, note: &Note) {
-        let host = cpal::default_host();
-        let device = host.default_output_device().expect("No output device available");
-        let config = device.default_output_config().unwrap();
-        let oscillators = &self.channel_oscillators[0];//.clone();
-
-        gen_note_impl::<f32>(&device, &config.into(), note, oscillators);
-    }
-
-    pub(crate) fn gen_notes(&self, notes: Vec<Note>) {
-        let host = cpal::default_host();
-        let device = host.default_output_device().expect("No output device available");
-        let config = device.default_output_config().unwrap();
-
-        gen_notes_impl::<f32>(&device, &config.into(), notes,
-                              self.channel_oscillators.clone());
-    }
+    gen_notes_impl::<f32>(&device, &config.into(), notes, channel_oscillators);
 }
 
 fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
@@ -55,7 +32,7 @@ where
     let frequency = note.frequency.clone();
     let mut next_value = move || {
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
-        volume * get_freq(oscillators, frequency, sample_clock)
+        volume * get_freq(&oscillators, frequency, sample_clock)
     };
 
     let channels = config.channels as usize;
@@ -74,7 +51,7 @@ where
 }
 
 fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                         notes: Vec<Note>, channel_oscillators: Vec<Vec<OscType>>)
+                     notes: Vec<Note>, channel_oscillators: Vec<Vec<OscType>>)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -85,7 +62,7 @@ where
         for (i, note) in notes.iter().enumerate() {
             freq +=
                 note.volume *
-                    get_freq(channel_oscillators.get(i), note.frequency, sample_clock);
+                    get_freq(&channel_oscillators[i], note.frequency, sample_clock);
         }
         freq
     };
@@ -106,7 +83,7 @@ where
 }
 
 
-fn get_freq(oscillators: Vec<OscType>, frequency: f32, sample_clock: f32) -> f32 {
+fn get_freq(oscillators: &Vec<OscType>, frequency: f32, sample_clock: f32) -> f32 {
     let mut freq = 0.0;
     for oscillator in oscillators {
         freq += match oscillator {
