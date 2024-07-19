@@ -24,17 +24,20 @@ fn main() {
     let channel_oscillators = vec![oscillators_1, oscillators_2];
     let mut multi_instrument =
         MultiInstrument::from_channel_oscillators(channel_oscillators);
-    let note = Note::from(frequency, volume, duration_ms);
-    multi_instrument.add_note_to_channels(note);
-    multi_instrument.add_note_to_channels(note);
+    let note_1 = Note::from(frequency, volume * 0.5, duration_ms);
+    let note_2 = Note::from(frequency / 2.0, volume * 0.75, duration_ms);
+    multi_instrument.add_note_to_channel(0, note_1 );
+    multi_instrument.add_note_to_channel(1, note_2);
+    multi_instrument.add_note_to_channel(0, note_2 );
+    multi_instrument.add_note_to_channel(1, note_1);
     multi_instrument.play_channel_notes_and_advance();
     multi_instrument.play_channel_notes();
 
     let mut instrument = Instrument::from_oscillators(get_osc_types(&osc_types_arg));
-    let note_1 = Note::from(frequency, volume * 0.5, duration_ms);
-    let note_2 = Note::from(frequency / 2.0, volume * 0.75, duration_ms);
-    instrument.add_note(note_1);
-    instrument.add_note(note_2);
+    let note_3 = Note::from(frequency, volume * 0.5, duration_ms);
+    let note_4 = Note::from(frequency / 2.0, volume * 0.75, duration_ms);
+    instrument.add_note(note_3);
+    instrument.add_note(note_4);
     instrument.play_note_and_advance();
     instrument.play_note();
     instrument.loop_once();

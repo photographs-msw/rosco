@@ -32,7 +32,7 @@ where
     let frequency = note.frequency.clone();
     let mut next_value = move || {
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
-        volume * get_freq(&oscillators, frequency, sample_clock)
+        volume * get_note_freq(&oscillators, frequency, sample_clock)
     };
 
     let channels = config.channels as usize;
@@ -58,13 +58,13 @@ where
     let mut sample_clock = 0f32;
     let mut next_value = move || {
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
-        let mut freq = 0.0;
-        for (i, note) in notes.iter().enumerate() {
-            freq +=
-                note.volume *
-                    get_freq(&channel_oscillators[i], note.frequency, sample_clock);
-        }
-        freq
+        // let mut freq = 0.0;
+        // for (i, note) in notes.iter().enumerate() {
+        //     freq +=
+        //         note.volume *
+        get_notes_freq(&notes, &channel_oscillators, sample_clock)
+        // }
+        // freq
     };
 
     let channels = config.channels as usize;
@@ -83,7 +83,7 @@ where
 }
 
 
-fn get_freq(oscillators: &Vec<OscType>, frequency: f32, sample_clock: f32) -> f32 {
+fn get_note_freq(oscillators: &Vec<OscType>, frequency: f32, sample_clock: f32) -> f32 {
     let mut freq = 0.0;
     for oscillator in oscillators {
         freq += match oscillator {
@@ -92,6 +92,16 @@ fn get_freq(oscillators: &Vec<OscType>, frequency: f32, sample_clock: f32) -> f3
             OscType::Square => get_square_freq(frequency, sample_clock),
             OscType::Saw => get_saw_freq(frequency, sample_clock),
         };
+    }
+    freq
+}
+
+fn get_notes_freq(notes: &Vec<Note>, channel_oscillators: &Vec<Vec<OscType>>,
+                  sample_clock: f32) -> f32 {
+    let mut freq = 0.0;
+    for (i, note) in notes.iter().enumerate() {
+       freq += note.volume *
+           get_note_freq(&channel_oscillators[i], note.frequency, sample_clock);
     }
     freq
 }
