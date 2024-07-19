@@ -1,12 +1,11 @@
-use std::time::Duration;
+use std::time;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
-use crate::oscillator::{get_saw_freq, get_sin_freq, get_square_freq, get_triangle_freq,
-                        OscType, SAMPLE_RATE};
+use crate::oscillator;
 use crate::note::Note;
 
-pub(crate) fn gen_note(note: &Note, oscillators: Vec<OscType>) {
+pub(crate) fn gen_note(note: &Note, oscillators: Vec<oscillator::OscType>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
@@ -14,7 +13,7 @@ pub(crate) fn gen_note(note: &Note, oscillators: Vec<OscType>) {
     gen_note_impl::<f32>(&device, &config.into(), note, oscillators);
 }
 
-pub(crate) fn gen_notes(notes: Vec<Note>, channel_oscillators: Vec<Vec<OscType>>) {
+pub(crate) fn gen_notes(notes: Vec<Note>, channel_oscillators: Vec<Vec<oscillator::OscType>>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
@@ -23,7 +22,7 @@ pub(crate) fn gen_notes(notes: Vec<Note>, channel_oscillators: Vec<Vec<OscType>>
 }
 
 fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                    note: &Note, oscillators: Vec<OscType>)
+                    note: &Note, oscillators: Vec<oscillator::OscType>)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -31,7 +30,7 @@ where
     let volume = note.volume.clone();
     let frequency = note.frequency.clone();
     let mut next_value = move || {
-        sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
+        sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
         volume * get_note_freq(&oscillators, frequency, sample_clock)
     };
 
@@ -47,24 +46,18 @@ where
         None
     ).unwrap();
     stream.play().unwrap();
-    std::thread::sleep(Duration::from_millis(note.duration_ms));
+    std::thread::sleep(time::Duration::from_millis(note.duration_ms));
 }
 
 fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                     notes: Vec<Note>, channel_oscillators: Vec<Vec<OscType>>)
+                     notes: Vec<Note>, channel_oscillators: Vec<Vec<oscillator::OscType>>)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
     let mut sample_clock = 0f32;
     let mut next_value = move || {
-        sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
-        // let mut freq = 0.0;
-        // for (i, note) in notes.iter().enumerate() {
-        //     freq +=
-        //         note.volume *
+        sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
         get_notes_freq(&notes, &channel_oscillators, sample_clock)
-        // }
-        // freq
     };
 
     let channels = config.channels as usize;
@@ -79,24 +72,24 @@ where
         None
     ).unwrap();
     stream.play().unwrap();
-    std::thread::sleep(Duration::from_millis(1000));
+    std::thread::sleep(time::Duration::from_millis(1000));
 }
 
 
-fn get_note_freq(oscillators: &Vec<OscType>, frequency: f32, sample_clock: f32) -> f32 {
+fn get_note_freq(oscillators: &Vec<oscillator::OscType>, frequency: f32, sample_clock: f32) -> f32 {
     let mut freq = 0.0;
-    for oscillator in oscillators {
-        freq += match oscillator {
-            OscType::Sine => get_sin_freq(frequency, sample_clock),
-            OscType::Triangle => get_triangle_freq(frequency, sample_clock),
-            OscType::Square => get_square_freq(frequency, sample_clock),
-            OscType::Saw => get_saw_freq(frequency, sample_clock),
+    for osc_type in oscillators {
+        freq += match osc_type {
+            oscillator::OscType::Sine => oscillator::get_sin_freq(frequency, sample_clock),
+            oscillator::OscType::Triangle => oscillator::get_triangle_freq(frequency, sample_clock),
+            oscillator::OscType::Square => oscillator::get_square_freq(frequency, sample_clock),
+            oscillator::OscType::Saw => oscillator::get_saw_freq(frequency, sample_clock),
         };
     }
     freq
 }
 
-fn get_notes_freq(notes: &Vec<Note>, channel_oscillators: &Vec<Vec<OscType>>,
+fn get_notes_freq(notes: &Vec<Note>, channel_oscillators: &Vec<Vec<oscillator::OscType>>,
                   sample_clock: f32) -> f32 {
     let mut freq = 0.0;
     for (i, note) in notes.iter().enumerate() {

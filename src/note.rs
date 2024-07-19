@@ -1,7 +1,6 @@
 #[allow(dead_code)]
 static DEFAULT_VOLUME: f32 = 1.0;
 
-// TODO DO WE NEED THESE TRAITS? GET OWNERSHIP RIGHT
 #[derive(Clone, Copy)]
 pub(crate) struct Note {
     pub(crate) frequency: f32,

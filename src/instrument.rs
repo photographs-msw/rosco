@@ -1,17 +1,17 @@
-use crate::audio_gen::gen_note;
+use crate::audio_gen;
 use crate::note::Note;
-use crate::oscillator::OscType;
+use crate::oscillator;
 use crate::sequence::Sequence;
 
 pub(crate) struct Instrument<> {
-    oscillators: Vec<OscType>,
+    oscillators: Vec<oscillator::OscType>,
     sequence: Sequence,
 }
 
 #[allow(dead_code)]
 impl Instrument {
 
-    pub(crate) fn from_oscillators(oscillators: Vec<OscType>) -> Self {
+    pub(crate) fn from_oscillators(oscillators: Vec<oscillator::OscType>) -> Self {
         Instrument {
             oscillators,
             sequence: Sequence::new()
@@ -23,11 +23,11 @@ impl Instrument {
     }
 
     pub(crate) fn play_note(&self) {
-        gen_note(&self.sequence.get_note(), self.oscillators.clone());
+        audio_gen::gen_note(&self.sequence.get_note(), self.oscillators.clone());
     }
 
     pub(crate) fn play_note_and_advance(&mut self) {
-        gen_note(&self.sequence.get_note_and_advance(), self.oscillators.clone());
+        audio_gen::gen_note(&self.sequence.get_note_and_advance(), self.oscillators.clone());
     }
 
     pub(crate) fn reset(&mut self) {
@@ -36,19 +36,19 @@ impl Instrument {
 
     pub(crate) fn loop_once(&self) {
         for note in self.sequence.iter() {
-            gen_note(note, self.oscillators.clone());
+            audio_gen::gen_note(note, self.oscillators.clone());
         }
     }
 
     pub(crate) fn loop_n(&self, n: u8) {
         for _ in 0..n {
             for note in self.sequence.iter() {
-                gen_note(note, self.oscillators.clone());
+                audio_gen::gen_note(note, self.oscillators.clone());
             }
         }
     }
 
     pub(crate) fn play_note_direct(&self, note: &Note) {
-        gen_note(note, self.oscillators.clone());
+        audio_gen::gen_note(note, self.oscillators.clone());
     }
 }
