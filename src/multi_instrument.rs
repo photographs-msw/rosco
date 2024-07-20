@@ -1,22 +1,8 @@
 use crate::audio_gen;
+use crate::channel::Channel;
 use crate::note::Note;
 use crate::oscillator;
 use crate::sequence::Sequence;
-
-pub(crate) struct Channel {
-    sequence: Sequence,
-    volume: f32
-}
-
-impl Channel {
-
-   fn from(sequence: Sequence, volume: f32) -> Self {
-        Channel {
-            sequence,
-            volume
-        }
-    }
-}
 
 #[allow(dead_code)]
 pub(crate) struct MultiInstrument {

@@ -9,7 +9,7 @@ pub struct Sequence {
 #[allow(dead_code)]
 impl Sequence {
 
-    pub(crate) fn new () -> Self {
+    pub(crate) fn new() -> Self {
         Sequence {
             notes: Vec::new(),
             index: 0

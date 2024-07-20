@@ -5,6 +5,7 @@ mod note;
 mod oscillator;
 mod utils;
 mod sequence;
+mod channel;
 
 use crate::instrument::Instrument;
 use crate::multi_instrument::MultiInstrument;
@@ -30,8 +31,11 @@ fn main() {
     multi_instrument.add_note_to_channel(1, note_2);
     multi_instrument.add_note_to_channel(0, note_2 );
     multi_instrument.add_note_to_channel(1, note_1);
+    multi_instrument.add_note_to_channels(note_1);
     multi_instrument.play_channel_notes_and_advance();
+    multi_instrument.set_volume_for_channel(0, 0.25);
     multi_instrument.play_channel_notes();
+    multi_instrument.set_volume_for_channels(0.75);
     multi_instrument.loop_once();
     multi_instrument.loop_n(2);
     multi_instrument.play_notes_direct(vec![note_1, note_2]);
@@ -42,7 +46,9 @@ fn main() {
     instrument.add_note(note_3);
     instrument.add_note(note_4);
     instrument.play_note_and_advance();
+    instrument.set_volume(0.25);
     instrument.play_note();
+    instrument.set_volume(0.75);
     instrument.loop_once();
     instrument.loop_n(2);
     instrument.play_note_direct(&note_1);
