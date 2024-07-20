@@ -1,3 +1,5 @@
+use crate::note::Note;
+
 pub(crate) static SAMPLE_RATE: f32 = 44100.0;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
@@ -25,18 +27,41 @@ pub(crate) fn get_osc_types(osc_type_arg: &str) -> Vec<OscType> {
     osc_types
 }
 
-pub(crate) fn get_sin_freq(frequency: f32, sample_clock: f32) -> f32 {
+pub(crate) fn get_note_freq(oscillators: &Vec<OscType>, frequency: f32, sample_clock: f32) -> f32 {
+    let mut freq = 0.0;
+    for osc_type in oscillators {
+        freq += match osc_type {
+            OscType::Sine => get_sin_freq(frequency, sample_clock),
+            OscType::Triangle => get_triangle_freq(frequency, sample_clock),
+            OscType::Square => get_square_freq(frequency, sample_clock),
+            OscType::Saw => get_saw_freq(frequency, sample_clock),
+        };
+    }
+    freq
+}
+
+pub(crate) fn get_notes_freq(notes: &Vec<Note>, channel_oscillators: &Vec<Vec<OscType>>,
+                             sample_clock: f32) -> f32 {
+    let mut freq = 0.0;
+    for (i, note) in notes.iter().enumerate() {
+        freq += note.volume *
+            get_note_freq(&channel_oscillators[i], note.frequency, sample_clock);
+    }
+    freq
+}
+
+fn get_sin_freq(frequency: f32, sample_clock: f32) -> f32 {
     (sample_clock * frequency * TWO_PI / SAMPLE_RATE).sin()
 }
 
-pub(crate) fn get_triangle_freq(frequency: f32, sample_clock: f32) -> f32 {
+fn get_triangle_freq(frequency: f32, sample_clock: f32) -> f32 {
     4.0 * ((frequency / SAMPLE_RATE * sample_clock)
         - ((frequency / SAMPLE_RATE * sample_clock) + 0.5)
         .floor()).abs()
         - 1.0
 }
 
-pub(crate) fn get_square_freq(frequency: f32, sample_clock: f32) -> f32 {
+fn get_square_freq(frequency: f32, sample_clock: f32) -> f32 {
     if (sample_clock * frequency / SAMPLE_RATE) % 1.0 < 0.5 {
         1.0
     } else {
@@ -44,7 +69,7 @@ pub(crate) fn get_square_freq(frequency: f32, sample_clock: f32) -> f32 {
     }
 }
 
-pub(crate) fn get_saw_freq(frequency: f32, sample_clock: f32) -> f32 {
+fn get_saw_freq(frequency: f32, sample_clock: f32) -> f32 {
     2.0 * ((frequency / SAMPLE_RATE * sample_clock)
         - ((frequency / SAMPLE_RATE * sample_clock) + 0.5)
         .floor()).abs()
