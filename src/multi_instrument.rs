@@ -5,10 +5,11 @@ use crate::note::Note;
 use crate::oscillator;
 use crate::sequence::SequenceBuilder;
 
-#[derive(Builder, Clone)]
-#[allow(dead_code)]
+#[derive(Builder)]
 pub(crate) struct MultiInstrument {
     channel_oscillators: Vec<Vec<oscillator::OscType>>,
+
+    #[allow(dead_code)]
     num_channels: usize,
 
     #[builder(public, setter(custom))]
@@ -27,7 +28,6 @@ impl MultiInstrumentBuilder {
     }
 }
 
-#[allow(dead_code)]
 impl MultiInstrument {
 
     pub(crate) fn play_channel_notes(&self) {
@@ -76,6 +76,7 @@ impl MultiInstrument {
         }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn add_chord_to_channels(&mut self, channel_nums: Vec<usize>, chord: Vec<Note>) {
         for channel_num in &channel_nums {
             self.validate_channel_num(*channel_num);

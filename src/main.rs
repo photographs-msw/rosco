@@ -12,10 +12,10 @@ mod utils;
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};
 use crate::note::{Note, NoteBuilder};
-use crate::utils::get_args;
+use crate::utils::get_cli_args;
 
 fn main() {
-    let args = get_args();
+    let args = get_cli_args();
     let osc_types_arg = args[0].clone();
     let frequency: f32 = args[1].parse().unwrap();
     let volume: f32 = args[2].parse().unwrap();
@@ -77,5 +77,7 @@ fn main() {
     instrument.set_volume(0.75);
     instrument.loop_once();
     instrument.loop_n(2);
+    instrument.reset();
+    instrument.play_note();
     instrument.play_note_direct(&note_3);
 }

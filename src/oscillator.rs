@@ -3,7 +3,7 @@ use crate::note::Note;
 pub(crate) static SAMPLE_RATE: f32 = 44100.0;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub(crate) enum OscType {
     Sine,
     Triangle,

@@ -8,12 +8,12 @@ use crate::sequence::SequenceBuilder;
 
 static DEFAULT_CHANNEL_VOLUME: f32 = 1.0;
 
-#[derive(Builder, Clone)]
-#[allow(dead_code)]
+#[derive(Builder)]
 pub(crate) struct Instrument<> {
     oscillators: Vec<oscillator::OscType>,
 
     #[builder(default = "DEFAULT_CHANNEL_VOLUME")]
+    #[allow(dead_code)]
     volume: f32,
 
     #[builder(public, setter(custom))]
@@ -30,7 +30,6 @@ impl InstrumentBuilder {
     }
 }
 
-#[allow(dead_code)]
 impl Instrument {
 
     pub(crate) fn add_note(&mut self, note: Note) {
