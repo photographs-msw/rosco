@@ -1,27 +1,21 @@
+use derive_builder::Builder;
+
 use crate::note::Note;
 
+static INIT_INDEX: usize = 0;
+
+#[derive(Builder, Clone)]
 #[allow(dead_code)]
 pub struct Sequence {
+    #[builder(default = "Vec::new()")]
     pub(crate) notes: Vec<Note>,
+
+    #[builder(default = "INIT_INDEX")]
     index: usize
 }
 
 #[allow(dead_code)]
 impl Sequence {
-
-    pub(crate) fn new() -> Self {
-        Sequence {
-            notes: Vec::new(),
-            index: 0
-        }
-    }
-
-    fn from_notes(notes: Vec<Note>) -> Self {
-        Sequence {
-            notes,
-            index: 0
-        }
-    }
 
     pub(crate) fn get_index(&self) -> usize {
         self.index

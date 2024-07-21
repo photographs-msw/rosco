@@ -1,29 +1,34 @@
+use derive_builder::Builder;
 use crate::audio_gen;
-use crate::channel::Channel;
+use crate::channel::{Channel, ChannelBuilder};
 use crate::note::Note;
 use crate::oscillator;
-use crate::sequence::Sequence;
+use crate::sequence::SequenceBuilder;
 
+#[derive(Builder, Clone)]
 #[allow(dead_code)]
 pub(crate) struct MultiInstrument {
     channel_oscillators: Vec<Vec<oscillator::OscType>>,
+    num_channels: usize,
+
+    #[builder(public, setter(custom))]
     channels: Vec<Channel>,
+}
+
+impl MultiInstrumentBuilder {
+    pub(crate) fn channels(&mut self) -> &mut Self {
+        let num_channels = self.num_channels.unwrap();
+        self.channels =
+            Some(vec![ChannelBuilder::default()
+                          .sequence(SequenceBuilder::default().build().unwrap())
+                          .volume(1.0 / num_channels as f32)
+                          .build().unwrap(); num_channels]);
+        self
+    }
 }
 
 #[allow(dead_code)]
 impl MultiInstrument {
-
-    pub fn from_channel_oscillators(channel_oscillators: Vec<Vec<oscillator::OscType>>) -> Self {
-        let mut channels = Vec::new();
-        let num_channels = channel_oscillators.len();
-        for _ in 0..num_channels {
-            channels.push(Channel::from(Sequence::new(), 1.0 / num_channels as f32));
-        }
-        MultiInstrument {
-            channel_oscillators,
-            channels,
-        }
-    }
 
     pub(crate) fn play_channel_notes(&self) {
         audio_gen::gen_notes(self.get_next_notes(), self.channel_oscillators.clone());

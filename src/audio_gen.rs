@@ -1,6 +1,6 @@
-use std::time;
-
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+
+use std::time;
 
 use crate::oscillator;
 use crate::note::Note;

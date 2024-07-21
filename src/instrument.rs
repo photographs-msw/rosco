@@ -1,33 +1,37 @@
+use derive_builder::Builder;
+
 use crate::audio_gen;
-use crate::channel::Channel;
+use crate::channel::{Channel, ChannelBuilder};
 use crate::note::Note;
 use crate::oscillator;
-use crate::sequence::Sequence;
+use crate::sequence::SequenceBuilder;
 
-static DEFAULT_INSTR_VOLUME: f32 = 1.0;
+static DEFAULT_CHANNEL_VOLUME: f32 = 1.0;
 
+#[derive(Builder, Clone)]
+#[allow(dead_code)]
 pub(crate) struct Instrument<> {
     oscillators: Vec<oscillator::OscType>,
+
+    #[builder(default = "DEFAULT_CHANNEL_VOLUME")]
+    volume: f32,
+
+    #[builder(public, setter(custom))]
     channel: Channel,
+}
+
+impl InstrumentBuilder {
+    pub(crate) fn channel(&mut self) -> &mut Self {
+        self.channel = Some(ChannelBuilder::default()
+            .sequence(SequenceBuilder::default().build().unwrap())
+            .volume(self.volume.unwrap())
+            .build().unwrap());
+        self
+    }
 }
 
 #[allow(dead_code)]
 impl Instrument {
-
-    pub(crate) fn from(oscillators: Vec<oscillator::OscType>, sequence: Sequence,
-                       volume: f32) -> Self {
-        Instrument {
-            oscillators,
-            channel: Channel::from(sequence, volume)
-        }
-    }
-
-    pub(crate) fn from_oscillators(oscillators: Vec<oscillator::OscType>) -> Self {
-        Instrument {
-            oscillators,
-            channel: Channel::from(Sequence::new(), DEFAULT_INSTR_VOLUME)
-        }
-    }
 
     pub(crate) fn add_note(&mut self, note: Note) {
         self.channel.sequence.add_note(note);
