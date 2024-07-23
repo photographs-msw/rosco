@@ -8,6 +8,7 @@ mod note;
 mod oscillator;
 mod sequence;
 mod utils;
+mod midi;
 
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};

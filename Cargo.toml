@@ -11,4 +11,5 @@ authors = ["Mark S. Weiss"]
 [dependencies]
 cpal = "0.15.3"
 derive_builder = "0.20.0"
+nodi = "1.0.0"
 once_cell = "1.19.0"
