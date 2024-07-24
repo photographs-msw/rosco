@@ -1,7 +1,7 @@
 extern crate derive_builder;
 
 mod audio_gen;
-mod channel;
+mod track;
 mod instrument;
 mod multi_instrument;
 mod note;
@@ -24,11 +24,11 @@ fn main() {
 
     let oscillators_1 = oscillator::get_osc_types(&osc_types_arg);
     let oscillators_2 = oscillator::get_osc_types(&osc_types_arg);
-    let channel_oscillators = vec![oscillators_1, oscillators_2];
-    let num_channels = channel_oscillators.len();
+    let track_oscillators = vec![oscillators_1, oscillators_2];
+    let num_tracks = track_oscillators.len();
     let mut multi_instrument = MultiInstrumentBuilder::default()
-        .channel_oscillators(channel_oscillators)
-        .num_channels(num_channels)
+        .track_oscillators(track_oscillators)
+        .num_tracks(num_tracks)
         .channels()
         .build().unwrap();
     // builder with default volume
@@ -41,15 +41,15 @@ fn main() {
         .volume(volume * 0.75)
         .duration_ms(duration_ms)
         .build().unwrap();
-    multi_instrument.add_note_to_channel(0, note_1 );
-    multi_instrument.add_note_to_channel(1, note_2);
-    multi_instrument.add_note_to_channel(0, note_2 );
-    multi_instrument.add_note_to_channel(1, note_1);
-    multi_instrument.add_note_to_channels(note_1);
-    multi_instrument.play_channel_notes_and_advance();
-    multi_instrument.set_volume_for_channel(0, 0.25);
-    multi_instrument.play_channel_notes();
-    multi_instrument.set_volume_for_channels(0.75);
+    multi_instrument.add_note_to_track(0, note_1 );
+    multi_instrument.add_note_to_track(1, note_2);
+    multi_instrument.add_note_to_track(0, note_2 );
+    multi_instrument.add_note_to_track(1, note_1);
+    multi_instrument.add_note_to_tracks(note_1);
+    multi_instrument.play_track_notes_and_advance();
+    multi_instrument.set_volume_for_track(0, 0.25);
+    multi_instrument.play_track_notes();
+    multi_instrument.set_volume_for_tracks(0.75);
     multi_instrument.loop_once();
     multi_instrument.loop_n(2);
     multi_instrument.play_notes_direct(vec![note_1, note_2]);

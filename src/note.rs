@@ -9,7 +9,7 @@ pub(crate) struct Note {
     pub(crate) duration_ms: u64,
 
     #[builder(default = "0")]
-    pub(crate) start_time: u64,
+    pub(crate) start_time_ms: u64,
 
     #[builder(default = "DEFAULT_VOLUME")]
     pub(crate) volume: f32,
