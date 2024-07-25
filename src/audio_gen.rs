@@ -5,24 +5,24 @@ use std::time;
 use crate::oscillator;
 use crate::note::Note;
 
-pub(crate) fn gen_note(note: &Note, oscillators: Vec<oscillator::OscType>) {
+pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
 
-    gen_note_impl::<f32>(&device, &config.into(), note, oscillators);
+    gen_note_impl::<f32>(&device, &config.into(), note, waveforms);
 }
 
-pub(crate) fn gen_notes(notes: Vec<Note>, channel_oscillators: Vec<Vec<oscillator::OscType>>) {
+pub(crate) fn gen_notes(notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
 
-    gen_notes_impl::<f32>(&device, &config.into(), notes, channel_oscillators);
+    gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms);
 }
 
 fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                    note: &Note, oscillators: Vec<oscillator::OscType>)
+                    note: &Note, waveforms: Vec<oscillator::Waveform>)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -31,7 +31,7 @@ where
     let frequency = note.frequency.clone();
     let mut next_value = move || {
         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
-        volume * oscillator::get_note_freq(&oscillators, frequency, sample_clock)
+        volume * oscillator::get_note_freq(&waveforms, frequency, sample_clock)
     };
 
     let channels = config.channels as usize;
@@ -50,14 +50,14 @@ where
 }
 
 fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                     notes: Vec<Note>, channel_oscillators: Vec<Vec<oscillator::OscType>>)
+                     notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
     let mut sample_clock = 0f32;
     let mut next_value = move || {
         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
-        oscillator::get_notes_freq(&notes, &channel_oscillators, sample_clock)
+        oscillator::get_notes_freq(&notes, &track_waveforms, sample_clock)
     };
 
     let channels = config.channels as usize;

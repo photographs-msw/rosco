@@ -4,48 +4,48 @@ pub(crate) static SAMPLE_RATE: f32 = 44100.0;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
 #[derive(Clone)]
-pub(crate) enum OscType {
+pub(crate) enum Waveform {
     Sine,
     Triangle,
     Square,
     Saw,
 }
 
-pub(crate) fn get_osc_types(osc_type_arg: &str) -> Vec<OscType> {
-    let mut osc_types: Vec<OscType> = Vec::new();
-    let osc_type_args = osc_type_arg.split(",");
-    for osc_type_arg in osc_type_args {
-        let osc_type: OscType = match osc_type_arg {
-            "sine" => OscType::Sine,
-            "triangle" => OscType::Triangle,
-            "square" => OscType::Square,
-            "saw" => OscType::Saw,
-            _ => OscType::Sine,
+pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
+    let mut waveforms: Vec<Waveform> = Vec::new();
+    let waveform_args = waveform_arg.split(",");
+    for waveform_arg in waveform_args {
+        let waveform: Waveform = match waveform_arg {
+            "sine" => Waveform::Sine,
+            "triangle" => Waveform::Triangle,
+            "square" => Waveform::Square,
+            "saw" => Waveform::Saw,
+            _ => Waveform::Sine,
         };
-        osc_types.push(osc_type);
+        waveforms.push(waveform);
     }
-    osc_types
+    waveforms
 }
 
-pub(crate) fn get_note_freq(oscillators: &Vec<OscType>, frequency: f32, sample_clock: f32) -> f32 {
+pub(crate) fn get_note_freq(waveforms: &Vec<Waveform>, frequency: f32, sample_clock: f32) -> f32 {
     let mut freq = 0.0;
-    for osc_type in oscillators {
-        freq += match osc_type {
-            OscType::Sine => get_sin_freq(frequency, sample_clock),
-            OscType::Triangle => get_triangle_freq(frequency, sample_clock),
-            OscType::Square => get_square_freq(frequency, sample_clock),
-            OscType::Saw => get_saw_freq(frequency, sample_clock),
+    for waveform in waveforms {
+        freq += match waveform {
+            Waveform::Sine => get_sin_freq(frequency, sample_clock),
+            Waveform::Triangle => get_triangle_freq(frequency, sample_clock),
+            Waveform::Square => get_square_freq(frequency, sample_clock),
+            Waveform::Saw => get_saw_freq(frequency, sample_clock),
         };
     }
     freq
 }
 
-pub(crate) fn get_notes_freq(notes: &Vec<Note>, channel_oscillators: &Vec<Vec<OscType>>,
+pub(crate) fn get_notes_freq(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Waveform>>,
                              sample_clock: f32) -> f32 {
     let mut freq = 0.0;
     for (i, note) in notes.iter().enumerate() {
         freq += note.volume *
-            get_note_freq(&channel_oscillators[i], note.frequency, sample_clock);
+            get_note_freq(&channel_waveforms[i], note.frequency, sample_clock);
     }
     freq
 }

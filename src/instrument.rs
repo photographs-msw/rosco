@@ -10,7 +10,7 @@ static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 
 #[derive(Builder)]
 pub(crate) struct Instrument<> {
-    oscillators: Vec<oscillator::OscType>,
+    waveforms: Vec<oscillator::Waveform>,
 
     #[builder(default = "DEFAULT_TRACK_VOLUME")]
     #[allow(dead_code)]
@@ -37,11 +37,11 @@ impl Instrument {
     }
 
     pub(crate) fn play_note(&self) {
-        audio_gen::gen_note(&self.track.sequence.get_note(), self.oscillators.clone());
+        audio_gen::gen_note(&self.track.sequence.get_note(), self.waveforms.clone());
     }
 
     pub(crate) fn play_note_and_advance(&mut self) {
-        audio_gen::gen_note(&self.track.sequence.get_note_and_advance(), self.oscillators.clone());
+        audio_gen::gen_note(&self.track.sequence.get_note_and_advance(), self.waveforms.clone());
     }
 
     pub(crate) fn reset(&mut self) {
@@ -50,14 +50,14 @@ impl Instrument {
 
     pub(crate) fn loop_once(&self) {
         for note in self.track.sequence.iter() {
-            audio_gen::gen_note(note, self.oscillators.clone());
+            audio_gen::gen_note(note, self.waveforms.clone());
         }
     }
 
     pub(crate) fn loop_n(&self, n: u8) {
         for _ in 0..n {
             for note in self.track.sequence.iter() {
-                audio_gen::gen_note(note, self.oscillators.clone());
+                audio_gen::gen_note(note, self.waveforms.clone());
             }
         }
     }
@@ -67,6 +67,6 @@ impl Instrument {
     }
 
     pub(crate) fn play_note_direct(&self, note: &Note) {
-        audio_gen::gen_note(note, self.oscillators.clone());
+        audio_gen::gen_note(note, self.waveforms.clone());
     }
 }

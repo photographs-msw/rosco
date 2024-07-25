@@ -17,17 +17,17 @@ use crate::utils::get_cli_args;
 
 fn main() {
     let args = get_cli_args();
-    let osc_types_arg = args[0].clone();
+    let waveforms_arg = args[0].clone();
     let frequency: f32 = args[1].parse().unwrap();
     let volume: f32 = args[2].parse().unwrap();
     let duration_ms: u64 = args[3].parse().unwrap();
 
-    let oscillators_1 = oscillator::get_osc_types(&osc_types_arg);
-    let oscillators_2 = oscillator::get_osc_types(&osc_types_arg);
-    let track_oscillators = vec![oscillators_1, oscillators_2];
-    let num_tracks = track_oscillators.len();
+    let waveforms_1 = oscillator::get_waveforms(&waveforms_arg);
+    let waveform_2 = oscillator::get_waveforms(&waveforms_arg);
+    let track_waveforms = vec![waveforms_1, waveform_2];
+    let num_tracks = track_waveforms.len();
     let mut multi_instrument = MultiInstrumentBuilder::default()
-        .track_oscillators(track_oscillators)
+        .track_waveforms(track_waveforms)
         .num_tracks(num_tracks)
         .channels()
         .build().unwrap();
@@ -56,8 +56,8 @@ fn main() {
 
     // override default builder volume of 1.0
     let instrument_volume: f32 = 0.9;
-    let mut instrument = InstrumentBuilder::default().
-        oscillators(oscillator::get_osc_types(&osc_types_arg))
+    let mut instrument = InstrumentBuilder::default()
+        .waveforms(oscillator::get_waveforms(&waveforms_arg))
         .volume(instrument_volume)
         .channel()
         .build().unwrap();

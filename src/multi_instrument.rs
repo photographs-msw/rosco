@@ -7,7 +7,7 @@ use crate::sequence::SequenceBuilder;
 
 #[derive(Builder)]
 pub(crate) struct MultiInstrument {
-    track_oscillators: Vec<Vec<oscillator::OscType>>,
+    track_waveforms: Vec<Vec<oscillator::Waveform>>,
 
     #[allow(dead_code)]
     num_tracks: usize,
@@ -31,12 +31,12 @@ impl MultiInstrumentBuilder {
 impl MultiInstrument {
 
     pub(crate) fn play_track_notes(&self) {
-        audio_gen::gen_notes(self.get_next_notes(), self.track_oscillators.clone());
+        audio_gen::gen_notes(self.get_next_notes(), self.track_waveforms.clone());
     }
 
     pub(crate) fn play_track_notes_and_advance(&mut self) {
         let notes = self.get_next_notes();
-        audio_gen::gen_notes(notes, self.track_oscillators.clone());
+        audio_gen::gen_notes(notes, self.track_waveforms.clone());
         for channel in self.tracks.iter_mut() {
             channel.sequence.advance();
         }
@@ -112,7 +112,7 @@ impl MultiInstrument {
     }
 
     pub(crate) fn play_notes_direct(&self, notes: Vec<Note>) {
-        audio_gen::gen_notes(notes, self.track_oscillators.clone());
+        audio_gen::gen_notes(notes, self.track_waveforms.clone());
     }
 
     fn get_next_notes(&self) -> Vec<Note> {
