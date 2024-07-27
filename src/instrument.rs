@@ -21,7 +21,7 @@ pub(crate) struct Instrument<> {
 }
 
 impl InstrumentBuilder {
-    pub(crate) fn channel(&mut self) -> &mut Self {
+    pub(crate) fn track(&mut self) -> &mut Self {
         self.track = Some(TrackBuilder::default()
             .sequence(SequenceBuilder::default().build().unwrap())
             .volume(self.volume.unwrap())

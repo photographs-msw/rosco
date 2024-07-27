@@ -29,7 +29,7 @@ fn main() {
     let mut multi_instrument = MultiInstrumentBuilder::default()
         .track_waveforms(track_waveforms)
         .num_tracks(num_tracks)
-        .channels()
+        .tracks()
         .build().unwrap();
     // builder with default volume
     let note_1: Note = NoteBuilder::default()
@@ -59,7 +59,7 @@ fn main() {
     let mut instrument = InstrumentBuilder::default()
         .waveforms(oscillator::get_waveforms(&waveforms_arg))
         .volume(instrument_volume)
-        .channel()
+        .track()
         .build().unwrap();
     let note_3: Note = NoteBuilder::default()
         .frequency(frequency)
