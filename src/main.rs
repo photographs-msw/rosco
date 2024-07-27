@@ -11,15 +11,14 @@ mod utils;
 mod midi;
 
 use crate::instrument::InstrumentBuilder;
-use crate::midi::midi_file_channels_into_tracks;
 use crate::multi_instrument::{MultiInstrumentBuilder};
 use crate::note::{Note, NoteBuilder};
-use crate::utils::get_cli_args;
 
 fn main() {
-    midi_file_channels_into_tracks("my_file.mid");
+    midi::midi_file_to_tracks("my_file.mid");
 
-    let args = get_cli_args();
+    let args = utils::get_cli_args();
+
     let waveforms_arg = args[0].clone();
     let frequency: f32 = args[1].parse().unwrap();
     let volume: f32 = args[2].parse().unwrap();

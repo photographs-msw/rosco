@@ -12,7 +12,7 @@ static DEFAULT_BPM: u8 = 120;
 static MIDI_TICKS_PER_QUARTER_NOTE: f32 = 960.0;
 static SECS_PER_MIN: f32 = 60.0;
 
-pub(crate) fn midi_file_channels_into_tracks(file_name: &str) -> Vec<track::Track> {
+pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<track::Track> {
 
     let mut tracks = Vec::new();
     let data = std::fs::read(file_name).unwrap();
