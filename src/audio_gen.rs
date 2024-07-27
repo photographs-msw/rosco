@@ -46,7 +46,7 @@ where
         None
     ).unwrap();
     stream.play().unwrap();
-    std::thread::sleep(time::Duration::from_millis(note.duration_ms));
+    std::thread::sleep(time::Duration::from_millis(note.duration_ms as u64));
 }
 
 fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,

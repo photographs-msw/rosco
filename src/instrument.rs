@@ -8,7 +8,7 @@ use crate::sequence::SequenceBuilder;
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 
-#[derive(Builder)]
+#[derive(Builder, Debug)]
 pub(crate) struct Instrument<> {
     waveforms: Vec<oscillator::Waveform>,
 

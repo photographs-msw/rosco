@@ -5,7 +5,7 @@ use crate::note::Note;
 static INIT_INDEX: usize = 0;
 
 // TODO MAKE THIS GENERIC
-#[derive(Builder, Clone)]
+#[derive(Builder, Clone, Debug)]
 pub struct Sequence {
     #[builder(default = "Vec::new()")]
     pub(crate) notes: Vec<Note>,

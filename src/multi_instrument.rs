@@ -5,7 +5,7 @@ use crate::note::Note;
 use crate::oscillator;
 use crate::sequence::SequenceBuilder;
 
-#[derive(Builder)]
+#[derive(Builder, Debug)]
 pub(crate) struct MultiInstrument {
     track_waveforms: Vec<Vec<oscillator::Waveform>>,
 
