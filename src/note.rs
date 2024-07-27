@@ -9,6 +9,7 @@ pub(crate) struct Note {
     pub(crate) duration_ms: u64,
 
     #[builder(default = "INIT_START_TIME")]
+    #[allow(dead_code)]
     pub(crate) start_time_ms: u64,
 
     #[builder(default = "DEFAULT_VOLUME")]

@@ -6,7 +6,9 @@ use crate::track;
 use crate::note;
 use crate::sequence::{Sequence, SequenceBuilder};
 
+#[allow(dead_code)]
 static DEFAULT_BPM: u8 = 120;
+#[allow(dead_code)]
 static MIDI_TICKS_PER_QUARTER_NOTE: f32 = 960.0;
 static SECS_PER_MIN: f32 = 60.0;
 
@@ -24,8 +26,8 @@ pub(crate) fn midi_file_channels_into_tracks(file_name: &str) -> Vec<track::Trac
     let mut track_in_note_on_map = HashMap::new();
     let mut ticks_since_start: u28 = u28::from(0);
     // these two variables are just to rename the struct match type to a name matching our semantics
-    let mut delta_ticks: u28 = u28::from(0);
-    let mut pitch: u7 = u7::from(0);
+    let mut delta_ticks: u28;
+    let mut pitch: u7;
 
     for track in midi.tracks.iter() {
         for event in track.iter() {
@@ -74,6 +76,8 @@ pub(crate) fn midi_file_channels_into_tracks(file_name: &str) -> Vec<track::Trac
                                 }
 
                                 midly::MidiMessage::NoteOff { key, vel } => {
+                                    pitch = *key;
+
                                     track_in_note_on_map.insert(channel, false);
                                     handle_note_off(*channel,
                                                     pitch,
@@ -102,7 +106,6 @@ pub(crate) fn midi_file_channels_into_tracks(file_name: &str) -> Vec<track::Trac
                         _ => {}
                     }
                 }
-                _ => {}
             }
         }
     }
@@ -120,10 +123,12 @@ pub(crate) fn midi_file_channels_into_tracks(file_name: &str) -> Vec<track::Trac
     tracks
 }
 
+#[allow(dead_code)]
 fn get_bpm(midi: &midly::Smf) -> u8 {
     for track in midi.tracks.iter() {
         for event in track.iter() {
             match event {
+                #[allow(unused_variables)]
                 midly::TrackEvent { delta, kind } => {
                     match kind {
                         midly::TrackEventKind::Meta(meta) => {
