@@ -197,9 +197,12 @@ fn handle_note_off(note_key: NoteKey,
                    bpm_ticks_per_ms: f32,
                    track_notes_map: &mut HashMap<NoteKey, Note>,
                    track_sequence_map: &mut HashMap<u4, Sequence>) {
-    let note= track_notes_map.get_mut(&note_key).unwrap();
+    // Add the last tick delta to the note duration, copy the note to the output track sequence
+    // and remove it from the current notes map
+    let mut note = track_notes_map.get_mut(&note_key).unwrap().clone();
     note.duration_ms += delta_ticks.as_int() as f32 / bpm_ticks_per_ms;
-    track_sequence_map.get_mut(&note_key.channel).unwrap().add_note(*note);
+    track_sequence_map.get_mut(&note_key.channel).unwrap().add_note(note);
+    track_notes_map.remove(&note_key);
 
     // TEMP DEBUG
     println!("{:#?}\nadded to track {}", note, note_key.channel.as_int());
