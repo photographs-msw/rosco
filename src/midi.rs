@@ -1,10 +1,11 @@
 use std::collections::HashMap;
+
 use nodi::midly;
 use nodi::midly::num::{u28, u4, u7};
 
-use crate::track;
-use crate::note;
+use crate::note::{Note, NoteBuilder};
 use crate::sequence::{Sequence, SequenceBuilder};
+use crate::track::{Track, TrackBuilder};
 
 #[allow(dead_code)]
 pub(crate) static DEFAULT_BPM: u8 = 120;
@@ -42,22 +43,26 @@ static MIDI_PITCH_TO_FREQ_HZ: [f64; 128] = [
     10548.081821211836, 11175.303405856126, 11839.8215267723, 12543.853951415975
 ];
 
-struct CurNote {
-    pitch: u7,
-    start_time: f32,
-    duration: f32,
-    volume: f32
+// The MIDI standard doesn't support connecting NoteOn and NoteOff events, nor NoteOn events with
+// > 0 velocity and NoteOn events on the same pitch with 0 velocity, which are treated as NoteOff.
+// We are processing raw Midi events in a stream, so we can't do any better and can only validly
+// process input which doesn't have overlapping notes on the same channel with the same pitch.
+// So the natural key for a current note in NoteOn state waiting for the NoteOff is (channel, pitch)
+#[derive(Debug, Eq, Hash, PartialEq)]
+struct NoteKey {
+    channel: u4,
+    pitch: u7
 }
 
-pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<track::Track> {
-
-    let mut tracks = Vec::new();
+pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
+    let mut tracks: Vec<Track> = Vec::new();
     let data = std::fs::read(file_name).unwrap();
     let midi = midly::Smf::parse(&data).unwrap();
 
-    let mut track_cur_note_map: HashMap<&u4, CurNote>= HashMap::new();
-    let mut track_cur_note_duration_map: HashMap<&u4, u28> = HashMap::new();
-    let mut track_in_note_on_map = HashMap::new();
+    // Map key is channel and pitch, so there can be more tha one notes in process on at channel
+    //  but only one per pitch. This is of course a bug / limitation.
+    let mut track_notes_map: HashMap<NoteKey, Note>= HashMap::new();
+    // let mut track_cur_notes_duration_map: HashMap<NoteKey, u28> = HashMap::new();
     let mut track_sequence_map: HashMap<u4, Sequence> = HashMap::new();
 
     let bpm = get_bpm(&midi);
@@ -77,9 +82,9 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<track::Track> {
                             match message {
                                 // 'key' is midi pitch 1..127
                                 midly::MidiMessage::NoteOn { key, vel } => {
-                                    if *vel > u7::from(0) {
-                                        track_in_note_on_map.insert(channel, true);
+                                    let note_key = NoteKey {channel: *channel, pitch: *key};
 
+                                    if *vel > u7::from(0) {
                                         // If we have never seen the channel before, init the state
                                         // of the map being used to collect events into sequences
                                         if !track_sequence_map.contains_key(channel) {
@@ -87,66 +92,51 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<track::Track> {
                                                                       SequenceBuilder::default()
                                                                           .build().unwrap());
                                         }
-
-                                        track_cur_note_duration_map.insert(channel,
-                                                                           u28::from(0));
                                         // Update the current note for this channel.
                                         // - Capture the velocity from the NoteOn event, should
                                         //  be a value > 0 if it's a note meant to be heard
                                         // - Set the duration to 0 to start
                                         // - Capture the start time in ticks converted to msecs
-                                        track_cur_note_map.insert(channel, CurNote {
-                                            pitch: *key,
-                                            start_time: ticks_since_start.as_int() as f32
-                                                / bpm_ticks_per_ms,
-                                            duration: 0.0,
-                                            volume: vel.as_int() as f32 / 127.0f32
-                                        });
+                                        // Handle case of existing open note with same key by
+                                        //  skipping this note if it is a duplicate
+                                        if !track_notes_map.contains_key(&note_key) {
+                                            track_notes_map.insert(note_key,
+                                                NoteBuilder::default().
+                                                    frequency(
+                                                    MIDI_PITCH_TO_FREQ_HZ[key.as_int() as usize]
+                                                        as f32)
+                                                    .start_time_ms(
+                                                        ticks_since_start.as_int() as f32 /
+                                                            bpm_ticks_per_ms)
+                                                    .duration_ms(0.0)
+                                                    .volume(vel.as_int() as f32 / 127.0f32)
+                                                    .build().unwrap()
+                                            );
+                                        }
                                     } else {
-                                        // NoteOn with velocity of 0 is the same as a NoteOff
-                                        track_in_note_on_map.insert(channel, false);
-
-                                        track_cur_note_map.insert(channel, CurNote {
-                                            pitch: *key,
-                                            start_time: 0.0,
-                                            duration: note_duration_ms(channel,
-                                                                       bpm_ticks_per_ms,
-                                                                       delta,
-                                                                       &track_cur_note_duration_map),
-                                            volume: vel.as_int() as f32 / 127.0f32
-                                        });
-                                        handle_note_off(channel,
-                                                        &track_cur_note_map,
+                                        handle_note_off(note_key,
+                                                        delta,
+                                                        bpm_ticks_per_ms,
+                                                        &mut track_notes_map,
                                                         &mut track_sequence_map);
                                     }
                                 }
 
                                 midly::MidiMessage::NoteOff { key, vel } => {
-                                    track_in_note_on_map.insert(channel, false);
-
-                                    track_cur_note_map.insert(channel, CurNote {
-                                        pitch: *key,
-                                        start_time: 0.0,
-                                        duration: note_duration_ms(channel,
-                                                                   bpm_ticks_per_ms,
-                                                                   delta,
-                                                                   &track_cur_note_duration_map),
-                                        volume: vel.as_int() as f32 / 127.0f32
-                                    });
-                                    handle_note_off(channel,
-                                                    &track_cur_note_map,
+                                    let note_key = NoteKey {channel: *channel, pitch: *key};
+                                    handle_note_off(note_key,
+                                                    delta,
+                                                    bpm_ticks_per_ms,
+                                                    &mut track_notes_map,
                                                     &mut track_sequence_map);
                                 }
-
                                 // If the event is not NoteOn or NoteOff, ignore it but add the
                                 // ticks since the last NoteOn to the running total of the duration
-                                // of the current NoteOn, if we are in a NoteOn.
+                                // of all current open notes for all tracks
                                 _ => {
-                                    if *track_in_note_on_map.get(&channel).unwrap() {
-                                        let cur_duration: u28 =
-                                            *track_cur_note_duration_map.get(&channel).unwrap();
-                                        track_cur_note_duration_map
-                                            .insert(channel, cur_duration + *delta);
+                                    for (note) in track_notes_map.values_mut() {
+                                        note.duration_ms +=
+                                            delta.as_int() as f32 / bpm_ticks_per_ms;
                                     }
                                 }
                             }
@@ -159,7 +149,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<track::Track> {
     }
 
     for (midi_channel, sequence) in track_sequence_map.iter() {
-        let track = track::TrackBuilder::default()
+        let track = TrackBuilder::default()
             .name(format!("{}", midi_channel))
             .sequence(sequence.clone())
             .volume(1.0 / track_sequence_map.len() as f32)
@@ -171,7 +161,6 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<track::Track> {
     tracks
 }
 
-#[allow(dead_code)]
 fn get_bpm(midi: &midly::Smf) -> u8 {
     for track in midi.tracks.iter() {
         for event in track.iter() {
@@ -210,21 +199,15 @@ fn note_duration_ms(channel: &u4,
         bpm_ticks_per_ms
 }
 
-fn handle_note_off(channel: &u4,
-                   track_cur_note_map: &HashMap<&u4, CurNote>,
+fn handle_note_off(note_key: NoteKey,
+                   delta_ticks: &u28,
+                   bpm_ticks_per_ms: f32,
+                   track_notes_map: &mut HashMap<NoteKey, Note>,
                    track_sequence_map: &mut HashMap<u4, Sequence>) {
-    // Construct the Note and add it to the sequence for this channel
-    let cur_note = track_cur_note_map.get(&channel).unwrap();
-    let note = note::NoteBuilder::default()
-        .frequency(MIDI_PITCH_TO_FREQ_HZ[cur_note.pitch.as_int() as usize] as f32)
-        .start_time_ms(cur_note.start_time)
-        .duration_ms(cur_note.duration)
-        .volume(cur_note.volume)
-        .build()
-        .unwrap();
+    let mut note= track_notes_map.get_mut(&note_key).unwrap();
+    note.duration_ms += delta_ticks.as_int() as f32 / bpm_ticks_per_ms;
+    track_sequence_map.get_mut(&note_key.channel).unwrap().add_note(*note);
 
     // TEMP DEBUG
-    println!("{:#?}", note);
-
-    track_sequence_map.get_mut(&channel).unwrap().add_note(note);
+    println!("{:#?}\nadded to track {}", note, note_key.channel.as_int());
 }
