@@ -122,6 +122,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
                                     }
                                 }
 
+                                #[allow(unused_variables)]
                                 midly::MidiMessage::NoteOff { key, vel } => {
                                     let note_key = NoteKey {channel: *channel, pitch: *key};
                                     handle_note_off(note_key,
@@ -134,8 +135,8 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
                                 // ticks since the last NoteOn to the running total of the duration
                                 // of all current open notes for all tracks
                                 _ => {
-                                    for (note) in track_notes_map.values_mut() {
-                                        note.duration_ms +=
+                                    for note in track_notes_map.values_mut() {
+                                       note.duration_ms +=
                                             delta.as_int() as f32 / bpm_ticks_per_ms;
                                     }
                                 }
@@ -191,20 +192,12 @@ fn ticks_per_millisecond(bpm: u8) -> f32 {
     ((bpm as f32 / SECS_PER_MIN) * MIDI_TICKS_PER_QUARTER_NOTE) / 1000.0
 }
 
-fn note_duration_ms(channel: &u4,
-                    bpm_ticks_per_ms: f32,
-                    delta_ticks: &u28,
-                    track_cur_note_duration_map: &HashMap<&u4, u28>) -> f32 {
-    (delta_ticks.as_int() + track_cur_note_duration_map.get(&channel).unwrap().as_int()) as f32 /
-        bpm_ticks_per_ms
-}
-
 fn handle_note_off(note_key: NoteKey,
                    delta_ticks: &u28,
                    bpm_ticks_per_ms: f32,
                    track_notes_map: &mut HashMap<NoteKey, Note>,
                    track_sequence_map: &mut HashMap<u4, Sequence>) {
-    let mut note= track_notes_map.get_mut(&note_key).unwrap();
+    let note= track_notes_map.get_mut(&note_key).unwrap();
     note.duration_ms += delta_ticks.as_int() as f32 / bpm_ticks_per_ms;
     track_sequence_map.get_mut(&note_key.channel).unwrap().add_note(*note);
 
