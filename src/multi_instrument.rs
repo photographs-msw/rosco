@@ -1,5 +1,6 @@
 use derive_builder::Builder;
 use crate::audio_gen;
+use crate::frequency_callback::{InstrumentGetFreqCallback, MultiInstrumentGetFreqCallback};
 use crate::track::{Track, TrackBuilder};
 use crate::note::Note;
 use crate::oscillator;
@@ -31,12 +32,14 @@ impl MultiInstrumentBuilder {
 impl MultiInstrument {
 
     pub(crate) fn play_track_notes(&self) {
-        audio_gen::gen_notes(self.get_next_notes(), self.track_waveforms.clone());
+        let callback = MultiInstrumentGetFreqCallback { track_waveforms: &self.track_waveforms };
+        audio_gen::gen_notes(self.get_next_notes(), Box::new(callback));
     }
 
     pub(crate) fn play_track_notes_and_advance(&mut self) {
         let notes = self.get_next_notes();
-        audio_gen::gen_notes(notes, self.track_waveforms.clone());
+        let callback = MultiInstrumentGetFreqCallback { track_waveforms: &self.track_waveforms };
+        audio_gen::gen_notes(self.get_next_notes(), Box::new(callback));
         for channel in self.tracks.iter_mut() {
             channel.sequence.advance();
         }
@@ -112,7 +115,8 @@ impl MultiInstrument {
     }
 
     pub(crate) fn play_notes_direct(&self, notes: Vec<Note>) {
-        audio_gen::gen_notes(notes, self.track_waveforms.clone());
+        let callback = MultiInstrumentGetFreqCallback { track_waveforms: &self.track_waveforms };
+        audio_gen::gen_notes(notes, Box::new(callback));
     }
 
     fn get_next_notes(&self) -> Vec<Note> {

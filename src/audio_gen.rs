@@ -1,28 +1,46 @@
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use std::time;
+use crate::frequency_callback::{NoteFrequencyCallback, NotesFrequencyCallback};
 
 use crate::oscillator;
 use crate::note::Note;
 
-pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
+pub(crate) fn gen_note(note: &Note, note_frequency_provider: Box<dyn NoteFrequencyCallback>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
 
-    gen_note_impl::<f32>(&device, &config.into(), note, waveforms);
+    gen_note_impl::<f32>(&device, &config.into(), note, note_frequency_provider);
 }
 
-pub(crate) fn gen_notes(notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>) {
+// pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
+//     let host = cpal::default_host();
+//     let device = host.default_output_device().expect("No output device available");
+//     let config = device.default_output_config().unwrap();
+//
+//     gen_note_impl::<f32>(&device, &config.into(), note, waveforms);
+// }
+
+pub(crate) fn gen_notes(notes: Vec<Note>,
+                        notes_frequency_provider: Box<dyn NotesFrequencyCallback>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
 
-    gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms);
+    gen_notes_impl::<f32>(&device, &config.into(), notes, notes_frequency_provider);
 }
+
+// pub(crate) fn gen_notes(notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>) {
+//     let host = cpal::default_host();
+//     let device = host.default_output_device().expect("No output device available");
+//     let config = device.default_output_config().unwrap();
+//
+//     gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms);
+// }
 
 fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                    note: &Note, waveforms: Vec<oscillator::Waveform>)
+                    note: &Note, note_frequency_provider: Box<dyn NoteFrequencyCallback>)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -31,7 +49,7 @@ where
     let frequency = note.frequency.clone();
     let mut next_value = move || {
         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
-        volume * oscillator::get_note_freq(&waveforms, frequency, sample_clock)
+        volume * note_frequency_provider.get_note_frequency(frequency, sample_clock)
     };
 
     let channels = config.channels as usize;
@@ -46,18 +64,47 @@ where
         None
     ).unwrap();
     stream.play().unwrap();
+    // TODO HOW LONG TO SLEEP? SHOULD IT HAVE ANYTHING TO DO WITH NOTE DURATION?
     std::thread::sleep(time::Duration::from_millis(note.duration_ms as u64));
 }
 
-fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                     notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>)
+// fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
+//                     note: &Note, waveforms: Vec<oscillator::Waveform>)
+// where
+//     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
+// {
+//     let mut sample_clock = 0f32;
+//     let volume = note.volume.clone();
+//     let frequency = note.frequency.clone();
+//     let mut next_value = move || {
+//         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
+//         volume * oscillator::get_note_freq(&waveforms, frequency, sample_clock)
+//     };
+//
+//     let channels = config.channels as usize;
+//     let err_fn =
+//         |err| eprintln!("an error occurred on the output audio stream: {}", err);
+//     let stream = device.build_output_stream(
+//         config,
+//         move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
+//             write_data::<T>(data, channels, &mut next_value)
+//         },
+//         err_fn,
+//         None
+//     ).unwrap();
+//     stream.play().unwrap();
+//     std::thread::sleep(time::Duration::from_millis(note.duration_ms as u64));
+// }
+
+fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig, notes: Vec<Note>,
+                     notes_frequency_provider: Box<dyn NotesFrequencyCallback>)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
     let mut sample_clock = 0f32;
     let mut next_value = move || {
         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
-        oscillator::get_notes_freq(&notes, &track_waveforms, sample_clock)
+        notes_frequency_provider.get_notes_frequency(&notes, sample_clock)
     };
 
     let channels = config.channels as usize;
@@ -74,6 +121,32 @@ where
     stream.play().unwrap();
     std::thread::sleep(time::Duration::from_millis(1000));
 }
+
+// fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
+//                      notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>)
+// where
+//     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
+// {
+//     let mut sample_clock = 0f32;
+//     let mut next_value = move || {
+//         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
+//         oscillator::get_notes_freq(&notes, &track_waveforms, sample_clock)
+//     };
+//
+//     let channels = config.channels as usize;
+//     let err_fn =
+//         |err| eprintln!("an error occurred on the output audio stream: {}", err);
+//     let stream = device.build_output_stream(
+//         config,
+//         move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
+//             write_data::<f32>(data, channels, &mut next_value)
+//         },
+//         err_fn,
+//         None
+//     ).unwrap();
+//     stream.play().unwrap();
+//     std::thread::sleep(time::Duration::from_millis(1000));
+// }
 
 fn write_data<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)
 where

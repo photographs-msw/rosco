@@ -1,6 +1,7 @@
 use derive_builder::Builder;
 
 use crate::audio_gen;
+use crate::frequency_callback::{InstrumentGetFreqCallback};
 use crate::track::{Track, TrackBuilder};
 use crate::note::Note;
 use crate::oscillator;
@@ -31,17 +32,18 @@ impl InstrumentBuilder {
 }
 
 impl Instrument {
-
     pub(crate) fn add_note(&mut self, note: Note) {
         self.track.sequence.add_note(note);
     }
 
     pub(crate) fn play_note(&self) {
-        audio_gen::gen_note(&self.track.sequence.get_note(), self.waveforms.clone());
+        let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
+        audio_gen::gen_note(&self.track.sequence.get_note(), Box::new(callback));
     }
 
     pub(crate) fn play_note_and_advance(&mut self) {
-        audio_gen::gen_note(&self.track.sequence.get_note_and_advance(), self.waveforms.clone());
+        let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
+        audio_gen::gen_note(&self.track.sequence.get_note_and_advance(), Box::new(callback));
     }
 
     pub(crate) fn reset(&mut self) {
@@ -50,14 +52,16 @@ impl Instrument {
 
     pub(crate) fn loop_once(&self) {
         for note in self.track.sequence.iter() {
-            audio_gen::gen_note(note, self.waveforms.clone());
+            let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
+            audio_gen::gen_note(note, Box::new(callback));
         }
     }
 
     pub(crate) fn loop_n(&self, n: u8) {
         for _ in 0..n {
             for note in self.track.sequence.iter() {
-                audio_gen::gen_note(note, self.waveforms.clone());
+                let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
+                audio_gen::gen_note(note, Box::new(callback));
             }
         }
     }
@@ -67,6 +71,7 @@ impl Instrument {
     }
 
     pub(crate) fn play_note_direct(&self, note: &Note) {
-        audio_gen::gen_note(note, self.waveforms.clone());
+        let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
+        audio_gen::gen_note(note, Box::new(callback));
     }
 }
