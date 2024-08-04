@@ -2,11 +2,12 @@ use derive_builder::Builder;
 use crate::audio_gen;
 use crate::track::{Track, TrackBuilder};
 use crate::note::Note;
+use crate::oscillator;
 use crate::sequence::SequenceBuilder;
 
-#[derive(Builder)]
+#[derive(Builder, Debug)]
 pub(crate) struct MultiInstrument {
-    track_waveforms: Vec<Vec<u8>>,
+    track_waveforms: Vec<Vec<oscillator::Waveform>>,
 
     #[allow(dead_code)]
     num_tracks: usize,
@@ -14,9 +15,6 @@ pub(crate) struct MultiInstrument {
     #[builder(public, setter(custom))]
     tracks: Vec<Track>,
 }
-
-// TODO CHANGE to PASS A COPY OF THE NOTE AND WAVEFORM ATTRIBUTES, USE A MACRO TO GENERATE THE
-// CALLS
 
 impl MultiInstrumentBuilder {
     pub(crate) fn tracks(&mut self) -> &mut Self {
@@ -33,11 +31,12 @@ impl MultiInstrumentBuilder {
 impl MultiInstrument {
 
     pub(crate) fn play_track_notes(&self) {
-        audio_gen::gen_notes_audio(&self.get_next_notes(), &self.track_waveforms);
+        audio_gen::gen_notes(self.get_next_notes(), self.track_waveforms.clone());
     }
 
     pub(crate) fn play_track_notes_and_advance(&mut self) {
-        audio_gen::gen_notes_audio(&self.get_next_notes(), &self.track_waveforms);
+        let notes = self.get_next_notes();
+        audio_gen::gen_notes(notes, self.track_waveforms.clone());
         for channel in self.tracks.iter_mut() {
             channel.sequence.advance();
         }
@@ -113,7 +112,7 @@ impl MultiInstrument {
     }
 
     pub(crate) fn play_notes_direct(&self, notes: Vec<Note>) {
-        audio_gen::gen_notes_audio(&notes, &self.track_waveforms);
+        audio_gen::gen_notes(notes, self.track_waveforms.clone());
     }
 
     fn get_next_notes(&self) -> Vec<Note> {

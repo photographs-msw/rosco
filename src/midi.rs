@@ -59,9 +59,10 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
     let data = std::fs::read(file_name).unwrap();
     let midi = midly::Smf::parse(&data).unwrap();
 
-    // Intermediate bookkeeping of notes in process; have seen NoteOn, waiting for matching NoteOff
+    // Map key is channel and pitch, so there can be more tha one notes in process on at channel
+    //  but only one per pitch. This is of course a bug / limitation.
     let mut track_notes_map: HashMap<NoteKey, Note>= HashMap::new();
-    // Output, tracks for each channel in the midi input with a sequence of notes for each track
+    // let mut track_cur_notes_duration_map: HashMap<NoteKey, u28> = HashMap::new();
     let mut track_sequence_map: HashMap<u4, Sequence> = HashMap::new();
 
     let bpm = get_bpm(&midi);
@@ -76,10 +77,10 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
                     ticks_since_start += *delta;
 
                     match kind {
-                        // channel is the MIDI channel 1..16
                         midly::TrackEventKind::Midi { channel, message } => {
+
                             match message {
-                                // 'key' is midi pitch 1..127, vel is the velocity 1..127
+                                // 'key' is midi pitch 1..127
                                 midly::MidiMessage::NoteOn { key, vel } => {
                                     let note_key = NoteKey {channel: *channel, pitch: *key};
 
@@ -121,7 +122,6 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
                                     }
                                 }
 
-                                // must capture vel to compile, but we don't use it in the block
                                 #[allow(unused_variables)]
                                 midly::MidiMessage::NoteOff { key, vel } => {
                                     let note_key = NoteKey {channel: *channel, pitch: *key};
@@ -150,13 +150,15 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
     }
 
     for (midi_channel, sequence) in track_sequence_map.iter() {
-        tracks.push(TrackBuilder::default()
+        let track = TrackBuilder::default()
             .name(format!("{}", midi_channel))
             .sequence(sequence.clone())
             .volume(1.0 / track_sequence_map.len() as f32)
-            .build().unwrap()
-        );
+            .build()
+            .unwrap();
+        tracks.push(track);
     }
+
     tracks
 }
 
