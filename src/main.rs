@@ -9,7 +9,6 @@ mod oscillator;
 mod sequence;
 mod utils;
 mod midi;
-mod frequency_callback;
 
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};

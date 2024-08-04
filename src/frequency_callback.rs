@@ -13,18 +13,18 @@ pub(crate) struct InstrumentGetFreqCallback<'a> {
     pub(crate) waveforms: &'a Vec<oscillator::Waveform>,
 }
 
-impl NoteFrequencyCallback for InstrumentGetFreqCallback {
-    fn get_note_frequency(&self, frequency: f32, sample_clock: f32) -> f32 {
-        oscillator::get_note_freq(self.waveforms, frequency, sample_clock)
-    }
-}
-
 pub(crate) struct MultiInstrumentGetFreqCallback<'a> {
     pub(crate) track_waveforms: &'a Vec<Vec<oscillator::Waveform>>,
 }
 
-impl NotesFrequencyCallback for MultiInstrumentGetFreqCallback {
+impl<'a> NoteFrequencyCallback for InstrumentGetFreqCallback<'a> {
+    fn get_note_frequency(&self, frequency: f32, sample_clock: f32) -> f32 {
+        oscillator::get_note_sample(self.waveforms, frequency, sample_clock)
+    }
+}
+
+impl<'a> NotesFrequencyCallback for MultiInstrumentGetFreqCallback<'a> {
     fn get_notes_frequency(&self, notes: &Vec<Note>, sample_clock: f32) -> f32 {
-        oscillator::get_notes_freq(notes, self.track_waveforms, sample_clock)
+        oscillator::get_notes_sample(notes, self.track_waveforms, sample_clock)
     }
 }

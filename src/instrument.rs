@@ -1,17 +1,15 @@
 use derive_builder::Builder;
 
 use crate::audio_gen;
-use crate::frequency_callback::{InstrumentGetFreqCallback};
 use crate::track::{Track, TrackBuilder};
 use crate::note::Note;
-use crate::oscillator;
 use crate::sequence::SequenceBuilder;
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 
-#[derive(Builder, Debug)]
+#[derive(Builder)]
 pub(crate) struct Instrument<> {
-    waveforms: Vec<oscillator::Waveform>,
+    waveforms: Vec<u8>,
 
     #[builder(default = "DEFAULT_TRACK_VOLUME")]
     #[allow(dead_code)]
@@ -37,13 +35,13 @@ impl Instrument {
     }
 
     pub(crate) fn play_note(&self) {
-        let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
-        audio_gen::gen_note(&self.track.sequence.get_note(), Box::new(callback));
+        let note = self.track.sequence.get_note();
+        audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms, &self.waveforms);
     }
 
     pub(crate) fn play_note_and_advance(&mut self) {
-        let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
-        audio_gen::gen_note(&self.track.sequence.get_note_and_advance(), Box::new(callback));
+        let note = self.track.sequence.get_note_and_advance();
+        audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms, &self.waveforms);
     }
 
     pub(crate) fn reset(&mut self) {
@@ -52,16 +50,16 @@ impl Instrument {
 
     pub(crate) fn loop_once(&self) {
         for note in self.track.sequence.iter() {
-            let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
-            audio_gen::gen_note(note, Box::new(callback));
+            audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms,
+                                      &self.waveforms);
         }
     }
 
     pub(crate) fn loop_n(&self, n: u8) {
         for _ in 0..n {
             for note in self.track.sequence.iter() {
-                let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
-                audio_gen::gen_note(note, Box::new(callback));
+                audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms,
+                                          &self.waveforms);
             }
         }
     }
@@ -71,7 +69,6 @@ impl Instrument {
     }
 
     pub(crate) fn play_note_direct(&self, note: &Note) {
-        let callback = InstrumentGetFreqCallback { waveforms: &self.waveforms };
-        audio_gen::gen_note(note, Box::new(callback));
+        audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms, &self.waveforms);
     }
 }
