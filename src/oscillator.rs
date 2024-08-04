@@ -1,54 +1,70 @@
-use crate::note::Note;
-
 pub(crate) static SAMPLE_RATE: f32 = 44100.0;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
-#[derive(Clone, Debug)]
-pub(crate) enum Waveform {
-    Sine,
-    Triangle,
-    Square,
-    Saw,
-}
+// #[derive(Clone, Debug)]
+// pub(crate) enum Waveform {
+//     Sine,
+//     Triangle,
+//     Square,
+//     Saw,
+// }
 
-pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
-    let mut waveforms: Vec<Waveform> = Vec::new();
+pub (crate) static SINE: u8 = 0;
+pub (crate) static TRIANGLE: u8 = 1;
+pub (crate) static SQUARE: u8 = 2;
+pub (crate) static SAW: u8 = 3;
+
+pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<u8> {
+    let mut waveforms: Vec<u8> = Vec::new();
     let waveform_args = waveform_arg.split(",");
     for waveform_arg in waveform_args {
-        let waveform: Waveform = match waveform_arg {
-            "sine" => Waveform::Sine,
-            "triangle" => Waveform::Triangle,
-            "square" => Waveform::Square,
-            "saw" => Waveform::Saw,
-            _ => Waveform::Sine,
+        let waveform = match waveform_arg {
+            "sine" => SINE,
+            "triangle" => TRIANGLE,
+            "square" => SQUARE,
+            "saw" => SAW,
+            _ => SINE,
         };
         waveforms.push(waveform);
     }
     waveforms
 }
 
-pub(crate) fn get_note_freq(waveforms: &Vec<Waveform>, frequency: f32, sample_clock: f32) -> f32 {
-    let mut freq = 0.0;
-    for waveform in waveforms {
-        freq += match waveform {
-            Waveform::Sine => get_sin_freq(frequency, sample_clock),
-            Waveform::Triangle => get_triangle_freq(frequency, sample_clock),
-            Waveform::Square => get_square_freq(frequency, sample_clock),
-            Waveform::Saw => get_saw_freq(frequency, sample_clock),
-        };
+// TODO Take sample rate here and implement nyquist overflow check
+// TODO This isn't really getting a frequenncy, it's getting an amplitude, frequenchy would be
+//  if we FFT'd the sample buffer. Rename to get_sample(0
+// pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_clock: f32) -> f32 {
+//     let mut freq = 0.0;
+//     for waveform in waveforms {
+//         freq += match waveform {
+//             Waveform::Sine => get_sin_freq(frequency, sample_clock),
+//             Waveform::Triangle => get_triangle_freq(frequency, sample_clock),
+//             Waveform::Square => get_square_freq(frequency, sample_clock),
+//             Waveform::Saw => get_saw_freq(frequency, sample_clock),
+//         };
+//     }
+//     freq
+// }
+
+pub(crate) fn get_note_sample(waveform: u8, frequency: f32, sample_clock: f32) -> f32 {
+    match waveform {
+        0 => get_sin_freq(frequency, sample_clock),
+        1 => get_triangle_freq(frequency, sample_clock),
+        2 => get_square_freq(frequency, sample_clock),
+        3 => get_saw_freq(frequency, sample_clock),
+        _ => get_sin_freq(frequency, sample_clock),
     }
-    freq
 }
 
-pub(crate) fn get_notes_freq(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Waveform>>,
-                             sample_clock: f32) -> f32 {
-    let mut freq = 0.0;
-    for (i, note) in notes.iter().enumerate() {
-        freq += note.volume *
-            get_note_freq(&channel_waveforms[i], note.frequency, sample_clock);
-    }
-    freq
-}
+// pub(crate) fn get_notes_sample(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Waveform>>,
+//                                sample_clock: f32) -> f32 {
+//     let mut freq = 0.0;
+//     for (i, note) in notes.iter().enumerate() {
+//         freq += note.volume *
+//             crate::oscillator::get_note_sample(&channel_waveforms[i], note.frequency, sample_clock);
+//     }
+//     freq
+// }
 
 fn get_sin_freq(frequency: f32, sample_clock: f32) -> f32 {
     (sample_clock * frequency * TWO_PI / SAMPLE_RATE).sin()

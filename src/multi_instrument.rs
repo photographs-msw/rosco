@@ -1,14 +1,12 @@
 use derive_builder::Builder;
 use crate::audio_gen;
-use crate::frequency_callback::{InstrumentGetFreqCallback, MultiInstrumentGetFreqCallback};
 use crate::track::{Track, TrackBuilder};
 use crate::note::Note;
-use crate::oscillator;
 use crate::sequence::SequenceBuilder;
 
-#[derive(Builder, Debug)]
+#[derive(Builder)]
 pub(crate) struct MultiInstrument {
-    track_waveforms: Vec<Vec<oscillator::Waveform>>,
+    track_waveforms: Vec<Vec<u8>>,
 
     #[allow(dead_code)]
     num_tracks: usize,
@@ -16,6 +14,9 @@ pub(crate) struct MultiInstrument {
     #[builder(public, setter(custom))]
     tracks: Vec<Track>,
 }
+
+// TODO CHANGE to PASS A COPY OF THE NOTE AND WAVEFORM ATTRIBUTES, USE A MACRO TO GENERATE THE
+// CALLS
 
 impl MultiInstrumentBuilder {
     pub(crate) fn tracks(&mut self) -> &mut Self {
@@ -32,14 +33,11 @@ impl MultiInstrumentBuilder {
 impl MultiInstrument {
 
     pub(crate) fn play_track_notes(&self) {
-        let callback = MultiInstrumentGetFreqCallback { track_waveforms: &self.track_waveforms };
-        audio_gen::gen_notes(self.get_next_notes(), Box::new(callback));
+        audio_gen::gen_notes_audio(&self.get_next_notes(), &self.track_waveforms);
     }
 
     pub(crate) fn play_track_notes_and_advance(&mut self) {
-        let notes = self.get_next_notes();
-        let callback = MultiInstrumentGetFreqCallback { track_waveforms: &self.track_waveforms };
-        audio_gen::gen_notes(self.get_next_notes(), Box::new(callback));
+        audio_gen::gen_notes_audio(&self.get_next_notes(), &self.track_waveforms);
         for channel in self.tracks.iter_mut() {
             channel.sequence.advance();
         }
@@ -115,8 +113,7 @@ impl MultiInstrument {
     }
 
     pub(crate) fn play_notes_direct(&self, notes: Vec<Note>) {
-        let callback = MultiInstrumentGetFreqCallback { track_waveforms: &self.track_waveforms };
-        audio_gen::gen_notes(notes, Box::new(callback));
+        audio_gen::gen_notes_audio(&notes, &self.track_waveforms);
     }
 
     fn get_next_notes(&self) -> Vec<Note> {
