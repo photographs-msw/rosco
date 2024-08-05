@@ -13,7 +13,7 @@ pub(crate) struct MultiInstrument {
     num_tracks: usize,
 
     #[builder(public, setter(custom))]
-    tracks: Vec<Track>,
+    pub(crate) tracks: Vec<Track>,
 }
 
 impl MultiInstrumentBuilder {

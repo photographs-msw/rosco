@@ -27,7 +27,7 @@ pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
     waveforms
 }
 
-pub(crate) fn get_note_freq(waveforms: &Vec<Waveform>, frequency: f32, sample_clock: f32) -> f32 {
+pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_clock: f32) -> f32 {
     let mut freq = 0.0;
     for waveform in waveforms {
         freq += match waveform {
@@ -40,12 +40,12 @@ pub(crate) fn get_note_freq(waveforms: &Vec<Waveform>, frequency: f32, sample_cl
     freq
 }
 
-pub(crate) fn get_notes_freq(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Waveform>>,
-                             sample_clock: f32) -> f32 {
+pub(crate) fn get_notes_sample(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Waveform>>,
+                               sample_clock: f32) -> f32 {
     let mut freq = 0.0;
     for (i, note) in notes.iter().enumerate() {
         freq += note.volume *
-            get_note_freq(&channel_waveforms[i], note.frequency, sample_clock);
+            get_note_sample(&channel_waveforms[i], note.frequency, sample_clock);
     }
     freq
 }

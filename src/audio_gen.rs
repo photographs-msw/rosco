@@ -29,9 +29,9 @@ where
     let mut sample_clock = 0f32;
     let volume = note.volume.clone();
     let frequency = note.frequency.clone();
-    let mut next_value = move || {
+    let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
-        volume * oscillator::get_note_freq(&waveforms, frequency, sample_clock)
+        volume * oscillator::get_note_sample(&waveforms, frequency, sample_clock)
     };
 
     let channels = config.channels as usize;
@@ -40,7 +40,7 @@ where
     let stream = device.build_output_stream(
         config,
         move |data: &mut [T], _: &cpal::OutputCallbackInfo| {
-            write_data::<T>(data, channels, &mut next_value)
+            write_data::<T>(data, channels, &mut next_sample)
         },
         err_fn,
         None
@@ -55,9 +55,9 @@ where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
     let mut sample_clock = 0f32;
-    let mut next_value = move || {
+    let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
-        oscillator::get_notes_freq(&notes, &track_waveforms, sample_clock)
+        oscillator::get_notes_sample(&notes, &track_waveforms, sample_clock)
     };
 
     let channels = config.channels as usize;
@@ -66,7 +66,7 @@ where
     let stream = device.build_output_stream(
         config,
         move |data: &mut [f32], _: &cpal::OutputCallbackInfo| {
-            write_data::<f32>(data, channels, &mut next_value)
+            write_data::<f32>(data, channels, &mut next_sample)
         },
         err_fn,
         None
