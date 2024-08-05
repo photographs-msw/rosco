@@ -33,7 +33,6 @@ fn main() {
         .num_tracks(num_tracks)
         .add_tracks(midi_tracks)
         .build().unwrap();
-    // midi_multi_instrument.tracks = midi_tracks;
     midi_multi_instrument.loop_once();
 
     let waveforms_3 = oscillator::get_waveforms(&waveforms_arg);
