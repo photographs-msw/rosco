@@ -12,11 +12,13 @@ pub(crate) struct MultiInstrument {
     #[allow(dead_code)]
     num_tracks: usize,
 
+    // user can call tracks() to build with empty tracks or add_tracks() to add tracks on build
     #[builder(public, setter(custom))]
     pub(crate) tracks: Vec<Track>,
 }
 
 impl MultiInstrumentBuilder {
+    // builds with empty tracks, the default setter in the builder
     pub(crate) fn tracks(&mut self) -> &mut Self {
         let num_tracks = self.num_tracks.unwrap();
         self.tracks =
@@ -24,6 +26,12 @@ impl MultiInstrumentBuilder {
                           .sequence(SequenceBuilder::default().build().unwrap())
                           .volume(1.0 / num_tracks as f32)
                           .build().unwrap(); num_tracks]);
+        self
+    }
+
+    // overriding setting in builder allowing the caller to add tracks on build
+    pub (crate) fn add_tracks(&mut self, tracks: Vec<Track>) -> &mut Self {
+        self.tracks = Some(tracks);
         self
     }
 }
