@@ -23,7 +23,6 @@ fn main() {
 
     let midi_tracks =
         midi::midi_file_to_tracks("/Users/markweiss/Downloads/test.mid");
-
     let waveforms_1 = oscillator::get_waveforms(&waveforms_arg);
     let waveform_2 = oscillator::get_waveforms(&waveforms_arg);
     let midi_track_waveforms = vec![waveforms_1, waveform_2];
