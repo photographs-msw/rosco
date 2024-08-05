@@ -78,7 +78,6 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
 
                     match kind {
                         midly::TrackEventKind::Midi { channel, message } => {
-
                             match message {
                                 // 'key' is midi pitch 1..127
                                 midly::MidiMessage::NoteOn { key, vel } => {
@@ -150,15 +149,13 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
     }
 
     for (midi_channel, sequence) in track_sequence_map.iter() {
-        let track = TrackBuilder::default()
+        tracks.push(TrackBuilder::default()
             .name(format!("{}", midi_channel))
             .sequence(sequence.clone())
             .volume(1.0 / track_sequence_map.len() as f32)
-            .build()
-            .unwrap();
-        tracks.push(track);
+            .build().unwrap()
+        );
     }
-
     tracks
 }
 

@@ -3,14 +3,13 @@ use derive_builder::Builder;
 use crate::audio_gen;
 use crate::track::{Track, TrackBuilder};
 use crate::note::Note;
-use crate::oscillator;
 use crate::sequence::SequenceBuilder;
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 
-#[derive(Builder, Debug)]
+#[derive(Builder)]
 pub(crate) struct Instrument<> {
-    waveforms: Vec<oscillator::Waveform>,
+    waveforms: Vec<u8>,
 
     #[builder(default = "DEFAULT_TRACK_VOLUME")]
     #[allow(dead_code)]
@@ -31,17 +30,18 @@ impl InstrumentBuilder {
 }
 
 impl Instrument {
-
     pub(crate) fn add_note(&mut self, note: Note) {
         self.track.sequence.add_note(note);
     }
 
     pub(crate) fn play_note(&self) {
-        audio_gen::gen_note(&self.track.sequence.get_note(), self.waveforms.clone());
+        let note = self.track.sequence.get_note();
+        audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms, &self.waveforms);
     }
 
     pub(crate) fn play_note_and_advance(&mut self) {
-        audio_gen::gen_note(&self.track.sequence.get_note_and_advance(), self.waveforms.clone());
+        let note = self.track.sequence.get_note_and_advance();
+        audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms, &self.waveforms);
     }
 
     pub(crate) fn reset(&mut self) {
@@ -50,14 +50,16 @@ impl Instrument {
 
     pub(crate) fn loop_once(&self) {
         for note in self.track.sequence.iter() {
-            audio_gen::gen_note(note, self.waveforms.clone());
+            audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms,
+                                      &self.waveforms);
         }
     }
 
     pub(crate) fn loop_n(&self, n: u8) {
         for _ in 0..n {
             for note in self.track.sequence.iter() {
-                audio_gen::gen_note(note, self.waveforms.clone());
+                audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms,
+                                          &self.waveforms);
             }
         }
     }
@@ -67,6 +69,6 @@ impl Instrument {
     }
 
     pub(crate) fn play_note_direct(&self, note: &Note) {
-        audio_gen::gen_note(note, self.waveforms.clone());
+        audio_gen::gen_note_audio(note.volume, note.frequency, note.duration_ms, &self.waveforms);
     }
 }
