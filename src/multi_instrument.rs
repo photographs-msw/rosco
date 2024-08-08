@@ -123,6 +123,8 @@ impl MultiInstrument {
         audio_gen::gen_notes(notes, self.track_waveforms.clone());
     }
 
+    // TODO THIS IS ALL WRONG
+    //  NEED ACTUAL TIME BASED GRID AND CURRENT TICK AND CURRENT SET OF NOTES BEING TURNED ON/OFF
     fn get_next_notes(&self) -> Vec<Note> {
         let mut notes = Vec::new();
         for track in &self.tracks {

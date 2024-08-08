@@ -17,8 +17,12 @@ pub(crate) fn gen_notes(notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::W
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
+    let max_note_duration_ms = notes.iter()
+        .map(|note| note.duration_ms as u64)
+        .max()
+        .unwrap();
 
-    gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms);
+    gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms, max_note_duration_ms);
 }
 
 fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
@@ -50,7 +54,8 @@ where
 }
 
 fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                     notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>)
+                     notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>,
+                     max_note_duration_ms: u64)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -72,7 +77,8 @@ where
         None
     ).unwrap();
     stream.play().unwrap();
-    std::thread::sleep(time::Duration::from_millis(1000));
+    // TODO THIS IS ALL WRONG, NEED SEQUENCE GRID
+    std::thread::sleep(time::Duration::from_millis(max_note_duration_ms));
 }
 
 fn write_data<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)

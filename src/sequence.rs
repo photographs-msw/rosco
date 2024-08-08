@@ -53,6 +53,10 @@ impl Sequence {
         note
     }
 
+    pub(crate) fn iter_mut(&mut self) -> std::slice::IterMut<Note> {
+        self.notes.iter_mut()
+    }
+
     pub(crate) fn iter(&self) -> std::slice::Iter<Note> {
         self.notes.iter()
     }
