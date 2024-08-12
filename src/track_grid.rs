@@ -1,9 +1,9 @@
 use crate::note::Note;
 use crate::oscillator;
-use crate::sequence::Sequence;
+use crate::track::Track;
 
-pub(crate) struct SequenceGrid {
-    pub(crate) sequences: Vec<Sequence>,
+pub(crate) struct TrackGrid {
+    pub(crate) tracks: Vec<Track>,
     sample_clock_index: f32,
 }
 
@@ -15,7 +15,7 @@ pub(crate) struct NoteWindow {
 }
 
 #[allow(dead_code)]
-impl SequenceGrid {
+impl TrackGrid {
     pub(crate) fn get_sample_rate_index(&self) -> f32 {
         self.sample_clock_index % oscillator::SAMPLE_RATE
     }
@@ -28,8 +28,8 @@ impl SequenceGrid {
         let cur_time_ms = self.get_current_time_ms();
         let mut window_end_time_ms = f32::INFINITY;
         let mut active_notes = Vec::new();
-        for sequence in &mut self.sequences.iter_mut() {
-            for note in sequence.iter_mut()  {
+        for track in &mut self.tracks.iter_mut() {
+            for note in track.sequence.iter_mut()  {
                 if note.is_playing(cur_time_ms) {
                     window_end_time_ms = f32::min(window_end_time_ms, note.end_time_ms);
                     active_notes.push(note.clone());
@@ -49,39 +49,48 @@ mod test_sequence_grid {
 
     #[cfg(test)]
     mod test_sequence_grid {
-        use crate::sequence_grid::SequenceGrid;
-        use crate::sequence::SequenceBuilder;
+        use crate::track::TrackBuilder;
+        use crate::track_grid::TrackGrid;
         use crate::note::NoteBuilder;
         use crate::oscillator;
+        use crate::sequence::SequenceBuilder;
 
         #[test]
         fn test_active_notes() {
             // Create a sequence grid with a sequence with two notes, one on and one off
-            let mut sequence_grid = SequenceGrid {
-                sequences: vec![SequenceBuilder::default()
-                    .notes(vec![
-                        setup_note()
-                            // See comment below in setup_note(), we set start_time_ms there
-                            // because otherwise builder fails because end_time_ms depends on it
-                            // Now set again here to set up the logic under test
-                            .start_time_ms(0.0)
-                            .build().unwrap(),
-                        setup_note()
-                            .start_time_ms(1.0)
-                            .build().unwrap(),
-                    ])
-                    .build().unwrap()
-                ],
-                sample_clock_index: 0.0,
+            let mut track_grid = TrackGrid {
+                tracks:
+                    vec![
+                        TrackBuilder::default()
+                            .name(String::from("Track 1"))
+                            .sequence(
+                                SequenceBuilder::default()
+                                    .notes(vec![
+                                        // See comment below in setup_note(), we set start_time_ms there
+                                        // because otherwise builder fails because end_time_ms depends on it
+                                        // Now set again here to set up the logic under test
+                                        setup_note()
+                                            .start_time_ms(0.0)
+                                            .build().unwrap(),
+                                        setup_note()
+                                            .start_time_ms(1.0)
+                                            .build().unwrap(),
+                                    ]).build().unwrap()
+                            )
+                            .volume(0.9)
+                            .build().unwrap()
+                    ],
+                    sample_clock_index: 0.0,
             };
 
             // expect one note to be active when sample_clock_index is 0.0
-            let note_window = sequence_grid.active_notes();
+            let note_window = track_grid.active_notes();
             assert_eq!(note_window.notes.len(), 1);
+            assert_eq!(note_window.start_time_ms, 0.0);
 
             // Now advance the sample_clock_index past both notes and expect no active notes
-            sequence_grid.sample_clock_index = 2.0 * oscillator::SAMPLE_RATE;
-            let note_window = sequence_grid.active_notes();
+            track_grid.sample_clock_index = 2.0 * oscillator::SAMPLE_RATE;
+            let note_window = track_grid.active_notes();
             assert_eq!(note_window.notes.len(), 0);
         }
 

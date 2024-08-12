@@ -9,7 +9,7 @@ mod oscillator;
 mod sequence;
 mod utils;
 mod midi;
-mod sequence_grid;
+mod track_grid;
 
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};
