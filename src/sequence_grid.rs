@@ -8,6 +8,13 @@ pub(crate) struct SequenceGrid {
 }
 
 #[allow(dead_code)]
+pub(crate) struct NoteWindow {
+    notes: Vec<Note>,
+    start_time_ms: f32,
+    end_time_ms: f32,
+}
+
+#[allow(dead_code)]
 impl SequenceGrid {
     pub(crate) fn get_sample_rate_index(&self) -> f32 {
         self.sample_clock_index % oscillator::SAMPLE_RATE
@@ -17,22 +24,29 @@ impl SequenceGrid {
         (self.sample_clock_index / oscillator::SAMPLE_RATE) * 1000.0
     }
 
-    pub(crate) fn active_notes(&mut self) -> Vec<Note> {
+    pub(crate) fn active_notes(&mut self) -> NoteWindow {
         let cur_time_ms = self.get_current_time_ms();
+        let mut window_end_time_ms = f32::INFINITY;
         let mut active_notes = Vec::new();
         for sequence in &mut self.sequences.iter_mut() {
             for note in sequence.iter_mut()  {
                 if note.is_playing(cur_time_ms) {
-                    note.cur_playing_time_ms(cur_time_ms);
+                    window_end_time_ms = f32::min(window_end_time_ms, note.end_time_ms);
                     active_notes.push(note.clone());
                 }
             }
         }
-        active_notes
+
+        NoteWindow {
+            notes: active_notes,
+            start_time_ms: cur_time_ms,
+            end_time_ms: window_end_time_ms,
+        }
     }
 }
 
 mod test_sequence_grid {
+
     #[cfg(test)]
     mod test_sequence_grid {
         use crate::sequence_grid::SequenceGrid;
@@ -62,13 +76,13 @@ mod test_sequence_grid {
             };
 
             // expect one note to be active when sample_clock_index is 0.0
-            let active_notes = sequence_grid.active_notes();
-            assert_eq!(active_notes.len(), 1);
+            let note_window = sequence_grid.active_notes();
+            assert_eq!(note_window.notes.len(), 1);
 
             // Now advance the sample_clock_index past both notes and expect no active notes
             sequence_grid.sample_clock_index = 2.0 * oscillator::SAMPLE_RATE;
-            let active_notes = sequence_grid.active_notes();
-            assert_eq!(active_notes.len(), 0);
+            let note_window = sequence_grid.active_notes();
+            assert_eq!(note_window.notes.len(), 0);
         }
 
         fn setup_note() -> NoteBuilder {
@@ -80,7 +94,6 @@ mod test_sequence_grid {
                 .end_time_ms()
                 .frequency(440.0)
                 .volume(1.0)
-                .cur_playing_time_ms(None)
                 .clone()
         }
     }

@@ -18,9 +18,6 @@ pub(crate) struct Note {
     #[builder(setter(custom))]
     #[allow(dead_code)]
     pub (crate) end_time_ms: f32,
-
-    #[builder(setter(custom))]
-    pub(crate) cur_playing_time_ms: Option<f32>,
 }
 
 impl NoteBuilder {
@@ -30,19 +27,10 @@ impl NoteBuilder {
         self.end_time_ms = Some(start_time_ms + duration_ms);
         self
     }
-
-    pub(crate) fn cur_playing_time_ms(&mut self, cur_playing_time_ms: Option<f32>) -> &mut Self {
-        self.cur_playing_time_ms = Some(cur_playing_time_ms.or(Some(INIT_START_TIME)));
-        self
-    }
 }
 
 #[allow(dead_code)]
 impl Note {
-    pub(crate) fn cur_playing_time_ms(&mut self, cur_playing_time_ms: f32) {
-        self.cur_playing_time_ms = Some(cur_playing_time_ms);
-    }
-
     pub(crate) fn is_playing(&self, time_ms: f32) -> bool {
         time_ms >= self.start_time_ms && time_ms < self.end_time_ms
     }
@@ -70,7 +58,6 @@ mod test_note {
             let note = setup_note()
                 .start_time_ms(0.0)
                 .end_time_ms()
-                .cur_playing_time_ms(None)
                 .build().unwrap();
 
             assert_eq!(note.is_playing(0.0), true);
@@ -83,7 +70,6 @@ mod test_note {
             let note = setup_note()
                 .start_time_ms(0.01)
                 .end_time_ms()
-                .cur_playing_time_ms(None)
                 .build().unwrap();
 
             assert_eq!(note.is_before_playing(0.0), true);
@@ -95,7 +81,6 @@ mod test_note {
             let note = setup_note()
                 .start_time_ms(0.0)
                 .end_time_ms()
-                .cur_playing_time_ms(None)
                 .build().unwrap();
 
             assert_eq!(note.is_after_playing(0.0), false);
@@ -108,7 +93,6 @@ mod test_note {
             let note = setup_note()
                 .start_time_ms(0.0)
                 .end_time_ms()
-                .cur_playing_time_ms(None)
                 .build().unwrap();
 
             assert_eq!(note.duration_position(0.0), 0.0);
