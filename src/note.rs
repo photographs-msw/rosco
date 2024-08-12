@@ -120,7 +120,8 @@ mod test_note {
             NoteBuilder::default()
                 .frequency(440.0)
                 .duration_ms(1000.0)
-                .volume(1.0).clone()
+                .volume(1.0)
+                .clone()
         }
     }
 }
