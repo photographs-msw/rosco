@@ -32,6 +32,7 @@ impl TrackGrid {
             for note in track.sequence.iter_mut()  {
                 if note.is_playing(cur_time_ms) {
                     window_end_time_ms = f32::min(window_end_time_ms, note.end_time_ms);
+                    note.volume *= track.volume;
                     active_notes.push(note.clone());
                 }
             }
