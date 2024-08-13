@@ -12,19 +12,18 @@ pub(crate) enum Waveform {
 }
 
 pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
-    let mut waveforms: Vec<Waveform> = Vec::new();
-    let waveform_args = waveform_arg.split(",");
-    for waveform_arg in waveform_args {
-        let waveform: Waveform = match waveform_arg {
-            "sine" => Waveform::Sine,
-            "triangle" => Waveform::Triangle,
-            "square" => Waveform::Square,
-            "saw" => Waveform::Saw,
-            _ => Waveform::Sine,
-        };
-        waveforms.push(waveform);
-    }
-    waveforms
+    waveform_arg.split(",")
+        .map( |waveform| {
+            let matched = match waveform {
+                "sine" => Waveform::Sine,
+                "triangle" => Waveform::Triangle,
+                "square" => Waveform::Square,
+                "saw" => Waveform::Saw,
+                _ => Waveform::Sine,
+            };
+            matched
+        })
+        .collect()
 }
 
 pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_clock: f32) -> f32 {

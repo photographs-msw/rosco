@@ -140,6 +140,7 @@ fn collect_args () -> (String, f32, f32, f32) {
     let mut duration_ms: f32 = 0.0;
     for (i, arg) in std::env::args().enumerate() {
         match i {
+            // skip program name in 0th args position
             0 => continue,
             1 => waveforms_arg = arg,
             2 => frequency = arg.parse().unwrap(),

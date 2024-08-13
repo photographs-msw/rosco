@@ -56,9 +56,9 @@ impl MultiInstrument {
     }
 
     pub(crate) fn reset_all_tracks(&mut self) {
-        for channel in &mut self.tracks {
-            channel.sequence.reset_index();
-        }
+        self.tracks.iter_mut().for_each(
+            |channel| channel.sequence.reset_index()
+        );
     }
 
     pub(crate) fn loop_once(&mut self) {
@@ -83,10 +83,9 @@ impl MultiInstrument {
 
     pub(crate) fn add_note_to_tracks(&mut self, note: Note) {
         self.validate_has_tracks();
-
-        for track in &mut self.tracks {
-            track.sequence.add_note(note);
-        }
+        self.tracks.iter_mut().for_each(
+            |track| track.sequence.add_note(note)
+        );
     }
 
     #[allow(dead_code)]
@@ -113,9 +112,9 @@ impl MultiInstrument {
     pub(crate) fn set_volume_for_tracks(&mut self, volume: f32) {
         self.validate_has_tracks();
 
-        for track in &mut self.tracks {
-            track.volume = volume;
-        }
+        self.tracks.iter_mut().for_each(
+            |track| track.volume = volume
+        );
     }
 
     pub(crate) fn set_volume_for_track(&mut self, track_num: usize, volume: f32) {
@@ -133,16 +132,14 @@ impl MultiInstrument {
     //  NEED ACTUAL TIME BASED GRID AND CURRENT TICK AND CURRENT SET OF NOTES BEING TURNED ON/OFF
     // deprecated
     fn get_next_notes(&self) -> Vec<Note> {
-        let mut notes = Vec::new();
-        for track in &self.tracks {
-            if track.sequence.at_end() {
-                continue;
-            }
-            let mut note = track.sequence.get_note();
-            note.volume *= track.volume;
-            notes.push(note);
-        }
-        notes
+        self.tracks.iter()
+            .filter(|track| !track.sequence.at_end())
+            .map(|track| {
+                let mut note = track.sequence.get_note();
+                note.volume *= track.volume;
+                note
+            })
+            .collect()
     }
 
     fn validate_track_num(&self, track_num: usize) {
