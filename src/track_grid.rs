@@ -61,6 +61,8 @@ impl TrackGrid {
             }
         }
 
+        self.advance_sample_clock_index_by_ms(end_time_ms - start_time_ms);
+
         NotesWindow {
             notes_data: NotesData {
                 notes: window_notes_data,
