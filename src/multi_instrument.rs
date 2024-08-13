@@ -1,6 +1,7 @@
 use derive_builder::Builder;
 use crate::audio_gen;
 use crate::track::{Track, TrackBuilder};
+use crate::note;
 use crate::note::Note;
 use crate::oscillator;
 use crate::sequence::SequenceBuilder;
@@ -30,6 +31,7 @@ impl MultiInstrumentBuilder {
     }
 
     // overriding setting in builder allowing the caller to add tracks on build
+    #[allow(dead_code)]
     pub (crate) fn add_tracks(&mut self, tracks: Vec<Track>) -> &mut Self {
         self.tracks = Some(tracks);
         self
@@ -39,12 +41,15 @@ impl MultiInstrumentBuilder {
 impl MultiInstrument {
 
     pub(crate) fn play_track_notes(&self) {
-        audio_gen::gen_notes(self.get_next_notes(), self.track_waveforms.clone());
+        let notes = self.get_next_notes();
+        let max_note_duration_ms = note::max_note_duration_ms(&notes);
+        audio_gen::gen_notes(notes, self.track_waveforms.clone(), max_note_duration_ms);
     }
 
     pub(crate) fn play_track_notes_and_advance(&mut self) {
         let notes = self.get_next_notes();
-        audio_gen::gen_notes(notes, self.track_waveforms.clone());
+        let max_note_duration_ms = note::max_note_duration_ms(&notes);
+        audio_gen::gen_notes(notes, self.track_waveforms.clone(), max_note_duration_ms);
         for channel in self.tracks.iter_mut() {
             channel.sequence.advance();
         }
@@ -120,11 +125,13 @@ impl MultiInstrument {
     }
 
     pub(crate) fn play_notes_direct(&self, notes: Vec<Note>) {
-        audio_gen::gen_notes(notes, self.track_waveforms.clone());
+        let max_note_duration_ms = note::max_note_duration_ms(&notes);
+        audio_gen::gen_notes(notes, self.track_waveforms.clone(), max_note_duration_ms);
     }
 
     // TODO THIS IS ALL WRONG
     //  NEED ACTUAL TIME BASED GRID AND CURRENT TICK AND CURRENT SET OF NOTES BEING TURNED ON/OFF
+    // deprecated
     fn get_next_notes(&self) -> Vec<Note> {
         let mut notes = Vec::new();
         for track in &self.tracks {

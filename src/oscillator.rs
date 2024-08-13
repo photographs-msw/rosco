@@ -31,10 +31,10 @@ pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_
     let mut freq = 0.0;
     for waveform in waveforms {
         freq += match waveform {
-            Waveform::Sine => get_sin_freq(frequency, sample_clock),
-            Waveform::Triangle => get_triangle_freq(frequency, sample_clock),
-            Waveform::Square => get_square_freq(frequency, sample_clock),
-            Waveform::Saw => get_saw_freq(frequency, sample_clock),
+            Waveform::Sine => get_sin_sample(frequency, sample_clock),
+            Waveform::Triangle => get_triangle_sample(frequency, sample_clock),
+            Waveform::Square => get_square_sample(frequency, sample_clock),
+            Waveform::Saw => get_saw_sample(frequency, sample_clock),
         };
     }
     freq
@@ -50,18 +50,18 @@ pub(crate) fn get_notes_sample(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Wa
     freq
 }
 
-fn get_sin_freq(frequency: f32, sample_clock: f32) -> f32 {
+fn get_sin_sample(frequency: f32, sample_clock: f32) -> f32 {
     (sample_clock * frequency * TWO_PI / SAMPLE_RATE).sin()
 }
 
-fn get_triangle_freq(frequency: f32, sample_clock: f32) -> f32 {
+fn get_triangle_sample(frequency: f32, sample_clock: f32) -> f32 {
     4.0 * ((frequency / SAMPLE_RATE * sample_clock)
         - ((frequency / SAMPLE_RATE * sample_clock) + 0.5)
         .floor()).abs()
         - 1.0
 }
 
-fn get_square_freq(frequency: f32, sample_clock: f32) -> f32 {
+fn get_square_sample(frequency: f32, sample_clock: f32) -> f32 {
     if (sample_clock * frequency / SAMPLE_RATE) % 1.0 < 0.5 {
         1.0
     } else {
@@ -69,7 +69,7 @@ fn get_square_freq(frequency: f32, sample_clock: f32) -> f32 {
     }
 }
 
-fn get_saw_freq(frequency: f32, sample_clock: f32) -> f32 {
+fn get_saw_sample(frequency: f32, sample_clock: f32) -> f32 {
     2.0 * ((frequency / SAMPLE_RATE * sample_clock)
         - ((frequency / SAMPLE_RATE * sample_clock) + 0.5)
         .floor()).abs()

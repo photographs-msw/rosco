@@ -60,4 +60,8 @@ impl Sequence {
     pub(crate) fn iter(&self) -> std::slice::Iter<Note> {
         self.notes.iter()
     }
+
+    pub(crate) fn len(&self) -> usize {
+        self.notes.len()
+    }
 }

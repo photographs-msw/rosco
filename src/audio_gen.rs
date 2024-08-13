@@ -13,16 +13,17 @@ pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
     gen_note_impl::<f32>(&device, &config.into(), note, waveforms);
 }
 
-pub(crate) fn gen_notes(notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>) {
+pub(crate) fn gen_notes(notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>,
+                        window_duration_ms: u64) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
-    let max_note_duration_ms = notes.iter()
-        .map(|note| note.duration_ms as u64)
-        .max()
-        .unwrap();
+    // let max_note_duration_ms = notes.iter()
+    //     .map(|note| note.duration_ms as u64)
+    //     .max()
+    //     .unwrap();
 
-    gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms, max_note_duration_ms);
+    gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms, window_duration_ms);
 }
 
 fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,

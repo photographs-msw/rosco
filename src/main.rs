@@ -14,6 +14,7 @@ mod track_grid;
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};
 use crate::note::{Note, NoteBuilder};
+use crate::track_grid::{TrackGrid, TrackGridBuilder};
 
 fn main() {
     let args = utils::get_cli_args();
@@ -24,6 +25,24 @@ fn main() {
 
     let midi_tracks =
         midi::midi_file_to_tracks("/Users/markweiss/Downloads/test.mid");
+    let mut track_grid: TrackGrid = TrackGridBuilder::default()
+        .tracks(midi_tracks)
+        .track_waveforms(vec![oscillator::get_waveforms(&waveforms_arg)])
+        .sample_clock_index(0.0)
+        .build().unwrap();
+
+    let mut notes_window = track_grid.next_notes_window();
+    while !notes_window.is_empty() {
+        let window_duration_ms = notes_window.window_duration_ms();
+        audio_gen::gen_notes(notes_window.notes_data.notes,
+                             notes_window.notes_data.notes_waveforms,
+                             window_duration_ms as u64);
+        track_grid.advance_sample_clock_index_by_ms(window_duration_ms);
+        notes_window = track_grid.next_notes_window();
+    }
+
+    let midi_tracks_2 =
+        midi::midi_file_to_tracks("/Users/markweiss/Downloads/test.mid");
     let waveforms_1 = oscillator::get_waveforms(&waveforms_arg);
     let waveform_2 = oscillator::get_waveforms(&waveforms_arg);
     let midi_track_waveforms = vec![waveforms_1, waveform_2];
@@ -31,7 +50,7 @@ fn main() {
     let mut midi_multi_instrument = MultiInstrumentBuilder::default()
         .track_waveforms(midi_track_waveforms)
         .num_tracks(num_tracks)
-        .add_tracks(midi_tracks)
+        .add_tracks(midi_tracks_2)
         .build().unwrap();
     midi_multi_instrument.loop_once();
 
@@ -47,12 +66,16 @@ fn main() {
     // builder with default volume
     let note_1: Note = NoteBuilder::default()
         .frequency(frequency)
+        .start_time_ms(0.0)
         .duration_ms(duration_ms)
+        .end_time_ms()
         .build().unwrap();
     let note_2: Note = NoteBuilder::default()
         .frequency(frequency)
         .volume(volume * 0.75)
+        .start_time_ms(duration_ms)
         .duration_ms(duration_ms)
+        .end_time_ms()
         .build().unwrap();
     multi_instrument.add_note_to_track(0, note_1 );
     multi_instrument.add_note_to_track(1, note_2);
@@ -76,12 +99,16 @@ fn main() {
         .build().unwrap();
     let note_3: Note = NoteBuilder::default()
         .frequency(frequency)
+        .start_time_ms(0.0)
         .duration_ms(duration_ms)
+        .end_time_ms()
         .build().unwrap();
     let note_4: Note = NoteBuilder::default()
         .frequency(frequency)
         .volume(volume * 0.75)
+        .start_time_ms(duration_ms)
         .duration_ms(duration_ms)
+        .end_time_ms()
         .build().unwrap();
     instrument.add_note(note_3);
     instrument.add_note(note_4);

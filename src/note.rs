@@ -48,6 +48,13 @@ impl Note {
     }
 }
 
+pub(crate) fn max_note_duration_ms(notes: &Vec<Note>) -> u64 {
+    notes.iter()
+        .map(|note| note.duration_ms as u64)
+        .max()
+        .unwrap()
+}
+
 mod test_note {
     #[cfg(test)]
     mod test_note {

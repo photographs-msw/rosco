@@ -105,11 +105,12 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
                                                     frequency(
                                                     MIDI_PITCH_TO_FREQ_HZ[key.as_int() as usize]
                                                         as f32)
+                                                    .volume(vel.as_int() as f32 / 127.0f32)
                                                     .start_time_ms(
                                                         ticks_since_start.as_int() as f32 /
                                                             bpm_ticks_per_ms)
                                                     .duration_ms(0.0)
-                                                    .volume(vel.as_int() as f32 / 127.0f32)
+                                                    .end_time_ms()
                                                     .build().unwrap()
                                             );
                                         }
@@ -201,9 +202,10 @@ fn handle_note_off(note_key: NoteKey,
     // and remove it from the current notes map
     let mut note = track_notes_map.get_mut(&note_key).unwrap().clone();
     note.duration_ms += delta_ticks.as_int() as f32 / bpm_ticks_per_ms;
+    note.end_time_ms = note.start_time_ms + note.duration_ms;
     track_sequence_map.get_mut(&note_key.channel).unwrap().add_note(note);
     track_notes_map.remove(&note_key);
 
     // TEMP DEBUG
-    println!("{:#?}\nadded to track {}", note, note_key.channel.as_int());
+    // println!("{:#?}\nadded to track {}", note, note_key.channel.as_int());
 }
