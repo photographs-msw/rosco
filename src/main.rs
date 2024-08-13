@@ -7,12 +7,8 @@ mod multi_instrument;
 mod note;
 mod oscillator;
 mod sequence;
-mod utils;
 mod midi;
 mod track_grid;
-
-use std::sync::mpsc;
-use std::thread;
 
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};
@@ -20,12 +16,7 @@ use crate::note::{Note, NoteBuilder};
 use crate::track_grid::{TrackGrid, TrackGridBuilder};
 
 fn main() {
-    // Collect CLI Args
-    let args = utils::get_cli_args();
-    let waveforms_arg = args[0].clone();
-    let frequency: f32 = args[1].parse().unwrap();
-    let volume: f32 = args[2].parse().unwrap();
-    let duration_ms: f32 = args[3].parse().unwrap();
+    let (waveforms_arg, frequency, volume, duration_ms) = collect_args();
 
     // Test loading MIDI file and playing back using multi-track, polyphonic grid with one
     // set of waveforms per track, notes per track, playing notes in windows of when they are active
@@ -39,8 +30,8 @@ fn main() {
         .sample_clock_index(0.0)
         .build().unwrap();
 
-    let (tx, rx) = mpsc::channel();
-    thread::spawn(move || {
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
         // TODO IMPLEMENT ITERATOR PATTERN FOR NOTES_WINDOW TO GET RID OF WHILE LOOP
         let mut notes_window = track_grid.next_notes_window();
         while !notes_window.is_empty() {
@@ -140,4 +131,22 @@ fn main() {
     instrument.reset();
     instrument.play_note();
     instrument.play_note_direct(&note_3);
+}
+
+fn collect_args () -> (String, f32, f32, f32) {
+    let mut waveforms_arg = String::from("sine");
+    let mut frequency: f32 = 0.0;
+    let mut volume: f32 = 0.0;
+    let mut duration_ms: f32 = 0.0;
+    for (i, arg) in std::env::args().enumerate() {
+        match i {
+            0 => continue,
+            1 => waveforms_arg = arg,
+            2 => frequency = arg.parse().unwrap(),
+            3 => volume = arg.parse().unwrap(),
+            4 => duration_ms = arg.parse().unwrap(),
+            _ => break,
+        }
+    }
+    (waveforms_arg, frequency, volume, duration_ms)
 }
