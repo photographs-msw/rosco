@@ -74,6 +74,20 @@ impl TrackGrid {
     }
 }
 
+// Custom iterator for TrackGrid over the note_windows in the grid
+impl<'a> Iterator for TrackGrid {
+    type Item = NotesWindow;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let notes_window = self.next_notes_window();
+        if notes_window.is_empty() {
+            return None;
+        }
+
+        Some(notes_window)
+    }
+}
+
 impl NotesWindow {
     pub(crate) fn is_empty(&self) -> bool {
         self.notes_data.notes.is_empty()

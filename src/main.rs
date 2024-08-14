@@ -24,7 +24,7 @@ fn main() {
     // and the other thread plays the current window
     let midi_tracks =
         midi::midi_file_to_tracks("/Users/markweiss/Downloads/test.mid");
-    let mut track_grid: TrackGrid = TrackGridBuilder::default()
+    let track_grid: TrackGrid = TrackGridBuilder::default()
         .tracks(midi_tracks)
         .track_waveforms(vec![oscillator::get_waveforms(&waveforms_arg)])
         .sample_clock_index(0.0)
@@ -32,11 +32,8 @@ fn main() {
 
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        // TODO IMPLEMENT ITERATOR PATTERN FOR NOTES_WINDOW TO GET RID OF WHILE LOOP
-        let mut notes_window = track_grid.next_notes_window();
-        while !notes_window.is_empty() {
+        for notes_window in track_grid {
             tx.send(notes_window).unwrap();
-            notes_window = track_grid.next_notes_window();
         }
     });
     for notes_window in rx {
