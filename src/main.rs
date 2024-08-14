@@ -22,10 +22,8 @@ fn main() {
     // set of waveforms per track, notes per track, playing notes in windows of when they are active
     // and coordinated concurrent playback where one thread prepares the next window to play
     // and the other thread plays the current window
-    let midi_tracks =
-        midi::midi_file_to_tracks("/Users/markweiss/Downloads/test.mid");
     let track_grid: TrackGrid = TrackGridBuilder::default()
-        .tracks(midi_tracks)
+        .tracks(midi::midi_file_to_tracks("/Users/markweiss/Downloads/test.mid"))
         .track_waveforms(vec![oscillator::get_waveforms(&waveforms_arg)])
         .sample_clock_index(0.0)
         .build().unwrap();
@@ -146,5 +144,6 @@ fn collect_args () -> (String, f32, f32, f32) {
             _ => break,
         }
     }
+
     (waveforms_arg, frequency, volume, duration_ms)
 }
