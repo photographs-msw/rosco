@@ -12,7 +12,7 @@ mod track_grid;
 
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};
-use crate::note::{Note, NoteBuilder};
+use crate::note::{EnvelopeBuilder, EnvelopePair, Note, NoteBuilder};
 use crate::track_grid::{TrackGrid, TrackGridBuilder};
 
 fn main() {
@@ -64,12 +64,20 @@ fn main() {
         .num_tracks(num_tracks)
         .tracks()
         .build().unwrap();
+    
     // builder with default volume
+    let envelope = EnvelopeBuilder::default()
+        .attack(EnvelopePair(0.3, 0.9))
+        .decay(EnvelopePair(0.35, 0.7))
+        .sustain(EnvelopePair(0.6, 0.65))
+        .build().unwrap();
+    
     let note_1: Note = NoteBuilder::default()
         .frequency(frequency)
         .start_time_ms(0.0)
         .duration_ms(duration_ms)
         .end_time_ms()
+        .envelope(envelope)
         .build().unwrap();
     let note_2: Note = NoteBuilder::default()
         .frequency(frequency)
@@ -77,6 +85,7 @@ fn main() {
         .start_time_ms(duration_ms)
         .duration_ms(duration_ms)
         .end_time_ms()
+        .envelope(envelope)
         .build().unwrap();
 
     // Test MultiInstrument, primitive concurrent playback that simply gets the next note to play
@@ -107,6 +116,7 @@ fn main() {
         .start_time_ms(0.0)
         .duration_ms(duration_ms)
         .end_time_ms()
+        .default_envelope()
         .build().unwrap();
     let note_4: Note = NoteBuilder::default()
         .frequency(frequency)
@@ -114,6 +124,7 @@ fn main() {
         .start_time_ms(duration_ms)
         .duration_ms(duration_ms)
         .end_time_ms()
+        .default_envelope()
         .build().unwrap();
     instrument.add_note(note_3);
     instrument.add_note(note_4);

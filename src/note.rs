@@ -1,9 +1,9 @@
 use derive_builder::Builder;
-use crate::track::Track;
 
 pub(crate) static INIT_START_TIME: f32 = 0.0;
 pub(crate) static DEFAULT_VOLUME: f32 = 1.0;
 
+#[allow(dead_code)]
 #[derive(Builder, Clone, Copy, Debug)]
 pub(crate) struct Note {
     pub(crate) frequency: f32,
@@ -13,18 +13,18 @@ pub(crate) struct Note {
     pub(crate) volume: f32,
 
     #[builder(default = "INIT_START_TIME")]
-    #[allow(dead_code)]
     pub(crate) start_time_ms: f32,
 
     #[builder(setter(custom))]
     #[allow(dead_code)]
     pub (crate) end_time_ms: f32,
 
-    // user can call default_envelope() to build with no-op envelope or can add custom envelope 
+    // user can call default_envelope() to build with no-op envelope or can add custom envelope
     #[builder(public, setter(custom))]
     pub(crate) envelope: Envelope,
 }
 
+#[allow(dead_code)]
 impl NoteBuilder {
     pub(crate) fn end_time_ms(&mut self) -> &mut Self {
         let start_time_ms = self.start_time_ms.unwrap();
@@ -37,7 +37,7 @@ impl NoteBuilder {
         self.envelope = Some(envelope);
         self
     }
-    
+
     // overriding setting in builder allowing the caller to add default no-op envelope on build
     pub(crate) fn default_envelope(&mut self) -> &mut Self {
         self.envelope = Some(Envelope {
@@ -52,21 +52,26 @@ impl NoteBuilder {
 }
 
 #[derive(Clone, Copy, Debug)]
-struct EnvelopePair (
-    f32,  // position in the note duration as "percentage", again in range 0.0 to 1.0
-    f32,  // volume level 0.0 to 1.0
+pub(crate) struct EnvelopePair (
+    pub(crate) f32,  // position in the note duration as "percentage", again in range 0.0 to 1.0
+    pub(crate) f32,  // volume level 0.0 to 1.0
 );
 
 // State for an ADSR envelope. User sets the position from the start where attack, decay, sustain
 // and release end, and the volume level at each of these positions. The envelope defaults to
 // starting from (0, 0) and connecting from their to start, and connecting from the position
 // of the end of sustain to the end of the note, which is the release.
+#[allow(dead_code)]
 #[derive(Builder, Clone, Copy, Debug)]
 #[builder(build_fn(validate = "Self::validate"))]
-struct Envelope {
+pub(crate) struct Envelope {
     #[builder(default = "EnvelopePair(0.0, 0.0)")]
     start: EnvelopePair,
 
+    // These three attributes control the shape of the envelope
+    //          attack
+    //       -          -   decay  --  sustain  - 
+    // start                                       release
     attack: EnvelopePair,
     decay: EnvelopePair,
     sustain: EnvelopePair,
@@ -80,9 +85,8 @@ impl EnvelopeBuilder {
         let attack = self.attack.unwrap();
         let decay = self.decay.unwrap();
         let sustain = self.sustain.unwrap();
-        let release = self.release.unwrap();
 
-        if attack.1 > decay.1 || decay.1 > sustain.1 || sustain.1 > release.1 {
+        if attack.0 > decay.0 || decay.0 > sustain.0  {
             return Err(
                 String::from("Envelope: attack, decay, sustain, release must be in order"));
         }
@@ -104,7 +108,7 @@ impl EnvelopeBuilder {
             attack,
             decay,
             sustain,
-            release,
+            release: EnvelopePair(1.0, 0.0),
         })
     }
 }
@@ -128,6 +132,7 @@ impl Note {
     }
 }
 
+#[allow(dead_code)]
 impl Envelope {
 
     pub(crate) fn volume_for_duration_position(&self, position: f32) -> f32 {
@@ -221,6 +226,7 @@ mod test_note {
                 .frequency(440.0)
                 .duration_ms(1000.0)
                 .volume(1.0)
+                .default_envelope()
                 .clone()
         }
     }

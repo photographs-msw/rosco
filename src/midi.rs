@@ -111,6 +111,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
                                                             bpm_ticks_per_ms)
                                                     .duration_ms(0.0)
                                                     .end_time_ms()
+                                                    .default_envelope()
                                                     .build().unwrap()
                                             );
                                         }
