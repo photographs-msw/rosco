@@ -9,6 +9,7 @@ authors = ["Mark S. Weiss"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+float_eq = "1.0.1"
 cpal = "0.15.3"
 derive_builder = "0.20.0"
 nodi = "1.0.0"

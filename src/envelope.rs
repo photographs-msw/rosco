@@ -1,11 +1,5 @@
 use derive_builder::Builder;
 
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct EnvelopePair (
-    pub(crate) f32,  // position in the note duration as "percentage", again in range 0.0 to 1.0
-    pub(crate) f32,  // volume level 0.0 to 1.0
-);
-
 // State for an ADSR envelope. User sets the position from the start where attack, decay, sustain
 // and release end, and the volume level at each of these positions. The envelope defaults to
 // starting from (0, 0) and connecting from their to start, and connecting from the position
@@ -25,9 +19,15 @@ pub(crate) struct Envelope {
     pub(crate) decay: EnvelopePair,
     pub(crate) sustain: EnvelopePair,
 
-    #[builder(default = "EnvelopePair(0.0, 1.0)")]
+    #[builder(default = "EnvelopePair(1.0, 0.0)")]
     pub(crate) release: EnvelopePair,
 }
+
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct EnvelopePair (
+    pub(crate) f32,  // position in the note duration as "percentage", again in range 0.0 to 1.0
+    pub(crate) f32,  // volume level 0.0 to 1.0
+);
 
 impl EnvelopeBuilder {
     pub(crate) fn validate(&self) -> Result<Envelope, String> {
@@ -89,5 +89,26 @@ impl Envelope {
         // y = mx + b, where slope = m and intercept = b
         // so the value along the line for any position
         slope * position + intercept
+    }
+}
+
+#[cfg(test)]
+mod test_envelope {
+    use float_eq::assert_float_eq;
+    use crate::envelope::{EnvelopeBuilder, EnvelopePair};
+
+    #[test]
+    fn test_volume_factor() {
+       let envelope = EnvelopeBuilder::default()
+           .attack(EnvelopePair(0.3, 0.9))
+           .decay(EnvelopePair(0.35, 0.7))
+           .sustain(EnvelopePair(0.6, 0.65))
+           .build().unwrap();
+
+        assert_float_eq!(envelope.volume_factor(0.0), 0.0, rmax <= 5.0 * f32::EPSILON);
+        assert_float_eq!(envelope.volume_factor(0.3), 0.9, rmax <= 5.0 * f32::EPSILON);
+        assert_float_eq!(envelope.volume_factor(0.35), 0.7, rmax <= 5.0 * f32::EPSILON);
+        assert_float_eq!(envelope.volume_factor(0.6), 0.65, rmax <= 5.0 * f32::EPSILON);
+        assert_float_eq!(envelope.volume_factor(1.0), 0.0, rmax <= 5.0 * f32::EPSILON);
     }
 }
