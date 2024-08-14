@@ -79,65 +79,63 @@ pub(crate) fn max_note_duration_ms(notes: &Vec<Note>) -> u64 {
         .unwrap()
 }
 
+#[cfg(test)]
 mod test_note {
-    #[cfg(test)]
-    mod test_note {
-        use crate::note::NoteBuilder;
+    use crate::note::NoteBuilder;
 
-        #[test]
-        fn test_is_playing() {
-            let note = setup_note()
-                .start_time_ms(0.0)
-                .end_time_ms()
-                .build().unwrap();
+    #[test]
+    fn test_is_playing() {
+        let note = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
 
-            assert_eq!(note.is_playing(0.0), true);
-            assert_eq!(note.is_playing(500.0), true);
-            assert_eq!(note.is_playing(1000.0), false);
-        }
+        assert_eq!(note.is_playing(0.0), true);
+        assert_eq!(note.is_playing(500.0), true);
+        assert_eq!(note.is_playing(1000.0), false);
+    }
 
-        #[test]
-        fn test_is_before_playing() {
-            let note = setup_note()
-                .start_time_ms(0.01)
-                .end_time_ms()
-                .build().unwrap();
+    #[test]
+    fn test_is_before_playing() {
+        let note = setup_note()
+            .start_time_ms(0.01)
+            .end_time_ms()
+            .build().unwrap();
 
-            assert_eq!(note.is_before_playing(0.0), true);
-            assert_eq!(note.is_before_playing(0.02), false);
-        }
+        assert_eq!(note.is_before_playing(0.0), true);
+        assert_eq!(note.is_before_playing(0.02), false);
+    }
 
-        #[test]
-        fn test_is_after_playing() {
-            let note = setup_note()
-                .start_time_ms(0.0)
-                .end_time_ms()
-                .build().unwrap();
+    #[test]
+    fn test_is_after_playing() {
+        let note = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
 
-            assert_eq!(note.is_after_playing(0.0), false);
-            assert_eq!(note.is_after_playing(500.0), false);
-            assert_eq!(note.is_after_playing(1000.0), true);
-        }
+        assert_eq!(note.is_after_playing(0.0), false);
+        assert_eq!(note.is_after_playing(500.0), false);
+        assert_eq!(note.is_after_playing(1000.0), true);
+    }
 
-        #[test]
-        fn test_duration_position() {
-            let note = setup_note()
-                .start_time_ms(0.0)
-                .end_time_ms()
-                .build().unwrap();
+    #[test]
+    fn test_duration_position() {
+        let note = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
 
-            assert_eq!(note.duration_position(0.0), 0.0);
-            assert_eq!(note.duration_position(500.0), 0.5);
-            assert_eq!(note.duration_position(1000.0), 1.0);
-        }
+        assert_eq!(note.duration_position(0.0), 0.0);
+        assert_eq!(note.duration_position(500.0), 0.5);
+        assert_eq!(note.duration_position(1000.0), 1.0);
+    }
 
-        fn setup_note() -> NoteBuilder {
-            NoteBuilder::default()
-                .frequency(440.0)
-                .duration_ms(1000.0)
-                .volume(1.0)
-                .default_envelope()
-                .clone()
-        }
+    fn setup_note() -> NoteBuilder {
+        NoteBuilder::default()
+            .frequency(440.0)
+            .duration_ms(1000.0)
+            .volume(1.0)
+            .default_envelope()
+            .clone()
     }
 }

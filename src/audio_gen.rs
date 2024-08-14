@@ -28,7 +28,8 @@ where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
     let mut sample_clock = 0f32;
-    let volume = note.volume.clone();
+    // TODO HOW TO GET POSITION ON EACH ITERATION AND GET VOLUME FACTOR IN THE CALLBACK
+    let volume = /*note.envelope.volume_factor() * */ note.volume.clone();
     let frequency = note.frequency.clone();
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;

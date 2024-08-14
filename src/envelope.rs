@@ -65,7 +65,7 @@ impl EnvelopeBuilder {
 #[allow(dead_code)]
 impl Envelope {
 
-    pub(crate) fn volume_for_duration_position(&self, position: f32) -> f32 {
+    pub(crate) fn volume_factor(&self, position: f32) -> f32 {
         if position < self.attack.0 {
             self.volume_for_segment_position(self.start, self.attack, position)
         } else if position < self.decay.0 {
