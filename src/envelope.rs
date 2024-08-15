@@ -1,11 +1,16 @@
+use std::hash::{Hash, Hasher};
+
 use derive_builder::Builder;
+use float_eq::float_eq;
+
+use crate::constants::FLOAT_EQ_TOLERANCE;
 
 // State for an ADSR envelope. User sets the position from the start where attack, decay, sustain
 // and release end, and the volume level at each of these positions. The envelope defaults to
 // starting from (0, 0) and connecting from their to start, and connecting from the position
 // of the end of sustain to the end of the note, which is the release.
 #[allow(dead_code)]
-#[derive(Builder, Clone, Copy, Debug)]
+#[derive(Builder, Clone, Copy, Debug, Eq, Hash, PartialEq)]
 #[builder(build_fn(validate = "Self::validate"))]
 pub(crate) struct Envelope {
     #[builder(default = "EnvelopePair(0.0, 0.0)")]
@@ -22,12 +27,6 @@ pub(crate) struct Envelope {
     #[builder(default = "EnvelopePair(1.0, 0.0)")]
     pub(crate) release: EnvelopePair,
 }
-
-#[derive(Clone, Copy, Debug)]
-pub(crate) struct EnvelopePair (
-    pub(crate) f32,  // position in the note duration as "percentage", again in range 0.0 to 1.0
-    pub(crate) f32,  // volume level 0.0 to 1.0
-);
 
 impl EnvelopeBuilder {
     pub(crate) fn validate(&self) -> Result<Envelope, String> {
@@ -92,10 +91,33 @@ impl Envelope {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+pub(crate) struct EnvelopePair (
+    pub(crate) f32,  // position in the note duration as "percentage", again in range 0.0 to 1.0
+    pub(crate) f32,  // volume level 0.0 to 1.0
+);
+
+impl PartialEq for EnvelopePair {
+    fn eq(&self, other: &Self) -> bool {
+        float_eq!(self.0, other.0, rmax <= FLOAT_EQ_TOLERANCE) &&
+            float_eq!(self.1, other.1, rmax <= FLOAT_EQ_TOLERANCE)
+    }
+}
+
+impl Hash for EnvelopePair {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.0.to_bits().hash(state);
+        self.1.to_bits().hash(state);
+    }
+}
+
+impl Eq for EnvelopePair {}
+
 #[cfg(test)]
 mod test_envelope {
     use float_eq::assert_float_eq;
     use crate::envelope::{EnvelopeBuilder, EnvelopePair};
+    use crate::envelope::FLOAT_EQ_TOLERANCE;
 
     #[test]
     fn test_volume_factor() {
@@ -105,10 +127,10 @@ mod test_envelope {
            .sustain(EnvelopePair(0.6, 0.65))
            .build().unwrap();
 
-        assert_float_eq!(envelope.volume_factor(0.0), 0.0, rmax <= 5.0 * f32::EPSILON);
-        assert_float_eq!(envelope.volume_factor(0.3), 0.9, rmax <= 5.0 * f32::EPSILON);
-        assert_float_eq!(envelope.volume_factor(0.35), 0.7, rmax <= 5.0 * f32::EPSILON);
-        assert_float_eq!(envelope.volume_factor(0.6), 0.65, rmax <= 5.0 * f32::EPSILON);
-        assert_float_eq!(envelope.volume_factor(1.0), 0.0, rmax <= 5.0 * f32::EPSILON);
+        assert_float_eq!(envelope.volume_factor(0.0), 0.0, rmax <= FLOAT_EQ_TOLERANCE);
+        assert_float_eq!(envelope.volume_factor(0.3), 0.9, rmax <= FLOAT_EQ_TOLERANCE);
+        assert_float_eq!(envelope.volume_factor(0.35), 0.7, rmax <= FLOAT_EQ_TOLERANCE);
+        assert_float_eq!(envelope.volume_factor(0.6), 0.65, rmax <= FLOAT_EQ_TOLERANCE);
+        assert_float_eq!(envelope.volume_factor(1.0), 0.0, rmax <= FLOAT_EQ_TOLERANCE);
     }
 }

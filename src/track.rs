@@ -1,15 +1,15 @@
 use derive_builder::Builder;
 
+use crate::constants::NO_TRACK;
 use crate::sequence::Sequence;
 
-static DEFAULT_TRACK_NAME: &str = "track_name";
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct Track {
-    #[builder(default = "String::from(DEFAULT_TRACK_NAME)")]
-    pub(crate) name: String,
+    #[builder(default = "NO_TRACK")]
+    pub(crate) num: i16,
 
     #[builder(default = "DEFAULT_TRACK_VOLUME")]
     pub(crate) volume: f32,

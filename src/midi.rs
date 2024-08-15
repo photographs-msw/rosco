@@ -65,7 +65,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
     // let mut track_cur_notes_duration_map: HashMap<NoteKey, u28> = HashMap::new();
     let mut track_sequence_map: HashMap<u4, Sequence> = HashMap::new();
 
-    let bpm = get_bpm(&midi);
+    let bpm = get_bpm_helper(&midi);
     let bpm_ticks_per_ms: f32 = ticks_per_millisecond(bpm);
     let mut ticks_since_start: u28 = u28::from(0);
 
@@ -153,7 +153,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
 
     for (midi_channel, sequence) in track_sequence_map.iter() {
         let track = TrackBuilder::default()
-            .name(format!("{}", midi_channel))
+            .num(midi_channel.as_int() as i16)
             .sequence(sequence.clone())
             .volume(1.0 / track_sequence_map.len() as f32)
             .build()
@@ -164,7 +164,30 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
     tracks
 }
 
-fn get_bpm(midi: &midly::Smf) -> u8 {
+pub(crate) fn get_bpm(file_name: &str) -> u8 {
+    let data = std::fs::read(file_name).unwrap();
+    let midi = midly::Smf::parse(&data).unwrap();
+    get_bpm_helper(&midi)
+}
+
+pub(crate) fn ticks_per_millisecond(bpm: u8) -> f32 {
+    ((bpm as f32 / SECS_PER_MIN) * MIDI_TICKS_PER_QUARTER_NOTE) / 1000.0
+}
+
+#[allow(dead_code)]
+pub(crate) fn milliseconds_per_tick(bpm: u8) -> f32 {
+    1000.0 / ticks_per_millisecond(bpm)
+}
+
+pub(crate) fn milliseconds_to_ticks(bpm: u8, ms: f32) -> u28 {
+    u28::from((ms * ticks_per_millisecond(bpm)) as u32)
+}
+
+pub(crate) fn ticks_to_milliseconds(bpm: u8, ticks: u28) -> f32 {
+    (ticks.as_int() as f32) / ticks_per_millisecond(bpm)
+}
+
+fn get_bpm_helper(midi: &midly::Smf) -> u8 {
     for track in midi.tracks.iter() {
         for event in track.iter() {
             match event {
@@ -188,10 +211,6 @@ fn get_bpm(midi: &midly::Smf) -> u8 {
         }
     }
     DEFAULT_BPM
-}
-
-fn ticks_per_millisecond(bpm: u8) -> f32 {
-    ((bpm as f32 / SECS_PER_MIN) * MIDI_TICKS_PER_QUARTER_NOTE) / 1000.0
 }
 
 fn handle_note_off(note_key: NoteKey,

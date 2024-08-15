@@ -1,5 +1,9 @@
-use derive_builder::Builder;
+use std::hash::{Hash, Hasher};
 
+use derive_builder::Builder;
+use float_eq::float_eq;
+
+use crate::constants::{FLOAT_EQ_TOLERANCE, NO_TRACK};
 use crate::envelope::{Envelope, EnvelopePair};
 
 pub(crate) static INIT_START_TIME: f32 = 0.0;
@@ -24,6 +28,33 @@ pub(crate) struct Note {
     // user can call default_envelope() to build with no-op envelope or can add custom envelope
     #[builder(public, setter(custom))]
     pub(crate) envelope: Envelope,
+
+    #[builder(public, setter(custom))]
+    pub(crate) track_num: i16,
+}
+
+impl Eq for Note {}
+
+impl Hash for Note {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.frequency.to_bits().hash(state);
+        self.duration_ms.to_bits().hash(state);
+        self.volume.to_bits().hash(state);
+        self.start_time_ms.to_bits().hash(state);
+        self.end_time_ms.to_bits().hash(state);
+        self.track_num.hash(state);
+    }
+}
+
+impl PartialEq for Note {
+    fn eq(&self, other: &Self) -> bool {
+        float_eq!(self.frequency, other.frequency, rmax <= FLOAT_EQ_TOLERANCE) &&
+            float_eq!(self.duration_ms, other.duration_ms, rmax <= FLOAT_EQ_TOLERANCE) &&
+            float_eq!(self.volume, other.volume, rmax <= FLOAT_EQ_TOLERANCE) &&
+            float_eq!(self.start_time_ms, other.end_time_ms, rmax <= FLOAT_EQ_TOLERANCE) &&
+            float_eq!(self.end_time_ms, other.end_time_ms, rmax <= FLOAT_EQ_TOLERANCE) &&
+            self.track_num == other.track_num
+    }
 }
 
 #[allow(dead_code)]
@@ -49,6 +80,16 @@ impl NoteBuilder {
             sustain: EnvelopePair(1.0, 1.0),
             release: EnvelopePair(1.0, 1.0),
         });
+        self
+    }
+
+    pub(crate) fn no_track(&mut self) -> &mut Self {
+        self.track_num = Some(NO_TRACK);
+        self
+    }
+
+    pub(crate) fn track_num(&mut self, track_num: i16) -> &mut Self {
+        self.track_num = Some(track_num);
         self
     }
 }
@@ -136,6 +177,7 @@ mod test_note {
             .duration_ms(1000.0)
             .volume(1.0)
             .default_envelope()
+            .no_track()
             .clone()
     }
 }

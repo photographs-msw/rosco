@@ -10,6 +10,7 @@ mod sequence;
 mod midi;
 mod track_grid;
 mod envelope;
+mod constants;
 
 use crate::envelope::{EnvelopeBuilder, EnvelopePair};
 use crate::instrument::InstrumentBuilder;
@@ -20,6 +21,7 @@ use crate::track_grid::{TrackGrid, TrackGridBuilder};
 fn main() {
     let (waveforms_arg, frequency, volume, duration_ms) = collect_args();
 
+    let bpm = midi::get_bpm("/Users/markweiss/Downloads/test.mid");
     // Test loading MIDI file and playing back using multi-track, polyphonic grid with one
     // set of waveforms per track, notes per track, playing notes in windows of when they are active
     // and coordinated concurrent playback where one thread prepares the next window to play
@@ -28,6 +30,7 @@ fn main() {
         .tracks(midi::midi_file_to_tracks("/Users/markweiss/Downloads/test.mid"))
         .track_waveforms(vec![oscillator::get_waveforms(&waveforms_arg)])
         .sample_clock_index(0.0)
+        .bpm(bpm)
         .build().unwrap();
 
     let (tx, rx) = std::sync::mpsc::channel();
@@ -79,6 +82,7 @@ fn main() {
         .duration_ms(duration_ms)
         .end_time_ms()
         .envelope(envelope)
+        .no_track()
         .build().unwrap();
     let note_2: Note = NoteBuilder::default()
         .frequency(frequency)
@@ -87,6 +91,7 @@ fn main() {
         .duration_ms(duration_ms)
         .end_time_ms()
         .envelope(envelope)
+        .no_track()
         .build().unwrap();
 
     // Test MultiInstrument, primitive concurrent playback that simply gets the next note to play
@@ -118,6 +123,7 @@ fn main() {
         .duration_ms(duration_ms)
         .end_time_ms()
         .default_envelope()
+        .no_track()
         .build().unwrap();
     let note_4: Note = NoteBuilder::default()
         .frequency(frequency)
@@ -126,6 +132,7 @@ fn main() {
         .duration_ms(duration_ms)
         .end_time_ms()
         .default_envelope()
+        .no_track()
         .build().unwrap();
     instrument.add_note(note_3);
     instrument.add_note(note_4);
