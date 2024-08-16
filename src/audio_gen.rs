@@ -33,6 +33,9 @@ where
     let frequency = note.frequency.clone();
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
+        // note_volume * track_volume *
+        // get_envelope_volume_factor(ADSR args, ticks_to_milliseconds(global_ticks_start_time + sample_clock)) *
+        // oscillator::get_note_sample(&waveforms, frequency, sample_clock)
         note_volume * oscillator::get_note_sample(&waveforms, frequency, sample_clock)
     };
 

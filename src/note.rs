@@ -74,11 +74,11 @@ impl NoteBuilder {
     // overriding setting in builder allowing the caller to add default no-op envelope on build
     pub(crate) fn default_envelope(&mut self) -> &mut Self {
         self.envelope = Some(Envelope {
-            start: EnvelopePair(1.0, 1.0),
-            attack: EnvelopePair(1.0, 1.0),
-            decay: EnvelopePair(1.0, 1.0),
-            sustain: EnvelopePair(1.0, 1.0),
-            release: EnvelopePair(1.0, 1.0),
+            start: EnvelopePair(0.0, 0.0),
+            attack: EnvelopePair(0.5, 1.0),
+            decay: EnvelopePair(0.5, 1.0),
+            sustain: EnvelopePair(0.5, 1.0),
+            release: EnvelopePair(1.0, 0.0),
         });
         self
     }

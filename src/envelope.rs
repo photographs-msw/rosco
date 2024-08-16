@@ -64,6 +64,8 @@ impl EnvelopeBuilder {
 #[allow(dead_code)]
 impl Envelope {
 
+    // TODO MOVE BOTH TO FREE FUNCTIONS AND JUST TAKE THE ADSR VALUES AS ARGS SO CAN BE
+    //  A CLOSURE IN THE gen_notes CALLBACK in audio_gen
     pub(crate) fn volume_factor(&self, position: f32) -> f32 {
         if position < self.attack.0 {
             self.volume_for_segment_position(self.start, self.attack, position)

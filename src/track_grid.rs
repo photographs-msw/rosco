@@ -46,6 +46,10 @@ impl TrackGrid {
     pub(crate) fn advance_sample_clock_index_by_ms(&mut self, ms: f32) {
         self.sample_clock_index += ms * oscillator::SAMPLE_RATE / 1000.0;
     }
+    
+    pub(crate) fn reset_clock(&mut self) {
+        self.sample_clock_index = 0.0;
+    }
 
     // TODO DEFINITELY NEED UNIT TESTING OF THE END TIME WINDOW LOGIC
     // If any note ends or any note is added, then the window ends on that event,
@@ -62,16 +66,23 @@ impl TrackGrid {
             .flat_map(|track| track.sequence.iter())
             .filter(|note| note.is_playing(start_time_ms))
             .collect::<Vec<&Note>>();
-        
+        if notes_playing_at_start.is_empty() {
+           return NotesWindow::empty_notes_window(); 
+        }
+
         // Calculate the end of the window in two passes
         // This first value is the end of the note ending the soonest after the start of the window
         // This is the end of the window unless we find a note that starts before this time
         // by walking forward in time from the start of the window to this time, checked next
-        let mut end_time_ms =
+        let mut end_time_ms = f32::INFINITY;
+        if notes_playing_at_start.len() == 1 {
+            end_time_ms = notes_playing_at_start.first().unwrap().end_time_ms;
+        } else {
             notes_playing_at_start.iter()
                 .map(|note| note.end_time_ms)
                 .min_by(|a, b| a.partial_cmp(&b)
                     .unwrap()).unwrap();
+        }
         // Now do the second pass, walk the range of ticks from start to end and see if any
         // new note starts before the earliest end of the notes in the starting set.
         // That new note would change the set so its start would mark the end of the window.
@@ -87,7 +98,7 @@ impl TrackGrid {
                 break;
             }
             let time_ms = midi::ticks_to_milliseconds(self.bpm, u28::from(tick));
-            // TODO THIS IS A PAINFUL CLONE to
+            // TODO THIS IS A PAINFUL CLONE too
             for track in self.tracks.clone() {
                 for note in track.sequence.iter() {
                     // If we hit a new note starting for the first time that wasn't in the
@@ -131,7 +142,7 @@ impl TrackGrid {
             end_time_ms,
         }
     }
-
+    
     fn calculate_end_time_ms (&mut self,
                               start_time_ms: &f32,
                               notes_playing_at_start: &Vec<&mut Note>) -> f32 {
@@ -171,7 +182,6 @@ impl TrackGrid {
     }
 }
 
-
 // Custom iterator for TrackGrid over the note_windows in the grid
 impl<'a> Iterator for TrackGrid {
     type Item = NotesWindow;
@@ -186,6 +196,15 @@ impl<'a> Iterator for TrackGrid {
     }
 }
 
+impl NotesData {
+    pub(crate) fn empty_notes_data() -> NotesData {
+        NotesData {
+            notes: Vec::new(),
+            notes_waveforms: Vec::new(),
+        }
+    }
+}
+
 impl NotesWindow {
     pub(crate) fn is_empty(&self) -> bool {
         self.notes_data.notes.is_empty()
@@ -193,6 +212,14 @@ impl NotesWindow {
 
     pub(crate) fn window_duration_ms(&self) -> f32 {
         self.end_time_ms - self.start_time_ms
+    }
+    
+    pub(crate) fn empty_notes_window() -> NotesWindow {
+        NotesWindow {
+            notes_data: NotesData::empty_notes_data(),
+            start_time_ms: 0.0,
+            end_time_ms: f32::INFINITY,
+        }
     }
 }
 
@@ -205,13 +232,13 @@ mod test_sequence_grid {
     use crate::sequence::SequenceBuilder;
 
     #[test]
-    fn test_active_notes() {
+    fn test_next_notes_window_boundaries() {
         // Create a sequence grid with a sequence with two notes, one on and one off
         let mut track_grid = TrackGridBuilder::default()
             .tracks(
                 vec![
                     TrackBuilder::default()
-                        .name(String::from("Track 1"))
+                        .num(1)
                         .sequence(
                             SequenceBuilder::default()
                                 .notes(vec![
@@ -231,6 +258,7 @@ mod test_sequence_grid {
                 ])
             .track_waveforms(vec![vec![oscillator::Waveform::Sine]])
             .sample_clock_index(0.0)
+            .bpm(120)
             .build().unwrap();
 
         // expect one note to be active when sample_clock_index is 0.0
@@ -254,6 +282,7 @@ mod test_sequence_grid {
             .frequency(440.0)
             .volume(1.0)
             .default_envelope()
+            .track_num(1)
             .clone()
     }
 }
