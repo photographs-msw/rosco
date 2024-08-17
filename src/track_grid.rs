@@ -326,6 +326,8 @@ mod test_sequence_grid {
             .track_waveforms(vec![vec![oscillator::Waveform::Sine]])
             .sample_clock_index(0.0)
             .bpm(120)
+            // Can't return reference because lifetime is this function, so need to clone
+            // and return owned value
             .clone()
     }
 
