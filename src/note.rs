@@ -151,7 +151,6 @@ mod test_note {
     fn test_is_after_playing() {
         let note = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
 
         assert_eq!(note.is_after_playing(0.0), false);

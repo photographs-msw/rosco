@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use derive_builder::Builder;
 use float_eq::float_eq;
 
-use crate::constants::FLOAT_EQ_TOLERANCE;
+use crate::constants;
 
 // State for an ADSR envelope. User sets the position from the start where attack, decay, sustain
 // and release end, and the volume level at each of these positions. The envelope defaults to
@@ -101,8 +101,8 @@ pub(crate) struct EnvelopePair (
 
 impl PartialEq for EnvelopePair {
     fn eq(&self, other: &Self) -> bool {
-        float_eq!(self.0, other.0, rmax <= FLOAT_EQ_TOLERANCE) &&
-            float_eq!(self.1, other.1, rmax <= FLOAT_EQ_TOLERANCE)
+        float_eq!(self.0, other.0, rmax <= constants::FLOAT_EQ_TOLERANCE) &&
+            float_eq!(self.1, other.1, rmax <= constants::FLOAT_EQ_TOLERANCE)
     }
 }
 
@@ -119,7 +119,7 @@ impl Eq for EnvelopePair {}
 mod test_envelope {
     use float_eq::assert_float_eq;
     use crate::envelope::{EnvelopeBuilder, EnvelopePair};
-    use crate::envelope::FLOAT_EQ_TOLERANCE;
+    use crate::constants;
 
     #[test]
     fn test_volume_factor() {
@@ -129,10 +129,10 @@ mod test_envelope {
            .sustain(EnvelopePair(0.6, 0.65))
            .build().unwrap();
 
-        assert_float_eq!(envelope.volume_factor(0.0), 0.0, rmax <= FLOAT_EQ_TOLERANCE);
-        assert_float_eq!(envelope.volume_factor(0.3), 0.9, rmax <= FLOAT_EQ_TOLERANCE);
-        assert_float_eq!(envelope.volume_factor(0.35), 0.7, rmax <= FLOAT_EQ_TOLERANCE);
-        assert_float_eq!(envelope.volume_factor(0.6), 0.65, rmax <= FLOAT_EQ_TOLERANCE);
-        assert_float_eq!(envelope.volume_factor(1.0), 0.0, rmax <= FLOAT_EQ_TOLERANCE);
+        assert_float_eq!(envelope.volume_factor(0.0), 0.0,rmax <= constants::FLOAT_EQ_TOLERANCE);
+        assert_float_eq!(envelope.volume_factor(0.3), 0.9,rmax <= constants::FLOAT_EQ_TOLERANCE);
+        assert_float_eq!(envelope.volume_factor(0.35), 0.7, rmax <= constants::FLOAT_EQ_TOLERANCE);
+        assert_float_eq!(envelope.volume_factor(0.6), 0.65, rmax <= constants::FLOAT_EQ_TOLERANCE);
+        assert_float_eq!(envelope.volume_factor(1.0), 0.0, rmax <= constants::FLOAT_EQ_TOLERANCE);
     }
 }
