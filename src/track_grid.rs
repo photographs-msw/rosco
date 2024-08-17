@@ -61,18 +61,14 @@ impl TrackGrid {
         self.sample_clock_index = 0.0;
     }
 
-    // TODO DEFINITELY NEED UNIT TESTING OF THE END TIME WINDOW LOGIC
-    // If any note ends or any note is added, then the window ends on that event,
-    // because a window is a time range where one set of one or more notes are playing.
-    // So the window end time is either the minimum end time of any note playing as of the
-    // start of the window, or any new note that starts playing after the start of the window
-    // but before the end of the notes initially playing.
+    // TODO NOW HANDLE THE CASE OF NO NOTES PLAYING AND RETURN REST NOTE AND SCAN AHEAD TO NEXT
+    //  SAMPLE INDEX WHERE ONE OR MORE NOTES ARE PLAYING
     pub(crate) fn next_notes_window(&mut self) -> NotesWindow {
         let start_time_ms = self.get_current_time_ms();
 
         // NOTE: mutable bindings in this loop because notes_playing_at_start is used mutably
         // in the load_notes_and_waveforms and calculate_end_time_ms functions
-        let notes_playing_at_start = self.tracks.iter()
+        let mut notes_playing_at_start = self.tracks.iter()
             .flat_map(|track| track.sequence.iter())
             .filter(|note| note.is_playing(start_time_ms))
             .collect::<Vec<&Note>>();
@@ -80,6 +76,47 @@ impl TrackGrid {
            return NotesWindow::empty_notes_window();
         }
 
+        let end_time_ms = self.calculate_end_time_ms(start_time_ms, &notes_playing_at_start);
+
+        // Walk the notes found at the start and set their volume adjusted by the track volume
+        // and push a clone of each note and its waveforms into the output
+        let mut window_notes_data = Vec::new();
+        let mut window_notes_waveforms = Vec::new();
+        self.load_notes_data_and_waveforms(&mut notes_playing_at_start, &mut window_notes_data,
+                                           &mut window_notes_waveforms);
+
+        self.advance_sample_clock_index_by_ms(end_time_ms - start_time_ms);
+
+        NotesWindow {
+            notes_data: NotesData {
+                notes: window_notes_data,
+                notes_waveforms: window_notes_waveforms,
+            },
+            start_time_ms,
+            end_time_ms,
+        }
+    }
+    
+    fn load_notes_data_and_waveforms(&self, notes_playing_at_start: &mut Vec<&Note>,
+                                     window_notes_data: &mut Vec<Note>,
+                                     window_notes_waveforms: &mut Vec<Vec<oscillator::Waveform>>) {
+        let track_num_track_map: HashMap<i16, &Track> =
+            self.tracks.iter().map(|track| (track.num, track)).collect();
+        for note in notes_playing_at_start.iter_mut() {
+            let track_for_note = track_num_track_map.get(&note.track_num).unwrap();
+            // TODO This still assumes even volume for entire note duration, no envelope support
+            // let out_note: &mut Note = note.clone();
+            let new_volume = (**note).volume * (**track_for_note).volume;
+            let mut note = (**note).clone();
+            note.volume = new_volume;
+            window_notes_data.push(note);
+            window_notes_waveforms.push(self.track_waveforms[note.track_num as usize].clone());
+        }
+    }
+
+    fn calculate_end_time_ms (&self,
+                              start_time_ms: f32,
+                              notes_playing_at_start: &Vec<&Note>) -> f32 {
         // Calculate the end of the window in two passes
         // This first value is the end of the note ending the soonest after the start of the window
         // This is the end of the window unless we find a note that starts before this time
@@ -116,73 +153,6 @@ impl TrackGrid {
                     if note.is_playing(time_ms) && !notes_playing_at_start.contains(&note) {
                         end_time_ms = time_ms;
                         found = true;
-                    }
-                }
-            }
-        }
-
-        // Walk the notes found at the start and set their volume adjusted by the track volume
-        // and push a clone of each note and its waveforms into the output
-        let mut window_notes_data = Vec::new();
-        let mut window_notes_waveforms = Vec::new();
-        // self.load_notes_data_and_waveforms(&mut notes_playing_at_start, &mut window_notes_data,
-        //                                    &mut window_notes_waveforms);
-        let track_num_track_map: HashMap<i16, &Track> =
-            self.tracks.iter().map(|track| (track.num, track)).collect();
-        for note in notes_playing_at_start.clone().iter_mut() {
-            let track_for_note = track_num_track_map.get(&note.track_num).unwrap();
-            // TODO This still assumes even volume for entire note duration, no envelope support
-            // let out_note: &mut Note = note.clone();
-            let new_volume = (**note).volume * (**track_for_note).volume;
-            let mut note = (**note).clone();
-            note.volume = new_volume;
-            window_notes_data.push(note);
-            window_notes_waveforms.push(self.track_waveforms[note.track_num as usize].clone());
-        }
-
-        self.advance_sample_clock_index_by_ms(end_time_ms - start_time_ms);
-
-        NotesWindow {
-            notes_data: NotesData {
-                notes: window_notes_data,
-                notes_waveforms: window_notes_waveforms,
-            },
-            start_time_ms,
-            end_time_ms,
-        }
-    }
-
-    fn calculate_end_time_ms (&mut self,
-                              start_time_ms: &f32,
-                              notes_playing_at_start: &Vec<&mut Note>) -> f32 {
-        // Calculate the end of the window in two passes
-        // This first value is the end of the note ending the soonest after the start of the window
-        // This is the end of the window unless we find a note that starts before this time
-        // by walking forward in time from the start of the window to this time, checked next
-        let mut end_time_ms =
-            notes_playing_at_start.iter()
-                .map(|note| note.end_time_ms)
-                .min_by(|a, b| a.partial_cmp(&b)
-                    .unwrap()).unwrap();
-        // Now do the second pass, walk the range of ticks from start to end and see if any
-        // new note starts before the earliest end of the notes in the starting set.
-        // That new note would change the set so its start would mark the end of the window.
-        // +1 to skip the first tick, which we already checked above in getting the notes at start
-        let start_time_tick =
-            (midi::milliseconds_to_ticks(self.bpm, *start_time_ms) + u28::from(1)).as_int();
-        // +1 because this is an open range so we include the last tick of the note
-        let cur_end_time_tick =
-            (midi::milliseconds_to_ticks(self.bpm, end_time_ms) + u28::from(1)).as_int();
-        'outer: for tick in start_time_tick..cur_end_time_tick {
-            let time_ms = midi::ticks_to_milliseconds(self.bpm, u28::from(tick));
-            for track in &mut self.tracks.iter_mut() {
-                for note in track.sequence.iter_mut() {
-                    // If we hit a new note starting for the first time that wasn't in the
-                    // set of notes at the start of the window, and we haven't reached end time
-                    // yet then this is the end of the window, so break
-                    if note.is_playing(time_ms) && !notes_playing_at_start.contains(&note) {
-                        end_time_ms = time_ms;
-                        break 'outer;
                     }
                 }
             }
@@ -242,7 +212,7 @@ mod test_sequence_grid {
     use crate::sequence::SequenceBuilder;
     use crate::track::TrackBuilder;
     use crate::track_grid::TrackGridBuilder;
-    
+
     static TRACK_NUM: i16 = 0;
 
     #[test]
