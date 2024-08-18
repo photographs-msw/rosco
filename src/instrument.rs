@@ -4,7 +4,7 @@ use crate::audio_gen;
 use crate::track::{Track, TrackBuilder};
 use crate::note::Note;
 use crate::oscillator;
-use crate::sequence::SequenceBuilder;
+use crate::note_sequence::NoteSequenceBuilder;
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 
@@ -23,7 +23,7 @@ pub(crate) struct Instrument<> {
 impl InstrumentBuilder {
     pub(crate) fn track(&mut self) -> &mut Self {
         self.track = Some(TrackBuilder::default()
-            .sequence(SequenceBuilder::default().build().unwrap())
+            .sequence(NoteSequenceBuilder::default().build().unwrap())
             .volume(self.volume.unwrap())
             .build().unwrap());
         self
