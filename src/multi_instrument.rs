@@ -96,7 +96,7 @@ impl MultiInstrument {
         if track_nums.len() != chord.len() {
             panic!("Number of tracks must match number of notes in chord");
         }
-        let first_index: usize = self.tracks[track_nums[0]].sequence.get_index();
+        let first_index= self.tracks[track_nums[0]].sequence.get_index();
         for channel_num in &track_nums[1..] {
             if self.tracks[*channel_num].sequence.get_index() != first_index {
                 panic!("Tracks must all be at the same index to add chord notes across \

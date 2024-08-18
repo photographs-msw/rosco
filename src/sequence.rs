@@ -2,7 +2,7 @@ use derive_builder::Builder;
 
 use crate::note::Note;
 
-static INIT_INDEX: usize = 0;
+static INIT_INDEX: i64 = 0;
 
 // TODO MAKE THIS GENERIC
 #[derive(Builder, Clone, Debug)]
@@ -11,13 +11,13 @@ pub struct Sequence {
     pub(crate) notes: Vec<Note>,
 
     #[builder(default = "INIT_INDEX")]
-    index: usize
+    index: i64
 }
 
 #[allow(dead_code)]
 impl Sequence {
 
-    pub(crate) fn get_index(&self) -> usize {
+    pub(crate) fn get_index(&self) -> i64 {
         self.index
     }
 
@@ -30,7 +30,7 @@ impl Sequence {
     }
 
     pub(crate) fn at_end(&self) -> bool {
-        self.index >= self.notes.len()
+        self.index >= 0 && self.index as usize >= self.notes.len()
     }
 
     pub(crate) fn add_note(&mut self, note: Note) {
@@ -38,17 +38,17 @@ impl Sequence {
     }
 
     pub(crate) fn get_note(&self) -> Note {
-        if self.index >= self.notes.len() {
+        if self.index < 0 || self.index as usize >= self.notes.len() {
             panic!("Index out of bounds");
         }
-        self.notes[self.index].clone()
+        self.notes[self.index as usize].clone()
     }
 
     pub(crate) fn get_note_and_advance(&mut self) -> Note {
-        if self.index >= self.notes.len() {
+        if self.index < 0 || self.index as usize >= self.notes.len() {
             panic!("Index out of bounds");
         }
-        let note = self.notes[self.index].clone();
+        let note = self.notes[self.index as usize].clone();
         self.advance();
         note
     }

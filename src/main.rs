@@ -26,25 +26,25 @@ fn main() {
     // set of waveforms per track, notes per track, playing notes in windows of when they are active
     // and coordinated concurrent playback where one thread prepares the next window to play
     // and the other thread plays the current window
-    let track_grid: TrackGrid = TrackGridBuilder::default()
-        .tracks(midi::midi_file_to_tracks("/Users/markweiss/Downloads/test.mid"))
-        .track_waveforms(vec![oscillator::get_waveforms(&waveforms_arg)])
-        .sample_clock_index(0.0)
-        .bpm(bpm)
-        .build().unwrap();
-
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        for notes_window in track_grid {
-            tx.send(notes_window).unwrap();
-        }
-    });
-    for notes_window in rx {
-        let window_duration_ms = notes_window.window_duration_ms();
-        audio_gen::gen_notes(notes_window.notes_data.notes,
-                             notes_window.notes_data.notes_waveforms,
-                             window_duration_ms as u64);
-    }
+    // let track_grid: TrackGrid = TrackGridBuilder::default()
+    //     .tracks(midi::midi_file_to_tracks("/Users/markweiss/Downloads/test.mid"))
+    //     .track_waveforms(vec![oscillator::get_waveforms(&waveforms_arg)])
+    //     .sample_clock_index(0.0)
+    //     .bpm(bpm)
+    //     .build().unwrap();
+    // 
+    // let (tx, rx) = std::sync::mpsc::channel();
+    // std::thread::spawn(move || {
+    //     for notes_window in track_grid {
+    //         tx.send(notes_window).unwrap();
+    //     }
+    // });
+    // for notes_window in rx {
+    //     let window_duration_ms = notes_window.window_duration_ms();
+    //     audio_gen::gen_notes(notes_window.notes_data.notes,
+    //                          notes_window.notes_data.notes_waveforms,
+    //                          window_duration_ms as u64);
+    // }
 
     // Setup MultiInstrument and Instrument
     let midi_tracks_2 =
@@ -81,7 +81,8 @@ fn main() {
         .start_time_ms(0.0)
         .duration_ms(duration_ms)
         .end_time_ms()
-        .envelope(envelope)
+        .default_envelope()
+        // .envelope(envelope)
         .no_track()
         .build().unwrap();
     let note_2: Note = NoteBuilder::default()
@@ -90,7 +91,8 @@ fn main() {
         .start_time_ms(duration_ms)
         .duration_ms(duration_ms)
         .end_time_ms()
-        .envelope(envelope)
+        .default_envelope()
+        // .envelope(envelope)
         .no_track()
         .build().unwrap();
 

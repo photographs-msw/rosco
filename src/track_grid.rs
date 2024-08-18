@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use derive_builder::Builder;
 use nodi::midly::num::u28;
 
-use crate::note::Note;
+use crate::note::{Note, NoteBuilder};
 use crate::{midi, oscillator};
 use crate::track::Track;
 
@@ -57,46 +57,59 @@ impl TrackGrid {
         self.sample_clock_index += ((ms * oscillator::SAMPLE_RATE) / 1000.0);
     }
 
-    pub(crate) fn reset_clock(&mut self) {
+    pub(crate) fn reset_sample_clock(&mut self) {
         self.sample_clock_index = 0.0;
     }
+    
+    // Each track has a current note index in its sequence
+    // All tracks start at 0, of course
+    // If there are notes playing in a track at the current time, then that note is its current index
+    // if there are no notes playing at the current time and we scan ahead, we do so by advancing 
+    //  the note index on every track and pick the note(s) with the mininum start time as the next
+    //  notes to play
 
     // TODO NOW HANDLE THE CASE OF NO NOTES PLAYING AND RETURN REST NOTE AND SCAN AHEAD TO NEXT
     //  SAMPLE INDEX WHERE ONE OR MORE NOTES ARE PLAYING
     pub(crate) fn next_notes_window(&mut self) -> NotesWindow {
         let start_time_ms = self.get_current_time_ms();
 
-        // NOTE: mutable bindings in this loop because notes_playing_at_start is used mutably
-        // in the load_notes_and_waveforms and calculate_end_time_ms functions
-        let mut notes_playing_at_start = self.tracks.iter()
+        let mut notes_playing_at_start_time = self.tracks.iter()
             .flat_map(|track| track.sequence.iter())
             .filter(|note| note.is_playing(start_time_ms))
             .collect::<Vec<&Note>>();
-        if notes_playing_at_start.is_empty() {
-           return NotesWindow::empty_notes_window();
-        }
 
-        let end_time_ms = self.calculate_end_time_ms(start_time_ms, &notes_playing_at_start);
+        // TODO If no notes are playing at this tick
+        //  - if no track has notes then return a Null or Err (whatever signals the end of an
+        //    iterator in Rust)
+        //  - if tracks have notes scan ahead until the first tick with Notes and return a
+        //    rest window with one note with zero volume and the start end of that window
+        if notes_playing_at_start_time.is_empty() {
+            return NotesWindow::empty_notes_window();
+        } else {
+            let end_time_ms =
+                self.calculate_end_time_ms(start_time_ms, &notes_playing_at_start_time);
 
-        // Walk the notes found at the start and set their volume adjusted by the track volume
-        // and push a clone of each note and its waveforms into the output
-        let mut window_notes_data = Vec::new();
-        let mut window_notes_waveforms = Vec::new();
-        self.load_notes_data_and_waveforms(&mut notes_playing_at_start, &mut window_notes_data,
-                                           &mut window_notes_waveforms);
+            // Walk the notes found at the start and set their volume adjusted by the track volume
+            // and push a clone of each note and its waveforms into the output
+            let mut window_notes_data = Vec::new();
+            let mut window_notes_waveforms = Vec::new();
+            self.load_notes_data_and_waveforms(&mut notes_playing_at_start_time, &mut window_notes_data,
+                                               &mut window_notes_waveforms);
 
-        self.advance_sample_clock_index_by_ms(end_time_ms - start_time_ms);
+            self.advance_sample_clock_index_by_ms(end_time_ms - start_time_ms);
 
-        NotesWindow {
-            notes_data: NotesData {
-                notes: window_notes_data,
-                notes_waveforms: window_notes_waveforms,
-            },
-            start_time_ms,
-            end_time_ms,
+            NotesWindow {
+                notes_data: NotesData {
+                    notes: window_notes_data,
+                    notes_waveforms: window_notes_waveforms,
+                },
+                start_time_ms,
+                end_time_ms,
+            }
         }
     }
-    
+
+    // TODO This still assumes even volume for entire note duration, no envelope support
     fn load_notes_data_and_waveforms(&self, notes_playing_at_start: &mut Vec<&Note>,
                                      window_notes_data: &mut Vec<Note>,
                                      window_notes_waveforms: &mut Vec<Vec<oscillator::Waveform>>) {
@@ -104,8 +117,6 @@ impl TrackGrid {
             self.tracks.iter().map(|track| (track.num, track)).collect();
         for note in notes_playing_at_start.iter_mut() {
             let track_for_note = track_num_track_map.get(&note.track_num).unwrap();
-            // TODO This still assumes even volume for entire note duration, no envelope support
-            // let out_note: &mut Note = note.clone();
             let new_volume = (**note).volume * (**track_for_note).volume;
             let mut note = (**note).clone();
             note.volume = new_volume;
@@ -114,9 +125,9 @@ impl TrackGrid {
         }
     }
 
-    fn calculate_end_time_ms (&self,
-                              start_time_ms: f32,
-                              notes_playing_at_start: &Vec<&Note>) -> f32 {
+    fn calculate_end_time_ms(&self,
+                             start_time_ms: f32,
+                             notes_playing_at_start: &Vec<&Note>) -> f32 {
         // Calculate the end of the window in two passes
         // This first value is the end of the note ending the soonest after the start of the window
         // This is the end of the window unless we find a note that starts before this time
@@ -144,18 +155,25 @@ impl TrackGrid {
                 break;
             }
             let time_ms = midi::ticks_to_milliseconds(self.bpm, u28::from(tick));
-            // TODO THIS IS A PAINFUL CLONE too
-            for track in self.tracks.clone() {
+            self.tracks.iter().for_each(|track|
                 for note in track.sequence.iter() {
+                    // TODO THIS IS O^2 UNLESS WE CAN SLICE FROM THE LAST PLAYED NOTE POSITION
+                    //  AND THESE CHECKS DON'T CHANGE THAT
+                    if note.is_before_playing(time_ms) {
+                        continue;
+                    }
+                    if note.is_after_playing(time_ms) {
+                        break;
+                    }
                     // If we hit a new note starting for the first time that wasn't in the
                     // set of notes at the start of the window, and we haven't reached end time
                     // yet then this is the end of the window, so break
                     if note.is_playing(time_ms) && !notes_playing_at_start.contains(&note) {
-                        end_time_ms = time_ms;
                         found = true;
+                        end_time_ms = time_ms;
                     }
                 }
-            }
+            )
         }
         end_time_ms
     }
@@ -176,9 +194,27 @@ impl<'a> Iterator for TrackGrid {
 }
 
 impl NotesData {
-    pub(crate) fn empty_notes_data() -> NotesData {
+    pub(crate) fn empty_notes_data() -> Self {
         NotesData {
             notes: Vec::new(),
+            notes_waveforms: Vec::new(),
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn rest_notes_data(start_time_ms: f32, end_time_ms: f32,
+                                  track_num: i16) -> Self {
+        NotesData {
+            notes: vec![NoteBuilder::default()
+                .start_time_ms(start_time_ms)
+                .duration_ms(end_time_ms - start_time_ms)
+                .end_time_ms()
+                .frequency(440.0)
+                .volume(0.0)
+                .default_envelope()
+                .track_num(track_num)
+                .build().unwrap()
+            ],
             notes_waveforms: Vec::new(),
         }
     }
@@ -193,11 +229,21 @@ impl NotesWindow {
         self.end_time_ms - self.start_time_ms
     }
 
-    pub(crate) fn empty_notes_window() -> NotesWindow {
+    pub(crate) fn empty_notes_window() -> Self {
         NotesWindow {
             notes_data: NotesData::empty_notes_data(),
             start_time_ms: 0.0,
             end_time_ms: f32::INFINITY,
+        }
+    }
+
+    #[allow(dead_code)]
+    pub(crate) fn rest_notes_window(start_time_ms: f32, end_time_ms: f32,
+                                    track_num: i16) -> Self {
+        NotesWindow {
+            notes_data: NotesData::rest_notes_data(start_time_ms, end_time_ms, track_num),
+            start_time_ms,
+            end_time_ms,
         }
     }
 }
@@ -219,12 +265,15 @@ mod test_sequence_grid {
     fn test_advance_sample_clock_get_sample_clock() {
         let mut track_grid = setup_track_grid()
             .build().unwrap();
+        track_grid.reset_sample_clock();
+
         assert_eq!(track_grid.get_current_time_ms(), 0.0);
         assert_eq!(track_grid.get_sample_clock_index(), 0.0);
 
         // Advance time by 1 sec, i.e. one unit of the sample rate
         // Expect clock to advance 1000ms and clock index to return to 0 position
         track_grid.advance_sample_clock_index_by_ms(1000.0);
+
         assert_float_eq!(track_grid.get_current_time_ms(), 1000.0,
             rmax <= constants::FLOAT_EQ_TOLERANCE);
         assert_float_eq!(track_grid.get_sample_clock_index(), 0.0,
@@ -232,6 +281,7 @@ mod test_sequence_grid {
 
         // Now advance by one sample and assert we are not at 1 sec and 0.0 sample index
         track_grid.increment_sample_clock();
+
         assert_float_ne!(track_grid.get_current_time_ms(), 1000.0,
             rmax <= constants::FLOAT_EQ_TOLERANCE);
         assert_float_ne!(track_grid.get_sample_clock_index(), 0.0,
@@ -244,20 +294,24 @@ mod test_sequence_grid {
         // at the start, and both on from 1sec to 2sec
         let mut track_grid = setup_track_grid()
             .build().unwrap();
+        track_grid.reset_sample_clock();
 
         // Expect one note to be active when sample_clock_index is 0.0
         let note_window = track_grid.next_notes_window();
+
         assert_eq!(note_window.notes_data.notes.len(), 1);
 
         // Expect both notes to be active when sample_clock_index is 1.5
         // track_grid.sample_clock_index = 1.5 * oscillator::SAMPLE_RATE;
         track_grid.advance_sample_clock_index_by_ms(1500.0);
         let note_window = track_grid.next_notes_window();
+
         assert_eq!(note_window.notes_data.notes.len(), 2);
 
         // Now advance the sample_clock_index past both notes and expect no active notes
         track_grid.advance_sample_clock_index_by_ms(501.0);
         let notes_window = track_grid.next_notes_window();
+
         assert_eq!(notes_window.notes_data.notes.len(), 0);
     }
 
