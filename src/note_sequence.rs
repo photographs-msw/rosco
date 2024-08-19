@@ -1,14 +1,13 @@
+use std::ops::{Deref, DerefMut};
+use std::rc::Rc;
+
 use derive_builder::Builder;
 
 use crate::note::Note;
 
-static INIT_INDEX: usize = 0;
+static INIT_START_TIME: f32 = 0.0;
 
 /*
-- [ ] Start at index 0 for all tracks
-- [ ] All tracks have a dummy first note at 0.0
-- [ ] Sequences are a Vev<Vec<Note>> ordered by start time
-- [ ] Each position is all notes at that start time, eg a chord
 - [ ] Algo starts with Case 1 no active notes at current play time. In this case we look ahead by checking the notes at each track’s note index +1
 - [ ] Find the next notes with the earliest start times, increment those track note indexes
 - [ ] If there is a gap between current play time and next notes start time, output a rest note from current play time to next note start time and move play time to the next note start time
@@ -18,24 +17,82 @@ static INIT_INDEX: usize = 0;
 - [ ] Repeat. On any iteration we either have active notes and determine next end time, or we do not and seek to next start time, issuing a rest for the gap
 */
 
-#[derive(Builder, Clone, Debug)]
-pub struct NoteSequence {
+#[derive(Builder, Debug)]
+pub(crate) struct NoteSequence {
     #[builder(default = "Vec::new()")]
-    pub(crate) notes: Vec<Note>,
-
-    #[builder(default = "INIT_INDEX")]
+    sequence: Vec<Vec<Note>>,
+    
+    #[builder(default = "0")]
     index: usize
 }
 
-#[allow(dead_code)]
 impl NoteSequence {
+    pub(crate) fn new() -> NoteSequence {
+        NoteSequence {
+            sequence: Vec::new(),
+            index: 0
+        }
+    }
 
+    // Manage Notes
+    pub(crate) fn append(&mut self, notes: Vec<Note>) {
+        notes.iter().for_each(|note| {
+            if note.start_time_ms < 0.0 {
+                panic!("Note start time must be >= 0.0");
+            }
+        });
+        self.sequence.push(notes);
+        // Maintain invariant that notes are sorted by start time
+        self.sequence.sort_by(
+            |a, b| a[0].start_time_ms.partial_cmp(&b[0].start_time_ms)
+                .unwrap());
+    }
+    
+    pub(crate) fn max_start_time(&self) -> f32 {
+        if self.sequence.is_empty() {
+            panic!("No notes in sequence");
+        }
+        // Because notes are sorted by start time in append(), the last note has the max start time
+        self.sequence[self.sequence.len() - 1][0].start_time_ms
+    }
+
+    pub(crate) fn get_notes(&self) -> Vec<Note> {
+        self.sequence[self.index].clone()
+    }
+
+    pub(crate) fn notes_iter_mut(&mut self) -> std::slice::IterMut<Note> {
+        self.sequence[self.index].iter_mut()
+    }
+
+    pub(crate) fn notes_iter(&self) -> std::slice::Iter<Note> {
+        self.sequence[self.index].iter()
+    }
+
+    pub(crate) fn notes_len(&self) -> usize {
+        self.sequence[self.index].len()
+    }
+
+    pub (crate) fn notes_are_empty(&self) -> bool {
+        self.sequence[self.index].is_empty()
+    }
+
+    // Manage Sequence
     pub(crate) fn get_index(&self) -> usize {
         self.index
     }
 
-    pub(crate) fn advance(&mut self) {
+    pub(crate) fn increment(&mut self) {
+        if self.index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.index += 1;
+    }
+
+    pub(crate) fn decrement(&mut self) {
+        if self.index - 1 < 0 {
+            panic!("Index out of bounds");
+        }
+        self.index -= 1;
     }
 
     pub(crate) fn reset_index(&mut self) {
@@ -43,38 +100,32 @@ impl NoteSequence {
     }
 
     pub(crate) fn at_end(&self) -> bool {
-        self.index >= self.notes.len()
+        self.index >= self.sequence.len()
     }
 
-    pub(crate) fn add_note(&mut self, note: Note) {
-        self.notes.push(note);
+    pub (crate) fn sequence_is_empty(&self) -> bool {
+        self.sequence.is_empty()
     }
 
-    pub(crate) fn get_note(&self) -> Note {
-        if self.index >= self.notes.len() {
+    pub(crate) fn sequence_iter_mut(&mut self) -> std::slice::IterMut<Vec<Note>> {
+        self.sequence.iter_mut()
+    }
+
+    pub(crate) fn sequence_iter(&self) -> std::slice::Iter<Vec<Note>> {
+        self.sequence.iter()
+    }
+
+    pub(crate) fn sequence_len(&self) -> usize {
+        self.sequence.len()
+    }
+    
+    fn get_notes_start_time(&self, index: usize) -> f32 {
+        if index < 0 || index >= self.sequence.len() {
             panic!("Index out of bounds");
         }
-        self.notes[self.index].clone()
-    }
-
-    pub(crate) fn get_note_and_advance(&mut self) -> Note {
-        if self.index >= self.notes.len() {
-            panic!("Index out of bounds");
+        if self.sequence[index].is_empty() {
+            panic!("No notes at index");
         }
-        let note = self.notes[self.index].clone();
-        self.advance();
-        note
-    }
-
-    pub(crate) fn iter_mut(&mut self) -> std::slice::IterMut<Note> {
-        self.notes.iter_mut()
-    }
-
-    pub(crate) fn iter(&self) -> std::slice::Iter<Note> {
-        self.notes.iter()
-    }
-
-    pub(crate) fn len(&self) -> usize {
-        self.notes.len()
+        self.sequence[index][0].start_time_ms
     }
 }
