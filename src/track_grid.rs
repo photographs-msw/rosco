@@ -51,7 +51,7 @@ impl TrackGrid {
         let mut window_notes_data = Vec::new();
         let mut window_notes_waveforms = Vec::new();
         for (i, track) in &mut self.tracks.iter_mut().enumerate() {
-            for note in track.sequence.iter_mut()  {
+            for note in track.sequence.notes_iter_mut()  {
                 if note.is_playing(start_time_ms) {
                     end_time_ms = f32::min(end_time_ms, note.end_time_ms);
                     note.volume *= track.volume;

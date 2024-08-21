@@ -9,6 +9,7 @@ mod oscillator;
 mod note_sequence;
 mod midi;
 mod track_grid;
+mod constants;
 
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};
@@ -144,7 +145,7 @@ fn main() {
     println!("Added Notes to Instrument");
 
     println!("Playing Notes on Instrument");
-    instrument.play_note_and_advance();
+    instrument.play_note_and_advance(0);
     instrument.set_volume(0.25);
     instrument.play_note();
     instrument.set_volume(0.75);

@@ -51,7 +51,7 @@ impl MultiInstrument {
         let max_note_duration_ms = note::max_note_duration_ms(&notes);
         audio_gen::gen_notes(notes, self.track_waveforms.clone(), max_note_duration_ms);
         for channel in self.tracks.iter_mut() {
-            channel.sequence.advance();
+            channel.sequence.increment();
         }
     }
 
@@ -78,13 +78,13 @@ impl MultiInstrument {
     pub(crate) fn add_note_to_track(&mut self, track_num: usize, note: Note) {
         self.validate_track_num(track_num);
 
-        self.tracks[track_num].sequence.add_note(note);
+        self.tracks[track_num].sequence.append_note(note);
     }
 
     pub(crate) fn add_note_to_tracks(&mut self, note: Note) {
         self.validate_has_tracks();
         self.tracks.iter_mut().for_each(
-            |track| track.sequence.add_note(note)
+            |track| track.sequence.append_note(note)
         );
     }
 
@@ -105,7 +105,7 @@ impl MultiInstrument {
         }
 
         for (track_num, note) in track_nums.iter().zip(chord) {
-            self.tracks[*track_num].sequence.add_note(note);
+            self.tracks[*track_num].sequence.append_note(note);
         }
     }
 

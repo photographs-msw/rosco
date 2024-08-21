@@ -203,7 +203,7 @@ fn handle_note_off(note_key: NoteKey,
     let mut note = track_notes_map.get_mut(&note_key).unwrap().clone();
     note.duration_ms += delta_ticks.as_int() as f32 / bpm_ticks_per_ms;
     note.end_time_ms = note.start_time_ms + note.duration_ms;
-    track_sequence_map.get_mut(&note_key.channel).unwrap().add_note(note);
+    track_sequence_map.get_mut(&note_key.channel).unwrap().append_note(note);
     track_notes_map.remove(&note_key);
 
     // TEMP DEBUG
