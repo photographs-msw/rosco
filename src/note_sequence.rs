@@ -2,8 +2,9 @@ use derive_builder::Builder;
 use float_eq::{float_eq, float_ne};
 
 use crate::constants;
-use crate::note::{Note, NoteBuilder};
+use crate::note::Note;
 
+#[allow(dead_code)]
 static INIT_START_TIME: f32 = 0.0;
 
 /*
@@ -25,6 +26,7 @@ pub(crate) struct NoteSequence {
     index: usize
 }
 
+#[allow(dead_code)]
 impl NoteSequence {
     
     // Manage Notes
