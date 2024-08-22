@@ -116,7 +116,7 @@ mod test_sequence_grid {
                         .name(String::from("Track 1"))
                         .sequence(
                             NoteSequenceBuilder::default()
-                                .notes(vec![
+                                .sequence(vec![vec![
                                     // See comment below in setup_note(), we set start_time_ms there
                                     // because otherwise builder fails because end_time_ms depends on it
                                     // Now set again here to set up the logic under test
@@ -126,7 +126,7 @@ mod test_sequence_grid {
                                     setup_note()
                                         .start_time_ms(1.0)
                                         .build().unwrap(),
-                                ]).build().unwrap()
+                                ]]).build().unwrap()
                         )
                         .volume(0.9)
                         .build().unwrap()

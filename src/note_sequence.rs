@@ -2,7 +2,7 @@ use derive_builder::Builder;
 use float_eq::{float_eq, float_ne};
 
 use crate::constants;
-use crate::note::Note;
+use crate::note::{Note, NoteBuilder};
 
 static INIT_START_TIME: f32 = 0.0;
 
@@ -53,13 +53,13 @@ impl NoteSequence {
        
         // Find insert position where existing notes at position have same start time as notes
         // to insert, or notes at existing position have greater start time as notes to insert
-        let insert_position: usize = self.index;
+        let mut insert_position: usize = 0;
         let notes_start_time_ms = notes[0].start_time_ms;
         let mut inserted = false;
         while insert_position < self.sequence.len() {
             if float_eq!(self.get_notes_start_time(insert_position), notes_start_time_ms,
                          rmax <= constants::FLOAT_EQ_TOLERANCE) {
-                self.sequence[insert_position].append(&mut notes.clone()); 
+                self.sequence[insert_position].append(&mut notes.clone());
                 inserted = true;
                 break;
             }
@@ -70,18 +70,20 @@ impl NoteSequence {
                 inserted = true;
                 break;
             }
+
+            insert_position += 1;
         }
         if !inserted {
             self.sequence.push(notes.clone());
             self.index += 1;
         }
     }
-    
+
     pub(crate) fn insert_notes_multi_position(&mut self, notes: Vec<Note>) {
-        self.validate_notes_to_add(&notes);
+        notes.iter().for_each(|note| self.validate_note_to_add(note));
         notes.iter().for_each(|note| {self.insert_note_helper(note);})
     }
-    
+
     pub(crate) fn append_note(&mut self, note: Note) {
         self.validate_note_to_add(&note);
         self.append_notes(vec![note]);
@@ -104,7 +106,7 @@ impl NoteSequence {
     pub(crate) fn get_note(&self) -> Note {
         self.sequence[self.index][0].clone()
     }
-    
+
     pub(crate) fn get_notes(&self) -> Vec<Note> {
         self.sequence[self.index].clone()
     }
@@ -157,9 +159,6 @@ impl NoteSequence {
     }
 
     pub(crate) fn decrement(&mut self) {
-        if self.index - 1 < 0 {
-            panic!("Index out of bounds");
-        }
         self.index -= 1;
     }
 
@@ -188,7 +187,7 @@ impl NoteSequence {
     }
     
     fn get_notes_start_time(&self, index: usize) -> f32 {
-        if index < 0 || index >= self.sequence.len() {
+        if index >= self.sequence.len() {
             panic!("Index out of bounds");
         }
         self.sequence[index][0].start_time_ms
@@ -208,7 +207,7 @@ impl NoteSequence {
             }
         });
     }
-    
+
     fn validate_note_to_add(&self, note: &Note) {
         if note.start_time_ms < 0.0 {
             panic!("Note start time must be >= 0.0");
@@ -216,7 +215,7 @@ impl NoteSequence {
     }
 
     fn insert_note_helper(&mut self, note: &Note) {
-        let insert_position: usize = self.index;
+        let mut insert_position: usize = 0;
         let notes_start_time_ms = note.start_time_ms;
         let mut inserted = false;
         while insert_position < self.sequence.len() {
@@ -233,10 +232,182 @@ impl NoteSequence {
                 inserted = true;
                 break;
             }
+
+            insert_position += 1;
         }
         if !inserted {
             self.sequence.push(vec![note.clone()]);
             self.index += 1;
         }
+    }
+}
+
+#[cfg(test)]
+mod test_note_sequence {
+    use crate::note::NoteBuilder;
+    use crate::note_sequence::NoteSequenceBuilder;
+
+    #[test]
+    fn test_append_note() {
+        let note = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
+
+        let sequence = NoteSequenceBuilder::default()
+            .sequence(vec![vec![note.clone()]])
+            .index(0)
+            .build().unwrap();
+
+        assert_eq!(sequence.get_notes()[0], note);
+    }
+
+    #[test]
+    fn test_append_notes() {
+        let note_1 = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_2 = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
+
+        let sequence = NoteSequenceBuilder::default()
+            .sequence(vec![vec![note_1.clone(), note_2.clone()]])
+            .index(0)
+            .build().unwrap();
+
+        assert_eq!(sequence.get_notes(), vec![note_1, note_2]);
+    }
+
+    #[test]
+    fn test_insert_notes_get_notes_at() {
+        let note_1 = setup_note()
+            .start_time_ms(2.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_2 = setup_note()
+            .start_time_ms(2.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_3 = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_4 = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_5 = setup_note()
+            .start_time_ms(1.0)
+            .end_time_ms()
+            .build().unwrap();
+
+        let mut sequence = NoteSequenceBuilder::default()
+            .index(0)
+            .build().unwrap();
+        sequence.insert_notes(vec![note_1, note_2]);
+        sequence.insert_notes(vec![note_3, note_4]);
+        sequence.insert_notes(vec![note_5]);
+
+        assert_eq!(sequence.get_notes_at(0), vec![note_3, note_4]);
+        assert_eq!(sequence.get_notes_at(1), vec![note_5]);
+        assert_eq!(sequence.get_notes_at(2), vec![note_1, note_2]);
+    }
+
+    #[test]
+    fn test_insert_note_get_note_at() {
+        let note_1 = setup_note()
+            .start_time_ms(1.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_2 = setup_note()
+            .start_time_ms(2.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_3 = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
+
+        let mut sequence = NoteSequenceBuilder::default()
+            .index(0)
+            .build().unwrap();
+        sequence.insert_note(note_1);
+        sequence.insert_note(note_2);
+        sequence.insert_note(note_3);
+
+        assert_eq!(sequence.get_note_at(0), note_3);
+        assert_eq!(sequence.get_note_at(1), note_1);
+        assert_eq!(sequence.get_note_at(2), note_2);
+    }
+
+    #[test]
+    fn test_insert_notes_multi_position_get_note_at() {
+        let note_1 = setup_note()
+            .start_time_ms(1.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_2 = setup_note()
+            .start_time_ms(2.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_3 = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
+
+        let mut sequence = NoteSequenceBuilder::default()
+            .index(0)
+            .build().unwrap();
+        sequence.insert_notes_multi_position(vec![note_1, note_2, note_3]);
+
+        assert_eq!(sequence.get_note_at(0), note_3);
+        assert_eq!(sequence.get_note_at(1), note_1);
+        assert_eq!(sequence.get_note_at(2), note_2);
+    }
+
+    #[test]
+    #[should_panic(expected = "Notes to add must not be empty")]
+    fn test_append_empty_notes() {
+        let mut sequence = NoteSequenceBuilder::default()
+            .index(0)
+            .build().unwrap();
+
+        sequence.append_notes(vec![]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Notes to add must not be empty")]
+    fn test_insert_empty_notes() {
+        let mut sequence = NoteSequenceBuilder::default()
+            .index(0)
+            .build().unwrap();
+
+        sequence.insert_notes(vec![]);
+    }
+
+    #[test]
+    #[should_panic(expected = "Note start time must be >= 0.0")]
+    fn test_insert_invalid_note() {
+        let note_1 = setup_note()
+            .start_time_ms(-1.0)
+            .end_time_ms()
+            .build().unwrap();
+        
+        let mut sequence = NoteSequenceBuilder::default()
+            .index(0)
+            .build().unwrap();
+
+        sequence.insert_note(note_1);
+    }
+    
+    fn setup_note() -> NoteBuilder {
+        NoteBuilder::default()
+            .frequency(440.0)
+            .duration_ms(1000.0)
+            .volume(1.0)
+            .clone()
     }
 }

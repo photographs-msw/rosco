@@ -3,7 +3,7 @@ use derive_builder::Builder;
 pub(crate) static INIT_START_TIME: f32 = 0.0;
 pub(crate) static DEFAULT_VOLUME: f32 = 1.0;
 
-#[derive(Builder, Clone, Copy, Debug)]
+#[derive(Builder, Clone, Copy, Debug, PartialEq)]
 pub(crate) struct Note {
     pub(crate) frequency: f32,
     pub(crate) duration_ms: f32,
