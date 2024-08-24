@@ -112,7 +112,7 @@ impl NoteSequence {
             window_notes.push(
                 NoteBuilder::default()
                     .frequency(440.0)
-                    .volume(1.0)
+                    .volume(0.0)
                     .start_time_ms(notes_time_ms)
                     .duration_ms(next_notes_start_time_ms - notes_time_ms)
                     .end_time_ms()
@@ -518,6 +518,9 @@ mod test_note_sequence {
         assert_eq!(notes_window.len(), 1);
         assert_eq!(sequence.get_index(), 0);
         assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EQ_TOLERANCE);
+        
+        // TODO CALL IT AGAIN TO TEST CASE OF STARTING ON NEXT NOTE AND ADVANCING THE INDEX
+        //  ALSO NEED TO TEST REST TEST CASE
     }
     
     fn setup_note() -> NoteBuilder {
