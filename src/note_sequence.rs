@@ -27,6 +27,7 @@ pub(crate) struct NoteSequence {
 
     // All positions in the grid before this have end times earlier than next_notes_time_ms
     // Allows O(1) access to scan for next notes window vs. always scanning from the beginning
+    #[builder(default = "Vec::new()")]
     frontier_indexes: Vec<usize>,
 
     // TODO MOVE TO GRID BASED FACADE BEHIND MODULE IN THIS PARENT MODULE
@@ -63,7 +64,7 @@ impl NoteSequence {
                      rmax <= constants::FLOAT_EPSILON) {
             self.sequence[max_frontier_index].append(&mut notes.clone());
         } else {
-            if min_frontier_start_time_ms < notes[0].start_time_ms {
+            if min_frontier_start_time_ms > notes[0].start_time_ms {
                 panic!("Notes must be appended sorted by start time");
             }
             self.sequence.push(notes.clone());
@@ -117,7 +118,7 @@ impl NoteSequence {
 
     pub(crate) fn get_next_notes_window(&mut self, notes_time_ms: f32) -> Vec<Note> {
         
-        fn note_ref_into_note(note: &Note, notes_time_ms: f32, end_time_ms: f32) -> Note {
+        fn note_ref_into_note( note: &Note, notes_time_ms: f32, end_time_ms: f32) -> Note {
             let mut new_note = note.clone();
             // not start time is current notes_time_ms
             new_note.start_time_ms = notes_time_ms;
@@ -147,9 +148,10 @@ impl NoteSequence {
             );
 
             self.next_notes_time_ms = frontier_min_start_time_ms + constants::FLOAT_EPSILON;
+            return window_notes;
         }
         
-        let end_time_ms = self.get_frontier_min_end_time();
+        let end_time_ms = self.get_frontier_next_min_end_time(notes_time_ms);
         // If the current note time is the same as the frontier min start time, emit all notes
         // in the frontier with the same start time and increment the current notes time to the
         // earliest end time in the frontier. This is the next window emit, note to end time.
@@ -172,8 +174,8 @@ impl NoteSequence {
             let notes: Vec<Note> = self.get_frontier_notes()
                 .iter()
                 .flatten()
-                .filter(|note| note.start_time_ms < notes_time_ms &&
-                    note.end_time_ms > notes_time_ms)
+                .filter(|note| NoteSequence::float_leq(note.start_time_ms, notes_time_ms) &&
+                    NoteSequence::float_geq(note.end_time_ms, notes_time_ms))
                 .map(|note| note_ref_into_note(note, notes_time_ms, end_time_ms))
                 .collect();
             window_notes.append(&mut notes.clone());
@@ -185,27 +187,42 @@ impl NoteSequence {
 
         window_notes
     }
+    
+    // TODO UTILS
+    fn float_leq(a: f32, b: f32) -> bool {
+        if a < b || float_eq!(a, b, rmax <= constants::FLOAT_EPSILON) {
+            return true;
+        }
+        false        
+    }
+
+    fn float_geq(a: f32, b: f32) -> bool {
+        if a > b || float_eq!(a, b, rmax <= constants::FLOAT_EPSILON) {
+            return true;
+        }
+        false
+    }
 
     fn get_frontier_notes(&self) ->  &[Vec<Note>] {
         let min_frontier_index = self.frontier_indexes[0];
         let max_frontier_index = self.frontier_indexes[self.frontier_indexes.len() - 1];
-        &self.sequence[min_frontier_index..max_frontier_index]
+        &self.sequence[min_frontier_index..(max_frontier_index + 1)]
     }
 
     fn get_frontier_min_start_time(&self) -> f32 {
         // Get the earliest start time of all notes in the frontier
-        let mut frontier_min_start_time_ms = f32::INFINITY;
+        let mut start_time_ms = f32::MAX;
         for note in self.get_frontier_notes().iter().flatten() {
-            if note.start_time_ms < frontier_min_start_time_ms {
-                frontier_min_start_time_ms = note.start_time_ms;
+            if note.start_time_ms < start_time_ms {
+                start_time_ms = note.start_time_ms;
             }
         }
-        frontier_min_start_time_ms
+        start_time_ms
     }
 
     fn get_min_start_time(&self, index: usize) -> f32 {
         // Get the earliest start time of all notes in the frontier
-        let mut min_start_time_ms = f32::INFINITY;
+        let mut min_start_time_ms = f32::MAX;
         for note in self.sequence[index].iter() {
             if note.start_time_ms < min_start_time_ms {
                 min_start_time_ms = note.start_time_ms;
@@ -214,14 +231,29 @@ impl NoteSequence {
         min_start_time_ms
     }
 
-    fn get_frontier_min_end_time(&self) -> f32 {
-        let mut frontier_min_end_time_ms = f32::INFINITY;
+    fn get_frontier_next_min_end_time(&self, note_time_ms: f32) -> f32 {
+        let mut end_time_ms = f32::MAX;
+        
+        // First pass, is what is the earliest end time in the future, after note_time_ms
+        // for a note that starts on or before note_time_ms and ends after it
         for note in self.get_frontier_notes().iter().flatten() {
-            if note.end_time_ms < frontier_min_end_time_ms {
-                frontier_min_end_time_ms = note.start_time_ms;
+            if (note.start_time_ms < note_time_ms ||
+                float_eq!(note.start_time_ms, note_time_ms, rmax <= constants::FLOAT_EPSILON)) &&
+                    note.end_time_ms > note_time_ms &&
+                    note.end_time_ms < end_time_ms {
+                end_time_ms = note.end_time_ms;
             }
         }
-        frontier_min_end_time_ms 
+        
+        // Second pass, is there a note that starts after note_time_ms earlier than the
+        // earliest end time. Because if there is then that is the end time of this window
+        for note in self.get_frontier_notes().iter().flatten() {
+            if note.start_time_ms > note_time_ms && note.start_time_ms < end_time_ms {
+                end_time_ms = note.start_time_ms;
+            }
+        }
+        
+        end_time_ms
     }
     
     fn validate_notes_to_add(&self, notes: &Vec<Note>) {
@@ -298,122 +330,122 @@ impl NoteSequence {
 //         self.sequence[self.index][0].start_time_ms
 //     }
 //
-//     // deprecated because makes no sense once we store a vector at each position
-//     // pub(crate) fn get_note(&self) -> Note {
-//     //     self.sequence[self.index][0].clone()
-//     // }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn get_notes(&self) -> Vec<Note> {
-//         self.sequence[self.index].clone()
-//     }
-//
-//     // deprecated because makes no sense once we store a vector at each position
-//     // pub(crate) fn get_note_at(&self, index: usize) -> Note {
-//     //     self.sequence[index][0].clone()
-//     // }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn get_notes_at(&self, index: usize) -> Vec<Note> {
-//         self.sequence[index].clone()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn get_note_at_and_advance(&mut self, index: usize) -> Note {
-//         self.index += 1;
-//         self.sequence[index][0].clone()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn get_notes_at_and_advance(&mut self, index: usize) -> Vec<Note> {
-//         self.index += 1;
-//         self.sequence[index].clone()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn notes_iter_mut(&mut self) -> std::slice::IterMut<Note> {
-//         self.sequence[self.index].iter_mut()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn notes_iter(&self) -> std::slice::Iter<Note> {
-//         self.sequence[self.index].iter()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn notes_len(&self) -> usize {
-//         self.sequence[self.index].len()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn notes_are_empty(&self) -> bool {
-//         self.sequence[self.index].is_empty()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn get_index(&self) -> usize {
-//         self.index
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn increment(&mut self) {
-//         if self.index >= self.sequence.len() {
-//             panic!("Index out of bounds");
-//         }
-//         self.index += 1;
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn decrement(&mut self) {
-//         self.index -= 1;
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn reset_index(&mut self) {
-//         self.index = 0;
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn at_end(&self) -> bool {
-//         self.index >= self.sequence.len()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn sequence_is_empty(&self) -> bool {
-//         self.sequence.is_empty()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn sequence_iter_mut(&mut self) -> std::slice::IterMut<Vec<Note>> {
-//         self.sequence.iter_mut()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn sequence_iter(&self) -> std::slice::Iter<Vec<Note>> {
-//         self.sequence.iter()
-//     }
-//
-//     // Only makes sense with an index and as an internal method
-//     // Would be public in a grid- rather than time-based sequencer
-//     fn sequence_len(&self) -> usize {
-//         self.sequence.len()
-//     }
+    // deprecated because makes no sense once we store a vector at each position
+    pub(crate) fn get_note(&self) -> Note {
+        self.sequence[self.index][0].clone()
+    }
+
+     // Only makes sense with an index and as an internal method
+     // Would be public in a grid- rather than time-based sequencer
+     pub(crate) fn get_notes(&self) -> Vec<Note> {
+        self.sequence[self.index].clone()
+    }
+
+    // deprecated because makes no sense once we store a vector at each position
+    pub(crate) fn get_note_at(&self, index: usize) -> Note {
+        self.sequence[index][0].clone()
+    }
+
+     // Only makes sense with an index and as an internal method
+     // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn get_notes_at(&self, index: usize) -> Vec<Note> {
+        self.sequence[index].clone()
+    }
+
+     // Only makes sense with an index and as an internal method
+     // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn get_note_at_and_advance(&mut self, index: usize) -> Note {
+        self.index += 1;
+        self.sequence[index][0].clone()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn get_notes_at_and_advance(&mut self, index: usize) -> Vec<Note> {
+        self.index += 1;
+        self.sequence[index].clone()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn notes_iter_mut(&mut self) -> std::slice::IterMut<Note> {
+        self.sequence[self.index].iter_mut()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn notes_iter(&self) -> std::slice::Iter<Note> {
+        self.sequence[self.index].iter()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn notes_len(&self) -> usize {
+        self.sequence[self.index].len()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn notes_are_empty(&self) -> bool {
+        self.sequence[self.index].is_empty()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn get_index(&self) -> usize {
+        self.index
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn increment(&mut self) {
+        if self.index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
+        self.index += 1;
+    }
+
+     // Only makes sense with an index and as an internal method
+     // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn decrement(&mut self) {
+        self.index -= 1;
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn reset_index(&mut self) {
+        self.index = 0;
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn at_end(&self) -> bool {
+        self.index >= self.sequence.len()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn sequence_is_empty(&self) -> bool {
+        self.sequence.is_empty()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn sequence_iter_mut(&mut self) -> std::slice::IterMut<Vec<Note>> {
+        self.sequence.iter_mut()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn sequence_iter(&self) -> std::slice::Iter<Vec<Note>> {
+        self.sequence.iter()
+    }
+
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    pub(crate) fn sequence_len(&self) -> usize {
+        self.sequence.len()
+    }
 }
 
 #[cfg(test)]
@@ -610,16 +642,35 @@ mod test_note_sequence {
         sequence.append_notes(&vec![note_3.clone(), note_4.clone()]);
         sequence.append_note(note_5.clone());
 
-        let notes_window = sequence.get_next_notes_window(0.0);
+        assert_eq!(sequence.frontier_indexes.len(), 4);
+        assert_eq!(sequence.sequence.len(), 4);
+        assert_eq!(sequence.sequence[0].len(), 1);
+        assert_eq!(sequence.sequence[0][0], note_1);
+        assert_eq!(sequence.sequence[1].len(), 1);
+        assert_eq!(sequence.sequence[1][0], note_2);
+        assert_eq!(sequence.sequence[2].len(), 2);
+        assert_eq!(sequence.sequence[2][0], note_3);
+        assert_eq!(sequence.sequence[2][1], note_4);
+        assert_eq!(sequence.sequence[2].len(), 2);
+        assert_eq!(sequence.sequence[3].len(), 1);
+        assert_eq!(sequence.sequence[3][0], note_5);
+        
+        let mut notes_window = sequence.get_next_notes_window(0.0);
         assert_eq!(notes_window.len(), 1);
         assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].start_time_ms, 0.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].end_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
 
         // TODO CALL IT AGAIN TO TEST CASE OF STARTING ON NEXT NOTE AND ADVANCING THE INDEX
         //  ALSO NEED TO TEST REST TEST CASE
-        let notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
         assert_eq!(notes_window.len(), 2);
         assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].start_time_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].end_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
         assert_float_eq!(notes_window[1].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[1].start_time_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[1].end_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
     }
 
     fn setup_note() -> NoteBuilder {
