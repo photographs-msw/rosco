@@ -96,7 +96,7 @@ impl TimeNoteSequence {
         notes.iter().for_each(|note| {self.insert_note(*note);})
     }
 
-    pub(crate) fn get_next_notes_window(&mut self, notes_time_ms: f32) -> Vec<Note> {
+    pub(crate) fn get_next_notes_window(&mut self) -> Vec<Note> {
 
         fn note_ref_into_note( note: &Note, notes_time_ms: f32, end_time_ms: f32) -> Note {
             let mut new_note = note.clone();
@@ -112,20 +112,19 @@ impl TimeNoteSequence {
         }
         let mut window_notes = Vec::new();
 
-        // TODO GET THIS WORKING, BUG NOW
-        self.remove_completed_frontier_indexes(notes_time_ms);
+        self.remove_completed_frontier_indexes(self.next_notes_time_ms);
 
         let frontier_min_start_time_ms = self.get_frontier_min_start_time();
         // If the current note time is earlier than that, emit a rest note and increment
         // the current notes time to the frontier min start time + epsilon
-        if notes_time_ms < frontier_min_start_time_ms {
+        if self.next_notes_time_ms < frontier_min_start_time_ms {
             // emit a rest note
             window_notes.push(
                 NoteBuilder::default()
                     .frequency(440.0)
                     .volume(0.0)
-                    .start_time_ms(notes_time_ms)
-                    .duration_ms(frontier_min_start_time_ms - notes_time_ms)
+                    .start_time_ms(self.next_notes_time_ms)
+                    .duration_ms(frontier_min_start_time_ms - self.next_notes_time_ms)
                     .end_time_ms()
                     .build().unwrap()
             );
@@ -134,16 +133,16 @@ impl TimeNoteSequence {
             return window_notes;
         }
 
-        let end_time_ms = self.get_frontier_next_min_end_time(notes_time_ms);
+        let end_time_ms = self.get_frontier_next_min_end_time(self.next_notes_time_ms);
         // If the current note time is the same as the frontier min start time, emit all notes
         // in the frontier with the same start time and increment the current notes time to the
         // earliest end time in the frontier. This is the next window emit, note to end time.
-        if float_eq(notes_time_ms, frontier_min_start_time_ms) {
+        if float_eq(self.next_notes_time_ms, frontier_min_start_time_ms) {
             let notes: Vec<Note> = self.get_frontier_notes()
                 .iter()
                 .flatten()
-                .filter(|note| float_eq(note.start_time_ms, notes_time_ms))
-                .map(|note| note_ref_into_note(note, notes_time_ms, end_time_ms))
+                .filter(|note| float_eq(note.start_time_ms, self.next_notes_time_ms))
+                .map(|note| note_ref_into_note(note, self.next_notes_time_ms, end_time_ms))
                 .collect();
             window_notes.append(&mut notes.clone());
 
@@ -151,14 +150,14 @@ impl TimeNoteSequence {
         // if notes_time_ms is greater than the frontier min start time, get all notes in the
         // frontier that are playing at the current notes time and emit them up to end time
         // as the next window and increment the current notes time to the end time
-        } else if notes_time_ms > frontier_min_start_time_ms {
+        } else if self.next_notes_time_ms > frontier_min_start_time_ms {
             let notes: Vec<Note> = self.get_frontier_notes()
                 .iter()
                 .flatten()
                 .filter(|note|
-                        float_leq(note.start_time_ms, notes_time_ms) &&
-                            float_geq(note.end_time_ms, notes_time_ms))
-                .map(|note| note_ref_into_note(note, notes_time_ms, end_time_ms))
+                        float_leq(note.start_time_ms, self.next_notes_time_ms) &&
+                            float_geq(note.end_time_ms, self.next_notes_time_ms))
+                .map(|note| note_ref_into_note(note, self.next_notes_time_ms, end_time_ms))
                 .filter(|note| note.duration_ms > 0.0)
                 .collect();
             window_notes.append(&mut notes.clone());
@@ -253,6 +252,21 @@ impl TimeNoteSequence {
         self.sequence[index].clone()
     }
 }
+
+// Custom iterator for TrackGrid over the note_windows in the grid
+impl<'a> Iterator for TimeNoteSequence {
+    type Item = Vec<Note>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let notes_window = self.get_next_notes_window();
+        if notes_window.is_empty() {
+            return None;
+        }
+
+        Some(notes_window)
+    }
+}
+
  
 #[cfg(test)]
 mod test_time_note_sequence {
@@ -303,7 +317,7 @@ mod test_time_note_sequence {
         assert_eq!(sequence.sequence[3][0], note_5);
 
         // 1 start 0 - 500
-        let mut notes_window = sequence.get_next_notes_window(0.0);
+        let mut notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 1);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 0.0);
@@ -311,7 +325,7 @@ mod test_time_note_sequence {
 
         // 1 500 - 1000
         // 2 start 500 - 1000
-        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 2);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 500.0);
@@ -323,7 +337,7 @@ mod test_time_note_sequence {
         // 2 1000 - 1500
         // 3 start 1000 - 1500
         // 4 start 1000 - 1500
-        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 3);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 1000.0);
@@ -337,7 +351,7 @@ mod test_time_note_sequence {
 
         // 3 1500 - 2000
         // 4 1500 - 2000
-        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 2);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 1500.0);
@@ -347,7 +361,7 @@ mod test_time_note_sequence {
         assert_float_eq(notes_window[1].end_time_ms, 2000.0);
         
         // Rest 2000 - 2500
-        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 1);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 2000.0);
@@ -356,7 +370,7 @@ mod test_time_note_sequence {
         assert_float_eq(notes_window[0].volume, 0.0);
         
         // 5 start 2500 - 3500
-        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 1);
         assert_float_eq(notes_window[0].duration_ms, 1000.0);
         assert_float_eq(notes_window[0].start_time_ms, 2500.0);
