@@ -1,5 +1,5 @@
 use derive_builder::Builder;
-use float_eq::float_eq;
+use float_eq::{float_eq, float_ne};
 
 use crate::constants;
 use crate::note::{Note, NoteBuilder};
@@ -75,7 +75,7 @@ impl NoteSequence {
     pub(crate) fn append_note(&mut self, note: Note) {
         self.append_notes(&vec![note]);
     }
- 
+
     pub(crate) fn insert_notes(&mut self, notes: Vec<Note>) {
         self.validate_notes_to_add(&notes);
 
@@ -86,7 +86,7 @@ impl NoteSequence {
         let mut inserted = false;
         while insert_position < self.sequence.len() {
             let min_start_time_ms = self.get_min_start_time(insert_position);
-            
+
             if float_eq!(min_start_time_ms, notes_start_time_ms,
                          rmax <= constants::FLOAT_EPSILON) {
                 self.sequence[insert_position].append(&mut notes.clone());
@@ -107,7 +107,7 @@ impl NoteSequence {
             self.frontier_indexes.push(insert_position);
         }
     }
-    
+
     pub(crate) fn insert_note(&mut self, note: Note) {
         self.insert_notes(vec![note]);
     }
@@ -117,7 +117,7 @@ impl NoteSequence {
     }
 
     pub(crate) fn get_next_notes_window(&mut self, notes_time_ms: f32) -> Vec<Note> {
-        
+
         fn note_ref_into_note( note: &Note, notes_time_ms: f32, end_time_ms: f32) -> Note {
             let mut new_note = note.clone();
             // not start time is current notes_time_ms
@@ -131,6 +131,9 @@ impl NoteSequence {
             new_note
         }
         let mut window_notes = Vec::new();
+
+        // TODO GET THIS WORKING, BUG NOW
+        // self.remove_completed_frontier_indexes(notes_time_ms);
 
         let frontier_min_start_time_ms = self.get_frontier_min_start_time();
         // If the current note time is earlier than that, emit a rest note and increment
@@ -150,13 +153,12 @@ impl NoteSequence {
             self.next_notes_time_ms = frontier_min_start_time_ms + constants::FLOAT_EPSILON;
             return window_notes;
         }
-        
+
         let end_time_ms = self.get_frontier_next_min_end_time(notes_time_ms);
         // If the current note time is the same as the frontier min start time, emit all notes
         // in the frontier with the same start time and increment the current notes time to the
         // earliest end time in the frontier. This is the next window emit, note to end time.
-        if float_eq!(notes_time_ms, frontier_min_start_time_ms,
-                     rmax <= constants::FLOAT_EPSILON) {
+        if NoteSequence::float_eq(notes_time_ms, frontier_min_start_time_ms) {
             let notes: Vec<Note> = self.get_frontier_notes()
                 .iter()
                 .flatten()
@@ -165,7 +167,7 @@ impl NoteSequence {
                 .map(|note| note_ref_into_note(note, notes_time_ms, end_time_ms))
                 .collect();
             window_notes.append(&mut notes.clone());
-            
+
             self.next_notes_time_ms = end_time_ms + constants::FLOAT_EPSILON;
         // if notes_time_ms is greater than the frontier min start time, get all notes in the
         // frontier that are playing at the current notes time and emit them up to end time
@@ -174,12 +176,14 @@ impl NoteSequence {
             let notes: Vec<Note> = self.get_frontier_notes()
                 .iter()
                 .flatten()
-                .filter(|note| NoteSequence::float_leq(note.start_time_ms, notes_time_ms) &&
-                    NoteSequence::float_geq(note.end_time_ms, notes_time_ms))
+                .filter(|note|
+                        NoteSequence::float_leq(note.start_time_ms, notes_time_ms) &&
+                            NoteSequence::float_geq(note.end_time_ms, notes_time_ms))
                 .map(|note| note_ref_into_note(note, notes_time_ms, end_time_ms))
+                .filter(|note| note.duration_ms > 0.0)
                 .collect();
             window_notes.append(&mut notes.clone());
-            
+
             self.next_notes_time_ms = end_time_ms + constants::FLOAT_EPSILON;
         } else {
             panic!("Invalid state for next notes window");
@@ -187,13 +191,13 @@ impl NoteSequence {
 
         window_notes
     }
-    
+
     // TODO UTILS
     fn float_leq(a: f32, b: f32) -> bool {
         if a < b || float_eq!(a, b, rmax <= constants::FLOAT_EPSILON) {
             return true;
         }
-        false        
+        false
     }
 
     fn float_geq(a: f32, b: f32) -> bool {
@@ -203,10 +207,35 @@ impl NoteSequence {
         false
     }
 
+    fn float_eq(a: f32, b: f32) -> bool {
+        float_eq!(a, b, rmax <= constants::FLOAT_EPSILON)
+    }
+
+    fn float_neq(a: f32, b: f32) -> bool {
+        float_ne!(a, b, rmax <= constants::FLOAT_EPSILON)
+    }
+
     fn get_frontier_notes(&self) ->  &[Vec<Note>] {
         let min_frontier_index = self.frontier_indexes[0];
         let max_frontier_index = self.frontier_indexes[self.frontier_indexes.len() - 1];
         &self.sequence[min_frontier_index..(max_frontier_index + 1)]
+    }
+
+    fn remove_completed_frontier_indexes(&mut self, note_time_ms: f32) {
+        let mut frontier_indexes_to_remove = Vec::new();
+        // Loop oever the notes in the position, if any have an end time later than current
+        // note time, then the note hasn't been completed yet so the index is still active.
+        // OTOH if all notes at an index have end times <= note_time_ms, that index is done
+        for i in 0..self.frontier_indexes.len() {
+            for note in self.sequence[self.frontier_indexes[i]].iter() {
+                if note.end_time_ms > note_time_ms {
+                    continue;
+                }
+            }
+            frontier_indexes_to_remove.push(self.frontier_indexes[i]);
+        }
+        self.frontier_indexes
+            .drain(frontier_indexes_to_remove[0]..frontier_indexes_to_remove[frontier_indexes_to_remove.len() - 1]);
     }
 
     fn get_frontier_min_start_time(&self) -> f32 {
@@ -233,7 +262,7 @@ impl NoteSequence {
 
     fn get_frontier_next_min_end_time(&self, note_time_ms: f32) -> f32 {
         let mut end_time_ms = f32::MAX;
-        
+
         // First pass, is what is the earliest end time in the future, after note_time_ms
         // for a note that starts on or before note_time_ms and ends after it
         for note in self.get_frontier_notes().iter().flatten() {
@@ -244,7 +273,7 @@ impl NoteSequence {
                 end_time_ms = note.end_time_ms;
             }
         }
-        
+
         // Second pass, is there a note that starts after note_time_ms earlier than the
         // earliest end time. Because if there is then that is the end time of this window
         for note in self.get_frontier_notes().iter().flatten() {
@@ -252,10 +281,10 @@ impl NoteSequence {
                 end_time_ms = note.start_time_ms;
             }
         }
-        
+
         end_time_ms
     }
-    
+
     fn validate_notes_to_add(&self, notes: &Vec<Note>) {
         for note in notes {
             if note.start_time_ms < 0.0 {
@@ -289,7 +318,7 @@ impl NoteSequence {
     //             }
     //         });
     //     }
-    
+
 //     fn insert_note_helper(&mut self, note: &Note) {
 //         let mut insert_position: usize = 0;
 //         let notes_start_time_ms = note.start_time_ms;
@@ -582,7 +611,7 @@ mod test_note_sequence {
     //     let mut sequence = NoteSequenceBuilder::default()
     //         .index(0)
     //         .build().unwrap();
-    // 
+    //
     //     sequence.append_notes(&vec![]);
     // }
 
@@ -632,7 +661,7 @@ mod test_note_sequence {
             .end_time_ms()
             .build().unwrap();
         let note_5 = setup_note()
-            .start_time_ms(1500.0)
+            .start_time_ms(2500.0)
             .end_time_ms()
             .build().unwrap();
         let mut sequence = NoteSequenceBuilder::default().build().unwrap();
@@ -654,15 +683,13 @@ mod test_note_sequence {
         assert_eq!(sequence.sequence[2].len(), 2);
         assert_eq!(sequence.sequence[3].len(), 1);
         assert_eq!(sequence.sequence[3][0], note_5);
-        
+
         let mut notes_window = sequence.get_next_notes_window(0.0);
         assert_eq!(notes_window.len(), 1);
         assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
         assert_float_eq!(notes_window[0].start_time_ms, 0.0, rmax <= constants::FLOAT_EPSILON);
         assert_float_eq!(notes_window[0].end_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
 
-        // TODO CALL IT AGAIN TO TEST CASE OF STARTING ON NEXT NOTE AND ADVANCING THE INDEX
-        //  ALSO NEED TO TEST REST TEST CASE
         notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
         assert_eq!(notes_window.len(), 2);
         assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
@@ -671,6 +698,24 @@ mod test_note_sequence {
         assert_float_eq!(notes_window[1].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
         assert_float_eq!(notes_window[1].start_time_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
         assert_float_eq!(notes_window[1].end_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
+
+        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        assert_eq!(notes_window.len(), 3);
+        assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].start_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].end_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[1].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[1].start_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[1].end_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[2].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[2].start_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[2].end_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
+
+        // TODO REMOVE COMPLETED FRONTIER INDEXES
+
+        // TODO REST AND THEN SINGLE NOTE
+        // notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        // assert_eq!(notes_window.len(), 1);
     }
 
     fn setup_note() -> NoteBuilder {
