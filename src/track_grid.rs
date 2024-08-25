@@ -104,7 +104,7 @@ mod test_sequence_grid {
     use crate::track_grid::TrackGridBuilder;
     use crate::note::NoteBuilder;
     use crate::oscillator;
-    use crate::note_sequence::NoteSequenceBuilder;
+    use crate::grid_note_sequence::GridNoteSequenceBuilder;
 
     #[test]
     fn test_active_notes() {
@@ -115,7 +115,7 @@ mod test_sequence_grid {
                     TrackBuilder::default()
                         .name(String::from("Track 1"))
                         .sequence(
-                            NoteSequenceBuilder::default()
+                            GridNoteSequenceBuilder::default()
                                 .sequence(vec![vec![
                                     // See comment below in setup_note(), we set start_time_ms there
                                     // because otherwise builder fails because end_time_ms depends on it

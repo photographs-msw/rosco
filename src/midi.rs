@@ -4,7 +4,7 @@ use nodi::midly;
 use nodi::midly::num::{u28, u4, u7};
 
 use crate::note::{Note, NoteBuilder};
-use crate::note_sequence::{NoteSequence, NoteSequenceBuilder};
+use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 use crate::track::{Track, TrackBuilder};
 
 #[allow(dead_code)]
@@ -63,7 +63,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
     //  but only one per pitch. This is of course a bug / limitation.
     let mut track_notes_map: HashMap<NoteKey, Note>= HashMap::new();
     // let mut track_cur_notes_duration_map: HashMap<NoteKey, u28> = HashMap::new();
-    let mut track_sequence_map: HashMap<u4, NoteSequence> = HashMap::new();
+    let mut track_sequence_map: HashMap<u4, GridNoteSequence> = HashMap::new();
 
     let bpm = get_bpm(&midi);
     let bpm_ticks_per_ms: f32 = ticks_per_millisecond(bpm);
@@ -89,7 +89,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
                                         // of the map being used to collect events into sequences
                                         if !track_sequence_map.contains_key(channel) {
                                             track_sequence_map.insert(*channel,
-                                                                      NoteSequenceBuilder::default()
+                                                                      GridNoteSequenceBuilder::default()
                                                                           .build().unwrap());
                                         }
                                         // Update the current note for this channel.
@@ -197,7 +197,7 @@ fn handle_note_off(note_key: NoteKey,
                    delta_ticks: &u28,
                    bpm_ticks_per_ms: f32,
                    track_notes_map: &mut HashMap<NoteKey, Note>,
-                   track_sequence_map: &mut HashMap<u4, NoteSequence>) {
+                   track_sequence_map: &mut HashMap<u4, GridNoteSequence>) {
     // Add the last tick delta to the note duration, copy the note to the output track sequence
     // and remove it from the current notes map
     let mut note = track_notes_map.get_mut(&note_key).unwrap().clone();

@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 
-use crate::note_sequence::NoteSequence;
+use crate::grid_note_sequence::GridNoteSequence;
 
 static DEFAULT_TRACK_NAME: &str = "track_name";
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
@@ -14,7 +14,7 @@ pub(crate) struct Track {
     #[builder(default = "DEFAULT_TRACK_VOLUME")]
     pub(crate) volume: f32,
 
-    pub(crate) sequence: NoteSequence,
+    pub(crate) sequence: GridNoteSequence,
 }
 
 impl Track {}

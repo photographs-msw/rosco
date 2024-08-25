@@ -4,7 +4,7 @@ use crate::track::{Track, TrackBuilder};
 use crate::note;
 use crate::note::Note;
 use crate::oscillator;
-use crate::note_sequence::NoteSequenceBuilder;
+use crate::grid_note_sequence::GridNoteSequenceBuilder;
 
 #[derive(Builder, Debug)]
 pub(crate) struct MultiInstrument {
@@ -24,7 +24,7 @@ impl MultiInstrumentBuilder {
         let num_tracks = self.num_tracks.unwrap();
         self.tracks =
             Some(vec![TrackBuilder::default()
-                          .sequence(NoteSequenceBuilder::default().build().unwrap())
+                          .sequence(GridNoteSequenceBuilder::default().build().unwrap())
                           .volume(1.0 / num_tracks as f32)
                           .build().unwrap(); num_tracks]);
         self

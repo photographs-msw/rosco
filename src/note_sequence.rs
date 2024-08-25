@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
 use crate::constants;
-use crate::float_utils::{assert_float_eq, float_eq, float_geq, float_leq};
+use crate::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::{Note, NoteBuilder};
 
 #[allow(dead_code)]
