@@ -36,7 +36,7 @@ fn main() {
         .track_waveforms(vec![oscillator::get_waveforms(&waveforms_arg)])
         .sample_clock_index(0.0)
         .build().unwrap();
-    println!("Loaded MIDI file");
+    println!("Loaded MIDI file into TrackGrid");
 
     println!("Playing MIDI file");
     let (tx, rx) = std::sync::mpsc::channel();

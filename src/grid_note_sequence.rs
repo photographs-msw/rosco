@@ -11,18 +11,18 @@ pub(crate) struct GridNoteSequence {
 }
 
 impl GridNoteSequence {
-    
+
     pub(crate) fn append_notes(&mut self, notes: &Vec<Note>) {
         if notes.is_empty() {
             panic!("Notes to add must not be empty");
         }
         self.sequence.push(notes.clone());
     }
-    
+
     pub(crate) fn append_note(&mut self, note: Note) {
         self.sequence.push(vec![note]);
     }
-    
+
     pub(crate) fn insert_notes(&mut self, notes: Vec<Note>) {
         if notes.is_empty() {
             panic!("Notes to add must not be empty");
@@ -32,14 +32,14 @@ impl GridNoteSequence {
         }
         self.sequence.insert(self.index, notes);
     }
-    
+
     pub(crate) fn insert_note(&mut self, note: Note) {
         if note.start_time_ms < 0.0 {
             panic!("Note start time must be >= 0.0");
         }
         self.sequence.insert(self.index, vec![note]);
     }
-    
+
     pub(crate)  fn insert_notes_at(&mut self, notes: Vec<Note>, index: usize) {
         if notes.is_empty() {
             panic!("Notes to add must not be empty");
@@ -49,11 +49,11 @@ impl GridNoteSequence {
         }
         self.sequence.insert(index, notes);
     }
-    
+
     pub(crate)  fn insert_note_at(&mut self, note: Note, index: usize) {
         self.sequence.insert(index, vec![note]);
     }
-    
+
     pub(crate) fn get_note(&self) -> Note {
         self.sequence[self.index][0].clone()
     }
@@ -285,7 +285,7 @@ mod test_grid_note_sequence {
         let mut sequence = GridNoteSequenceBuilder::default()
             .index(0)
             .build().unwrap();
-    
+
         sequence.append_notes(&vec![]);
     }
 
@@ -295,7 +295,7 @@ mod test_grid_note_sequence {
         let mut sequence = GridNoteSequenceBuilder::default()
             .index(0)
             .build().unwrap();
-    
+
         sequence.insert_notes(vec![]);
     }
 
@@ -306,11 +306,11 @@ mod test_grid_note_sequence {
             .start_time_ms(-1.0)
             .end_time_ms()
             .build().unwrap();
-    
+
         let mut sequence = GridNoteSequenceBuilder::default()
             .index(0)
             .build().unwrap();
-    
+
         sequence.insert_note(note_1);
     }
 
