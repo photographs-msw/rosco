@@ -54,8 +54,8 @@ struct NoteKey {
     pitch: u7
 }
 
-pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track> {
-    let mut tracks: Vec<Track> = Vec::new();
+pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track<GridNoteSequence>> {
+    let mut tracks: Vec<Track<GridNoteSequence>> = Vec::new();
     let data = std::fs::read(file_name).unwrap();
     let midi = midly::Smf::parse(&data).unwrap();
 

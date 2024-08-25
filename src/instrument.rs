@@ -1,10 +1,10 @@
 use derive_builder::Builder;
 
 use crate::audio_gen;
-use crate::track::{Track, TrackBuilder};
+use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 use crate::note::Note;
 use crate::oscillator;
-use crate::grid_note_sequence::GridNoteSequenceBuilder;
+use crate::track::{Track, TrackBuilder};
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 
@@ -17,7 +17,7 @@ pub(crate) struct Instrument<> {
     volume: f32,
 
     #[builder(public, setter(custom))]
-    track: Track,
+    track: Track<GridNoteSequence>,
 }
 
 impl InstrumentBuilder {

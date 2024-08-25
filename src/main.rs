@@ -38,7 +38,7 @@ fn main() {
         .build().unwrap();
     println!("Loaded MIDI file into TrackGrid");
 
-    println!("Playing MIDI file");
+    println!("Playing MIDI file from TrackGrid");
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         for notes_window in track_grid {

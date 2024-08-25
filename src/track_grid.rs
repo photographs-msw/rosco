@@ -1,12 +1,13 @@
 use derive_builder::Builder;
 
+use crate::grid_note_sequence::GridNoteSequence;
 use crate::note::Note;
 use crate::oscillator;
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct TrackGrid {
-    pub(crate) tracks: Vec<Track>,
+    pub(crate) tracks: Vec<Track<GridNoteSequence>>,
     pub(crate) track_waveforms: Vec<Vec<oscillator::Waveform>>,
     pub(crate) sample_clock_index: f32,
 }

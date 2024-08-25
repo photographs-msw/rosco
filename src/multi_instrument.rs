@@ -4,7 +4,7 @@ use crate::track::{Track, TrackBuilder};
 use crate::note;
 use crate::note::Note;
 use crate::oscillator;
-use crate::grid_note_sequence::GridNoteSequenceBuilder;
+use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 
 #[derive(Builder, Debug)]
 pub(crate) struct MultiInstrument {
@@ -15,7 +15,7 @@ pub(crate) struct MultiInstrument {
 
     // user can call tracks() to build with empty tracks or add_tracks() to add tracks on build
     #[builder(public, setter(custom))]
-    pub(crate) tracks: Vec<Track>,
+    pub(crate) tracks: Vec<Track<GridNoteSequence>>,
 }
 
 impl MultiInstrumentBuilder {
@@ -32,7 +32,7 @@ impl MultiInstrumentBuilder {
 
     // overriding setting in builder allowing the caller to add tracks on build
     #[allow(dead_code)]
-    pub (crate) fn add_tracks(&mut self, tracks: Vec<Track>) -> &mut Self {
+    pub (crate) fn add_tracks(&mut self, tracks: Vec<Track<GridNoteSequence>>) -> &mut Self {
         self.tracks = Some(tracks);
         self
     }
