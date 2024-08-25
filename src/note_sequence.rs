@@ -133,7 +133,7 @@ impl NoteSequence {
         let mut window_notes = Vec::new();
 
         // TODO GET THIS WORKING, BUG NOW
-        // self.remove_completed_frontier_indexes(notes_time_ms);
+        self.remove_completed_frontier_indexes(notes_time_ms);
 
         let frontier_min_start_time_ms = self.get_frontier_min_start_time();
         // If the current note time is earlier than that, emit a rest note and increment
@@ -223,19 +223,19 @@ impl NoteSequence {
 
     fn remove_completed_frontier_indexes(&mut self, note_time_ms: f32) {
         let mut frontier_indexes_to_remove = Vec::new();
-        // Loop oever the notes in the position, if any have an end time later than current
+        // Loop over the notes in the position, if any have an end time later than current
         // note time, then the note hasn't been completed yet so the index is still active.
         // OTOH if all notes at an index have end times <= note_time_ms, that index is done
         for i in 0..self.frontier_indexes.len() {
-            for note in self.sequence[self.frontier_indexes[i]].iter() {
-                if note.end_time_ms > note_time_ms {
-                    continue;
-                }
+            if self.sequence[self.frontier_indexes[i]].iter().all(
+                    |note|
+                    NoteSequence::float_leq(note.end_time_ms, note_time_ms)) {
+                frontier_indexes_to_remove.push(i);
             }
-            frontier_indexes_to_remove.push(self.frontier_indexes[i]);
         }
-        self.frontier_indexes
-            .drain(frontier_indexes_to_remove[0]..frontier_indexes_to_remove[frontier_indexes_to_remove.len() - 1]);
+        frontier_indexes_to_remove.iter().for_each(|index| {
+            self.frontier_indexes.remove(*index);
+        });
     }
 
     fn get_frontier_min_start_time(&self) -> f32 {
@@ -375,8 +375,9 @@ impl NoteSequence {
         self.sequence[index][0].clone()
     }
 
-     // Only makes sense with an index and as an internal method
-     // Would be public in a grid- rather than time-based sequencer
+    // Only makes sense with an index and as an internal method
+    // Would be public in a grid- rather than time-based sequencer
+    // #VisibleForTesting
     pub(crate) fn get_notes_at(&self, index: usize) -> Vec<Note> {
         self.sequence[index].clone()
     }
@@ -684,12 +685,15 @@ mod test_note_sequence {
         assert_eq!(sequence.sequence[3].len(), 1);
         assert_eq!(sequence.sequence[3][0], note_5);
 
+        // 1 start 0 - 500
         let mut notes_window = sequence.get_next_notes_window(0.0);
         assert_eq!(notes_window.len(), 1);
         assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
         assert_float_eq!(notes_window[0].start_time_ms, 0.0, rmax <= constants::FLOAT_EPSILON);
         assert_float_eq!(notes_window[0].end_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
 
+        // 1 500 - 1000
+        // 2 start 500 - 1000
         notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
         assert_eq!(notes_window.len(), 2);
         assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
@@ -699,6 +703,9 @@ mod test_note_sequence {
         assert_float_eq!(notes_window[1].start_time_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
         assert_float_eq!(notes_window[1].end_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
 
+        // 2 1000 - 1500
+        // 3 start 1000 - 1500
+        // 4 start 1000 - 1500
         notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
         assert_eq!(notes_window.len(), 3);
         assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
@@ -711,13 +718,137 @@ mod test_note_sequence {
         assert_float_eq!(notes_window[2].start_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
         assert_float_eq!(notes_window[2].end_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
 
-        // TODO REMOVE COMPLETED FRONTIER INDEXES
-
-        // TODO REST AND THEN SINGLE NOTE
-        // notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
-        // assert_eq!(notes_window.len(), 1);
+        // 3 1500 - 2000
+        // 4 1500 - 2000
+        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        assert_eq!(notes_window.len(), 2);
+        assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].start_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].end_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[1].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[1].start_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[1].end_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
+        
+        // Rest 2000 - 2500
+        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        assert_eq!(notes_window.len(), 1);
+        assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].start_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].end_time_ms, 2500.0, rmax <= constants::FLOAT_EPSILON);
+        // 0 volume because it is a rest note
+        assert_float_eq!(notes_window[0].volume, 0.0, rmax <= constants::FLOAT_EPSILON);
+        
+        // 5 start 2500 - 3500
+        notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
+        assert_eq!(notes_window.len(), 1);
+        assert_float_eq!(notes_window[0].duration_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].start_time_ms, 2500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq!(notes_window[0].end_time_ms, 3500.0, rmax <= constants::FLOAT_EPSILON);
     }
 
+    #[test]
+    fn test_insert() {
+        let note_1 = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_2 = setup_note()
+            .start_time_ms(500.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_3 = setup_note()
+            .start_time_ms(1000.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_4 = setup_note()
+            .start_time_ms(1000.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_5 = setup_note()
+            .start_time_ms(2500.0)
+            .end_time_ms()
+            .build().unwrap();
+        let mut sequence = NoteSequenceBuilder::default().build().unwrap();
+        
+        sequence.insert_note(note_5.clone());
+        let mut notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_5);
+
+        sequence.insert_note(note_2.clone());
+        notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_2);
+        notes = sequence.get_notes_at(1);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_5);
+
+        sequence.insert_note(note_3.clone());
+        sequence.insert_note(note_4.clone());
+        notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_2);
+        notes = sequence.get_notes_at(1);
+        assert_eq!(notes.len(), 2);
+        assert_eq!(notes[0], note_3);
+        assert_eq!(notes[0], note_4);
+        
+        sequence.insert_note(note_1.clone());
+        notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_1);
+    }
+
+    #[test]
+    fn test_insert_multi_position() {
+        let note_1 = setup_note()
+            .start_time_ms(0.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_2 = setup_note()
+            .start_time_ms(500.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_3 = setup_note()
+            .start_time_ms(1000.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_4 = setup_note()
+            .start_time_ms(1000.0)
+            .end_time_ms()
+            .build().unwrap();
+        let note_5 = setup_note()
+            .start_time_ms(2500.0)
+            .end_time_ms()
+            .build().unwrap();
+        let mut sequence = NoteSequenceBuilder::default().build().unwrap();
+
+        sequence.insert_notes_multi_position(vec![note_5.clone(), note_2.clone(),
+                                                  note_3.clone(), note_4.clone(), note_1.clone()]);
+        assert_eq!(sequence.sequence.len(), 4);
+        assert_eq!(sequence.sequence[0].len(), 1);
+        assert_eq!(sequence.sequence[1].len(), 1);
+        assert_eq!(sequence.sequence[2].len(), 2);
+        assert_eq!(sequence.sequence[3].len(), 1);
+
+        let mut notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_1);
+
+        notes = sequence.get_notes_at(1);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_2);
+
+        notes = sequence.get_notes_at(2);
+        assert_eq!(notes.len(), 2);
+        assert_eq!(notes[0], note_3);
+        assert_eq!(notes[1], note_4);
+
+        notes = sequence.get_notes_at(3);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_5);
+    }
+    
     fn setup_note() -> NoteBuilder {
         NoteBuilder::default()
             .frequency(440.0)
