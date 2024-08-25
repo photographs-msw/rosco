@@ -8,7 +8,7 @@ use crate::note::{Note, NoteBuilder};
 static INIT_START_TIME: f32 = 0.0;
 
 #[derive(Builder, Clone, Debug)]
-pub(crate) struct NoteSequence {
+pub(crate) struct TimeNoteSequence {
     #[builder(default = "Vec::new()")]
     sequence: Vec<Vec<Note>>,
 
@@ -26,7 +26,7 @@ pub(crate) struct NoteSequence {
 }
 
 #[allow(dead_code)]
-impl NoteSequence {
+impl TimeNoteSequence {
     
     // Manage Notes
     pub(crate) fn append_notes(&mut self, notes: &Vec<Note>) {
@@ -441,7 +441,7 @@ impl NoteSequence {
 mod test_time_note_sequence {
     use crate::float_utils::assert_float_eq;
     use crate::note::NoteBuilder;
-    use crate::note_sequence::NoteSequenceBuilder;
+    use crate::time_note_sequence::TimeNoteSequenceBuilder;
 
     #[test]
     fn test_get_next_notes_window() {
@@ -465,7 +465,7 @@ mod test_time_note_sequence {
             .start_time_ms(2500.0)
             .end_time_ms()
             .build().unwrap();
-        let mut sequence = NoteSequenceBuilder::default().build().unwrap();
+        let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
 
         sequence.append_note(note_1.clone());
         sequence.append_note(note_2.clone());
@@ -568,7 +568,7 @@ mod test_time_note_sequence {
             .start_time_ms(2500.0)
             .end_time_ms()
             .build().unwrap();
-        let mut sequence = NoteSequenceBuilder::default().build().unwrap();
+        let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
         
         sequence.insert_note(note_5.clone());
         let mut notes = sequence.get_notes_at(0);
@@ -621,7 +621,7 @@ mod test_time_note_sequence {
             .start_time_ms(2500.0)
             .end_time_ms()
             .build().unwrap();
-        let mut sequence = NoteSequenceBuilder::default().build().unwrap();
+        let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
 
         sequence.insert_notes_multi_position(vec![note_5.clone(), note_2.clone(),
                                                   note_3.clone(), note_4.clone(), note_1.clone()]);

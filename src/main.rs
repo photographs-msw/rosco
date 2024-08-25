@@ -6,7 +6,7 @@ mod instrument;
 mod multi_instrument;
 mod note;
 mod oscillator;
-mod note_sequence;
+mod time_note_sequence;
 mod midi;
 mod track_grid;
 mod constants;
