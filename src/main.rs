@@ -10,6 +10,7 @@ mod note_sequence;
 mod midi;
 mod track_grid;
 mod constants;
+mod float_utils;
 
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};

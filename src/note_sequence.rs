@@ -1,7 +1,7 @@
 use derive_builder::Builder;
-use float_eq::{float_eq, float_ne};
 
 use crate::constants;
+use crate::float_utils::{assert_float_eq, float_eq, float_geq, float_leq};
 use crate::note::{Note, NoteBuilder};
 
 #[allow(dead_code)]
@@ -60,8 +60,7 @@ impl NoteSequence {
         // semantics for append, which means "add to the end"
         let max_frontier_index = self.frontier_indexes[self.frontier_indexes.len() - 1];
         let min_frontier_start_time_ms = self.get_frontier_min_start_time();
-        if float_eq!(min_frontier_start_time_ms, notes[0].start_time_ms,
-                     rmax <= constants::FLOAT_EPSILON) {
+        if float_eq(min_frontier_start_time_ms, notes[0].start_time_ms) {
             self.sequence[max_frontier_index].append(&mut notes.clone());
         } else {
             if min_frontier_start_time_ms > notes[0].start_time_ms {
@@ -87,8 +86,7 @@ impl NoteSequence {
         while insert_position < self.sequence.len() {
             let min_start_time_ms = self.get_min_start_time(insert_position);
 
-            if float_eq!(min_start_time_ms, notes_start_time_ms,
-                         rmax <= constants::FLOAT_EPSILON) {
+            if float_eq(min_start_time_ms, notes_start_time_ms) {
                 self.sequence[insert_position].append(&mut notes.clone());
                 inserted = true;
                 break;
@@ -158,12 +156,11 @@ impl NoteSequence {
         // If the current note time is the same as the frontier min start time, emit all notes
         // in the frontier with the same start time and increment the current notes time to the
         // earliest end time in the frontier. This is the next window emit, note to end time.
-        if NoteSequence::float_eq(notes_time_ms, frontier_min_start_time_ms) {
+        if float_eq(notes_time_ms, frontier_min_start_time_ms) {
             let notes: Vec<Note> = self.get_frontier_notes()
                 .iter()
                 .flatten()
-                .filter(|note| float_eq!(note.start_time_ms, notes_time_ms,
-                    rmax <= constants::FLOAT_EPSILON))
+                .filter(|note| float_eq(note.start_time_ms, notes_time_ms))
                 .map(|note| note_ref_into_note(note, notes_time_ms, end_time_ms))
                 .collect();
             window_notes.append(&mut notes.clone());
@@ -177,8 +174,8 @@ impl NoteSequence {
                 .iter()
                 .flatten()
                 .filter(|note|
-                        NoteSequence::float_leq(note.start_time_ms, notes_time_ms) &&
-                            NoteSequence::float_geq(note.end_time_ms, notes_time_ms))
+                        float_leq(note.start_time_ms, notes_time_ms) &&
+                            float_geq(note.end_time_ms, notes_time_ms))
                 .map(|note| note_ref_into_note(note, notes_time_ms, end_time_ms))
                 .filter(|note| note.duration_ms > 0.0)
                 .collect();
@@ -190,29 +187,6 @@ impl NoteSequence {
         }
 
         window_notes
-    }
-
-    // TODO UTILS
-    fn float_leq(a: f32, b: f32) -> bool {
-        if a < b || float_eq!(a, b, rmax <= constants::FLOAT_EPSILON) {
-            return true;
-        }
-        false
-    }
-
-    fn float_geq(a: f32, b: f32) -> bool {
-        if a > b || float_eq!(a, b, rmax <= constants::FLOAT_EPSILON) {
-            return true;
-        }
-        false
-    }
-
-    fn float_eq(a: f32, b: f32) -> bool {
-        float_eq!(a, b, rmax <= constants::FLOAT_EPSILON)
-    }
-
-    fn float_neq(a: f32, b: f32) -> bool {
-        float_ne!(a, b, rmax <= constants::FLOAT_EPSILON)
     }
 
     fn get_frontier_notes(&self) ->  &[Vec<Note>] {
@@ -229,7 +203,7 @@ impl NoteSequence {
         for i in 0..self.frontier_indexes.len() {
             if self.sequence[self.frontier_indexes[i]].iter().all(
                     |note|
-                    NoteSequence::float_leq(note.end_time_ms, note_time_ms)) {
+                    float_leq(note.end_time_ms, note_time_ms)) {
                 frontier_indexes_to_remove.push(i);
             }
         }
@@ -266,8 +240,7 @@ impl NoteSequence {
         // First pass, is what is the earliest end time in the future, after note_time_ms
         // for a note that starts on or before note_time_ms and ends after it
         for note in self.get_frontier_notes().iter().flatten() {
-            if (note.start_time_ms < note_time_ms ||
-                float_eq!(note.start_time_ms, note_time_ms, rmax <= constants::FLOAT_EPSILON)) &&
+            if (note.start_time_ms < note_time_ms || float_eq(note.start_time_ms, note_time_ms)) &&
                     note.end_time_ms > note_time_ms &&
                     note.end_time_ms < end_time_ms {
                 end_time_ms = note.end_time_ms;
@@ -324,7 +297,7 @@ impl NoteSequence {
 //         let notes_start_time_ms = note.start_time_ms;
 //         let mut inserted = false;
 //         while insert_position < self.sequence.len() {
-//             if float_eq!(self.notes_start_time(insert_position), notes_start_time_ms,
+//             if float_eq(self.notes_start_time(insert_position), notes_start_time_ms,
 //                          rmax <= constants::FLOAT_EQ_TOLERANCE) {
 //                 self.sequence[insert_position].push(note.clone());
 //                 inserted = true;
@@ -480,8 +453,7 @@ impl NoteSequence {
 
 #[cfg(test)]
 mod test_note_sequence {
-    use float_eq::assert_float_eq;
-    use crate::constants;
+    use crate::float_utils::assert_float_eq;
     use crate::note::NoteBuilder;
     use crate::note_sequence::NoteSequenceBuilder;
 
@@ -688,62 +660,62 @@ mod test_note_sequence {
         // 1 start 0 - 500
         let mut notes_window = sequence.get_next_notes_window(0.0);
         assert_eq!(notes_window.len(), 1);
-        assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].start_time_ms, 0.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].end_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
+        assert_float_eq(notes_window[0].start_time_ms, 0.0);
+        assert_float_eq(notes_window[0].end_time_ms, 1000.0);
 
         // 1 500 - 1000
         // 2 start 500 - 1000
         notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
         assert_eq!(notes_window.len(), 2);
-        assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].start_time_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].end_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[1].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[1].start_time_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[1].end_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
+        assert_float_eq(notes_window[0].start_time_ms, 500.0);
+        assert_float_eq(notes_window[0].end_time_ms, 1000.0);
+        assert_float_eq(notes_window[1].duration_ms, 500.0);
+        assert_float_eq(notes_window[1].start_time_ms, 500.0);
+        assert_float_eq(notes_window[1].end_time_ms, 1500.0);
 
         // 2 1000 - 1500
         // 3 start 1000 - 1500
         // 4 start 1000 - 1500
         notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
         assert_eq!(notes_window.len(), 3);
-        assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].start_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].end_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[1].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[1].start_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[1].end_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[2].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[2].start_time_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[2].end_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
+        assert_float_eq(notes_window[0].start_time_ms, 1000.0);
+        assert_float_eq(notes_window[0].end_time_ms, 1500.0);
+        assert_float_eq(notes_window[1].duration_ms, 500.0);
+        assert_float_eq(notes_window[1].start_time_ms, 1000.0);
+        assert_float_eq(notes_window[1].end_time_ms, 2000.0);
+        assert_float_eq(notes_window[2].duration_ms, 500.0);
+        assert_float_eq(notes_window[2].start_time_ms, 1000.0);
+        assert_float_eq(notes_window[2].end_time_ms, 2000.0);
 
         // 3 1500 - 2000
         // 4 1500 - 2000
         notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
         assert_eq!(notes_window.len(), 2);
-        assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].start_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].end_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[1].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[1].start_time_ms, 1500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[1].end_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
+        assert_float_eq(notes_window[0].start_time_ms, 1500.0);
+        assert_float_eq(notes_window[0].end_time_ms, 2000.0);
+        assert_float_eq(notes_window[1].duration_ms, 500.0);
+        assert_float_eq(notes_window[1].start_time_ms, 1500.0);
+        assert_float_eq(notes_window[1].end_time_ms, 2000.0);
         
         // Rest 2000 - 2500
         notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
         assert_eq!(notes_window.len(), 1);
-        assert_float_eq!(notes_window[0].duration_ms, 500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].start_time_ms, 2000.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].end_time_ms, 2500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
+        assert_float_eq(notes_window[0].start_time_ms, 2000.0);
+        assert_float_eq(notes_window[0].end_time_ms, 2500.0);
         // 0 volume because it is a rest note
-        assert_float_eq!(notes_window[0].volume, 0.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq(notes_window[0].volume, 0.0);
         
         // 5 start 2500 - 3500
         notes_window = sequence.get_next_notes_window(sequence.next_notes_time_ms);
         assert_eq!(notes_window.len(), 1);
-        assert_float_eq!(notes_window[0].duration_ms, 1000.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].start_time_ms, 2500.0, rmax <= constants::FLOAT_EPSILON);
-        assert_float_eq!(notes_window[0].end_time_ms, 3500.0, rmax <= constants::FLOAT_EPSILON);
+        assert_float_eq(notes_window[0].duration_ms, 1000.0);
+        assert_float_eq(notes_window[0].start_time_ms, 2500.0);
+        assert_float_eq(notes_window[0].end_time_ms, 3500.0);
     }
 
     #[test]
