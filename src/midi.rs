@@ -4,7 +4,7 @@ use nodi::midly;
 use nodi::midly::num::{u28, u4, u7};
 
 use crate::note::{Note, NoteBuilder};
-use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
+use crate::note_sequence_trait::{AppendNote, BuilderWrapper};
 use crate::track::{Track, TrackBuilder};
 
 #[allow(dead_code)]
@@ -54,8 +54,13 @@ struct NoteKey {
     pitch: u7
 }
 
-pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track<GridNoteSequence>> {
-    let mut tracks: Vec<Track<GridNoteSequence>> = Vec::new();
+pub(crate) fn midi_file_to_tracks<
+    SequenceType: AppendNote + Clone,
+    SequenceBuilderType: BuilderWrapper<SequenceType>
+>
+(file_name: &str) -> Vec<Track<SequenceType>> {
+ 
+    let mut tracks: Vec<Track<SequenceType>> = Vec::new();
     let data = std::fs::read(file_name).unwrap();
     let midi = midly::Smf::parse(&data).unwrap();
 
@@ -63,7 +68,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track<GridNoteSequence
     //  but only one per pitch. This is of course a bug / limitation.
     let mut track_notes_map: HashMap<NoteKey, Note>= HashMap::new();
     // let mut track_cur_notes_duration_map: HashMap<NoteKey, u28> = HashMap::new();
-    let mut track_sequence_map: HashMap<u4, GridNoteSequence> = HashMap::new();
+    let mut track_sequence_map: HashMap<u4, SequenceType> = HashMap::new();
 
     let bpm = get_bpm(&midi);
     let bpm_ticks_per_ms: f32 = ticks_per_millisecond(bpm);
@@ -89,8 +94,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track<GridNoteSequence
                                         // of the map being used to collect events into sequences
                                         if !track_sequence_map.contains_key(channel) {
                                             track_sequence_map.insert(*channel,
-                                                                      GridNoteSequenceBuilder::default()
-                                                                          .build().unwrap());
+                                                                      SequenceBuilderType::new());
                                         }
                                         // Update the current note for this channel.
                                         // - Capture the velocity from the NoteOn event, should
@@ -151,7 +155,7 @@ pub(crate) fn midi_file_to_tracks(file_name: &str) -> Vec<Track<GridNoteSequence
     }
 
     for (midi_channel, sequence) in track_sequence_map.iter() {
-        let track = TrackBuilder::default()
+        let track= TrackBuilder::default()
             .name(format!("{}", midi_channel))
             .sequence(sequence.clone())
             .volume(1.0 / track_sequence_map.len() as f32)
@@ -193,11 +197,11 @@ fn ticks_per_millisecond(bpm: u8) -> f32 {
     ((bpm as f32 / SECS_PER_MIN) * MIDI_TICKS_PER_QUARTER_NOTE) / 1000.0
 }
 
-fn handle_note_off(note_key: NoteKey,
-                   delta_ticks: &u28,
-                   bpm_ticks_per_ms: f32,
-                   track_notes_map: &mut HashMap<NoteKey, Note>,
-                   track_sequence_map: &mut HashMap<u4, GridNoteSequence>) {
+fn handle_note_off<SequenceType: AppendNote>(note_key: NoteKey,
+                                 delta_ticks: &u28,
+                                 bpm_ticks_per_ms: f32,
+                                 track_notes_map: &mut HashMap<NoteKey, Note>,
+                                 track_sequence_map: &mut HashMap<u4, SequenceType>) {
     // Add the last tick delta to the note duration, copy the note to the output track sequence
     // and remove it from the current notes map
     let mut note = track_notes_map.get_mut(&note_key).unwrap().clone();
@@ -207,5 +211,5 @@ fn handle_note_off(note_key: NoteKey,
     track_notes_map.remove(&note_key);
 
     // TEMP DEBUG
-    // println!("{:#?}\nadded to track {}", note, note_key.channel.as_int());
+    // println!("{:#?}\n added to track {}", note, note_key.channel.as_int());
 }

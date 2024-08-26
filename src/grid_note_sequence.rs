@@ -1,5 +1,7 @@
 use derive_builder::Builder;
+
 use crate::note::Note;
+use crate::note_sequence_trait::{AppendNote, BuilderWrapper};
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct GridNoteSequence {
@@ -10,6 +12,18 @@ pub(crate) struct GridNoteSequence {
     index: usize,
 }
 
+impl AppendNote for GridNoteSequence {
+    fn append_note(&mut self, note: Note) {
+        self.sequence.push(vec![note]);
+    }
+}
+
+impl BuilderWrapper<GridNoteSequence> for GridNoteSequenceBuilder {
+    fn new () -> GridNoteSequence {
+        GridNoteSequenceBuilder::default().build().unwrap()
+    }
+}
+
 impl GridNoteSequence {
 
     pub(crate) fn append_notes(&mut self, notes: &Vec<Note>) {
@@ -17,10 +31,6 @@ impl GridNoteSequence {
             panic!("Notes to add must not be empty");
         }
         self.sequence.push(notes.clone());
-    }
-
-    pub(crate) fn append_note(&mut self, note: Note) {
-        self.sequence.push(vec![note]);
     }
 
     pub(crate) fn insert_notes(&mut self, notes: Vec<Note>) {

@@ -3,6 +3,7 @@ use crate::audio_gen;
 use crate::track::{Track, TrackBuilder};
 use crate::note;
 use crate::note::Note;
+use crate::note_sequence_trait::AppendNote;
 use crate::oscillator;
 use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 
