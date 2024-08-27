@@ -1,19 +1,19 @@
 use derive_builder::Builder;
 
-use crate::note::{Note, NoteBuilder};
-use crate::note_sequence_trait::NextNotes;
+use crate::note::Note;
+use crate::note_sequence_trait::{CopySequenceNotes, NextNotes};
 use crate::oscillator;
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
-pub(crate) struct TrackGrid<SequenceType: NextNotes + Copy> {
+pub(crate) struct TrackGrid<SequenceType: NextNotes + CopySequenceNotes> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
     pub(crate) track_waveforms: Vec<Vec<oscillator::Waveform>>,
-    
+
     // TODO THIS IS EITHER PAREMETERIZED OR WE HAVE BOTH TIME AND INDEX AND IGNORE ONE
     #[builder(default = "0.0")]
     pub(crate) sample_clock_index: f32,
-    
+
     #[builder(default = "0")]
     pub(crate) index: usize,
 }
@@ -25,24 +25,26 @@ pub(crate) struct NotesData {
     pub(crate) notes_waveforms: Vec<Vec<oscillator::Waveform>>,
 }
 
-impl<SequenceType: NextNotes + Copy> TrackGrid<SequenceType> {
-    
+impl<SequenceType: NextNotes + CopySequenceNotes> TrackGrid<SequenceType> {
+
     pub(crate) fn next_notes(&mut self) -> NotesData {
         let mut notes = Vec::new();
         let mut notes_waveforms = Vec::new();
-        
+
         for (i, track) in self.tracks.iter_mut().enumerate() {
-            let mut sequence = track.sequence;
-            let new_notes = sequence.next_notes();
-            new_notes.iter().for_each(|note| {
-                let note_copy = NoteBuilder::default()
-                    .start_time_ms(note.start_time_ms)
-                    .duration_ms(note.duration_ms)
-                    .frequency(note.frequency)
-                    .volume(note.volume)
-                    .build().unwrap();
-                notes.push(note_copy)
-            });
+            let mut sequence_notes = track.sequence.copy_sequence_notes();
+            let mut new_notes = Vec::new();
+            for notes in sequence_notes.iter_mut() {
+                notes.iter().for_each(|note| {
+                    // let note_copy = NoteBuilder::default()
+                    //     .start_time_ms(note.start_time_ms)
+                    //     .duration_ms(note.duration_ms)
+                    //     .frequency(note.frequency)
+                    //     .volume(note.volume)
+                    //     .build().unwrap();
+                    new_notes.push(note)
+                });
+            }
             for _ in 0..new_notes.len() {
                 notes_waveforms.push(self.track_waveforms[i].clone());
             }
@@ -55,7 +57,7 @@ impl<SequenceType: NextNotes + Copy> TrackGrid<SequenceType> {
     }
 }
 
-impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
+impl<SequenceType: NextNotes + CopySequenceNotes> Iterator for TrackGrid<SequenceType> {
     type Item = NotesData;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -63,7 +65,7 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
         if notes_window.notes.is_empty() {
             return None;
         }
-        
+
         Some(notes_window)
     }
 }
@@ -81,24 +83,24 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
 //     pub(crate) start_time_ms: f32,
 //     pub(crate) end_time_ms: f32,
 // }
-// 
+//
 // #[allow(dead_code)]
 // impl TrackGrid {
 //     pub(crate) fn get_sample_clock_index(&self) -> f32 {
 //         self.sample_clock_index % oscillator::SAMPLE_RATE
 //     }
-// 
+//
 //     pub(crate) fn get_current_time_ms(&self) -> f32 {
 //         (self.sample_clock_index / oscillator::SAMPLE_RATE) * 1000.0
 //     }
-// 
+//
 //     pub(crate) fn advance_sample_clock_index_by_ms(&mut self, ms: f32) {
 //         self.sample_clock_index += ms * oscillator::SAMPLE_RATE / 1000.0;
 //     }
-// 
+//
 //     pub(crate) fn next_notes_window(&mut self) -> NotesWindow {
 //         let start_time_ms = self.get_current_time_ms();
-// 
+//
 //         let mut end_time_ms = f32::INFINITY;
 //         let mut window_notes_data = Vec::new();
 //         let mut window_notes_waveforms = Vec::new();
@@ -112,9 +114,9 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
 //                 }
 //             }
 //         }
-// 
+//
 //         self.advance_sample_clock_index_by_ms(end_time_ms - start_time_ms);
-// 
+//
 //         NotesWindow {
 //             notes_data: NotesData {
 //                 notes: window_notes_data,
@@ -129,9 +131,9 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
 // Custom iterator for TrackGrid over the note_windows in the grid
 // impl<'a, SequenceType: Iterator> Iterator for TrackGrid<SequenceType> {
 //     type Item = NotesData;
-// 
+//
 //     fn next(&mut self) -> Option<Self::Item> {
-//         let mut next_notes = Vec::new(); 
+//         let mut next_notes = Vec::new();
 //         for track in &mut self.tracks {
 //             for notes in track.sequence {
 //                 let x: Vec<Note> = notes.into();
@@ -142,7 +144,7 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
 //         //     .map(|track| track.sequence.)
 //         //     .flatten()
 //         //     .collect();
-//             
+//
 //         if next_notes.is_empty() {
 //             return None;
 //         }
@@ -157,7 +159,7 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
 
 // impl<'a, SequenceType: Iterator<Item = Vec<Note>>> Iterator for TrackGrid<SequenceType> {
 //     type Item = NotesData;
-// 
+//
 //     fn next(&mut self) -> Option<Self::Item> {
 //         let mut next_notes = Vec::new();
 //         for track in &self.tracks {
@@ -167,7 +169,7 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
 //                 next_notes.append(&mut x);
 //             }
 //         }
-// 
+//
 //         if next_notes.is_empty() {
 //             return None;
 //         }
@@ -184,12 +186,12 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
 //     pub(crate) fn is_empty(&self) -> bool {
 //         self.notes_data.notes.is_empty()
 //     }
-// 
+//
 //     pub(crate) fn window_duration_ms(&self) -> f32 {
 //         self.end_time_ms - self.start_time_ms
 //     }
 // }
-// 
+//
 // #[cfg(test)]
 // mod test_sequence_grid {
 //     use crate::track::TrackBuilder;
@@ -197,7 +199,7 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
 //     use crate::note::NoteBuilder;
 //     use crate::oscillator;
 //     use crate::grid_note_sequence::GridNoteSequenceBuilder;
-// 
+//
 //     #[test]
 //     fn test_active_notes() {
 //         // Create a sequence grid with a sequence with two notes, one on and one off
@@ -226,18 +228,18 @@ impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
 //             .track_waveforms(vec![vec![oscillator::Waveform::Sine]])
 //             .sample_clock_index(0.0)
 //             .build().unwrap();
-// 
+//
 //         // expect one note to be active when sample_clock_index is 0.0
 //         let note_window = track_grid.next_notes_window();
 //         assert_eq!(note_window.notes_data.notes.len(), 1);
 //         assert_eq!(note_window.start_time_ms, 0.0);
-// 
+//
 //         // Now advance the sample_clock_index past both notes and expect no active notes
 //         track_grid.sample_clock_index = 2.0 * oscillator::SAMPLE_RATE;
 //         let notes_window = track_grid.next_notes_window();
 //         assert_eq!(notes_window.notes_data.notes.len(), 0);
 //     }
-// 
+//
 //     fn setup_note() -> NoteBuilder {
 //         NoteBuilder::default()
 //             // Unfortunately because end_time_ms() custom builder unwraps values from

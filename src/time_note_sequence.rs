@@ -3,7 +3,7 @@ use derive_builder::Builder;
 use crate::constants;
 use crate::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::{Note, NoteBuilder};
-use crate::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
+use crate::note_sequence_trait::{AppendNote, BuilderWrapper, CopySequenceNotes, NextNotes};
 
 #[allow(dead_code)]
 static INIT_START_TIME: f32 = 0.0;
@@ -34,6 +34,12 @@ impl NextNotes for TimeNoteSequence {
     }
 }
 
+impl CopySequenceNotes for TimeNoteSequence {
+    fn copy_sequence_notes(&mut self) -> Vec<Vec<Note>> {
+        self.sequence.clone()
+    }
+}
+
 impl BuilderWrapper<TimeNoteSequence> for TimeNoteSequenceBuilder {
     fn new () -> TimeNoteSequence {
         TimeNoteSequenceBuilder::default().build().unwrap()
@@ -42,11 +48,11 @@ impl BuilderWrapper<TimeNoteSequence> for TimeNoteSequenceBuilder {
 
 #[allow(dead_code)]
 impl TimeNoteSequence {
-   
+
     pub(crate) fn build_new() -> TimeNoteSequenceBuilder {
         TimeNoteSequenceBuilder::default()
     }
-    
+
     // Manage Notes
     pub(crate) fn append_notes(&mut self, notes: &Vec<Note>) {
         self.validate_notes_to_add(&notes);
@@ -192,7 +198,7 @@ impl TimeNoteSequence {
 
         window_notes
     }
-    
+
     fn get_frontier_notes(&self) ->  &[Vec<Note>] {
         let min_frontier_index = self.frontier_indexes[0];
         let max_frontier_index = self.frontier_indexes[self.frontier_indexes.len() - 1];
@@ -290,7 +296,7 @@ impl<'a> Iterator for TimeNoteSequence {
     }
 }
 
- 
+
 #[cfg(test)]
 mod test_time_note_sequence {
     use crate::float_utils::assert_float_eq;

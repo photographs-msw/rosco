@@ -5,9 +5,13 @@ pub(crate) trait AppendNote {
 }
 
 pub(crate) trait BuilderWrapper<SequenceType> {
-    fn new() -> SequenceType; 
+    fn new() -> SequenceType;
 }
 
 pub(crate) trait NextNotes {
     fn next_notes(&mut self) -> Vec<Note>;
+}
+
+pub(crate) trait CopySequenceNotes {
+    fn copy_sequence_notes(&mut self) -> Vec<Vec<Note>>;
 }
