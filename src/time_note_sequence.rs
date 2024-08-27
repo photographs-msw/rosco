@@ -29,7 +29,7 @@ impl AppendNote for TimeNoteSequence {
 }
 
 impl NextNotes for TimeNoteSequence {
-    fn next_notes(&self) -> Vec<Note> {
+    fn next_notes(&mut self) -> Vec<Note> {
         self.get_next_notes_window()
     }
 }

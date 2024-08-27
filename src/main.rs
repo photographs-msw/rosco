@@ -18,7 +18,7 @@ use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 use crate::instrument::InstrumentBuilder;
 use crate::multi_instrument::{MultiInstrumentBuilder};
 use crate::note::{Note, NoteBuilder};
-use crate::track_grid::{TrackGrid, TrackGridBuilder};
+use crate::track_grid::TrackGridBuilder;
 
 fn main() {
     println!("Loading args");

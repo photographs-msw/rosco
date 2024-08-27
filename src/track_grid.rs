@@ -1,12 +1,12 @@
 use derive_builder::Builder;
 
-use crate::note::Note;
+use crate::note::{Note, NoteBuilder};
 use crate::note_sequence_trait::NextNotes;
 use crate::oscillator;
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
-pub(crate) struct TrackGrid<SequenceType: NextNotes> {
+pub(crate) struct TrackGrid<SequenceType: NextNotes + Copy> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
     pub(crate) track_waveforms: Vec<Vec<oscillator::Waveform>>,
     
@@ -25,15 +25,24 @@ pub(crate) struct NotesData {
     pub(crate) notes_waveforms: Vec<Vec<oscillator::Waveform>>,
 }
 
-impl<SequenceType: NextNotes> TrackGrid<SequenceType> {
+impl<SequenceType: NextNotes + Copy> TrackGrid<SequenceType> {
     
-    pub(crate) fn next_notes(&self) -> NotesData {
+    pub(crate) fn next_notes(&mut self) -> NotesData {
         let mut notes = Vec::new();
         let mut notes_waveforms = Vec::new();
         
-        for (i, track) in self.tracks.iter().enumerate() {
-            let mut new_notes = track.sequence.next_notes();
-            notes.append(&mut new_notes);
+        for (i, track) in self.tracks.iter_mut().enumerate() {
+            let mut sequence = track.sequence;
+            let new_notes = sequence.next_notes();
+            new_notes.iter().for_each(|note| {
+                let note_copy = NoteBuilder::default()
+                    .start_time_ms(note.start_time_ms)
+                    .duration_ms(note.duration_ms)
+                    .frequency(note.frequency)
+                    .volume(note.volume)
+                    .build().unwrap();
+                notes.push(note_copy)
+            });
             for _ in 0..new_notes.len() {
                 notes_waveforms.push(self.track_waveforms[i].clone());
             }

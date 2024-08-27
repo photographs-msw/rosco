@@ -9,5 +9,5 @@ pub(crate) trait BuilderWrapper<SequenceType> {
 }
 
 pub(crate) trait NextNotes {
-    fn next_notes(&self) -> Vec<Note>;
+    fn next_notes(&mut self) -> Vec<Note>;
 }

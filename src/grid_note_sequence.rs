@@ -25,7 +25,7 @@ impl BuilderWrapper<GridNoteSequence> for GridNoteSequenceBuilder {
 }
 
 impl NextNotes for GridNoteSequence {
-    fn next_notes(&self) -> Vec<Note> {
+    fn next_notes(&mut self) -> Vec<Note> {
         self.get_notes_at_and_advance(self.index)
     }
 }
@@ -124,11 +124,6 @@ impl GridNoteSequence {
         }
         self.index += 1;
         self.sequence[index].clone()
-    }
-
-    // For NextNote Trait
-    pub(crate) fn next_notes(&mut self) -> Vec<Note> {
-        self.get_next_notes_window()
     }
 
     // Only makes sense with an index and as an internal method
