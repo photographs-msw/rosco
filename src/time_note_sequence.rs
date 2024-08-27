@@ -3,7 +3,7 @@ use derive_builder::Builder;
 use crate::constants;
 use crate::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::{Note, NoteBuilder};
-use crate::note_sequence_trait::{AppendNote, BuilderWrapper};
+use crate::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
 
 #[allow(dead_code)]
 static INIT_START_TIME: f32 = 0.0;
@@ -25,6 +25,12 @@ pub(crate) struct TimeNoteSequence {
 impl AppendNote for TimeNoteSequence {
     fn append_note(&mut self, note: Note) {
         self.append_notes(&vec![note]);
+    }
+}
+
+impl NextNotes for TimeNoteSequence {
+    fn next_notes(&self) -> Vec<Note> {
+        self.get_next_notes_window()
     }
 }
 
@@ -186,7 +192,7 @@ impl TimeNoteSequence {
 
         window_notes
     }
-
+    
     fn get_frontier_notes(&self) ->  &[Vec<Note>] {
         let min_frontier_index = self.frontier_indexes[0];
         let max_frontier_index = self.frontier_indexes[self.frontier_indexes.len() - 1];

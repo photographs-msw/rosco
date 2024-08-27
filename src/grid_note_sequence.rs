@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
 use crate::note::Note;
-use crate::note_sequence_trait::{AppendNote, BuilderWrapper};
+use crate::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct GridNoteSequence {
@@ -21,6 +21,12 @@ impl AppendNote for GridNoteSequence {
 impl BuilderWrapper<GridNoteSequence> for GridNoteSequenceBuilder {
     fn new () -> GridNoteSequence {
         GridNoteSequenceBuilder::default().build().unwrap()
+    }
+}
+
+impl NextNotes for GridNoteSequence {
+    fn next_notes(&self) -> Vec<Note> {
+        self.get_notes_at_and_advance(self.index)
     }
 }
 
@@ -50,17 +56,22 @@ impl GridNoteSequence {
         self.sequence.insert(self.index, vec![note]);
     }
 
-    pub(crate)  fn insert_notes_at(&mut self, notes: Vec<Note>, index: usize) {
+    pub(crate) fn insert_notes_at(&mut self, notes: Vec<Note>, index: usize) {
         if notes.is_empty() {
             panic!("Notes to add must not be empty");
         }
         if index >= self.sequence.len() {
             self.append_notes(&notes);
+            return;
         }
         self.sequence.insert(index, notes);
     }
 
-    pub(crate)  fn insert_note_at(&mut self, note: Note, index: usize) {
+    pub(crate) fn insert_note_at(&mut self, note: Note, index: usize) {
+        if index >= self.sequence.len() {
+            self.append_note(note);
+            return;
+        }
         self.sequence.insert(index, vec![note]);
     }
 
@@ -71,11 +82,17 @@ impl GridNoteSequence {
     // Only makes sense with an index and as an internal method
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn get_notes(&self) -> Vec<Note> {
+        if self.index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.sequence[self.index].clone()
     }
 
     // deprecated because makes no sense once we store a vector at each position
     pub(crate) fn get_note_at(&self, index: usize) -> Note {
+        if index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.sequence[index][0].clone()
     }
 
@@ -83,12 +100,18 @@ impl GridNoteSequence {
     // Would be public in a grid- rather than time-based sequencer
     // #VisibleForTesting
     pub(crate) fn get_notes_at(&self, index: usize) -> Vec<Note> {
+        if index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.sequence[index].clone()
     }
 
     // Only makes sense with an index and as an internal method
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn get_note_at_and_advance(&mut self, index: usize) -> Note {
+        if index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.index += 1;
         self.sequence[index][0].clone()
     }
@@ -96,31 +119,51 @@ impl GridNoteSequence {
     // Only makes sense with an index and as an internal method
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn get_notes_at_and_advance(&mut self, index: usize) -> Vec<Note> {
+        if index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.index += 1;
         self.sequence[index].clone()
+    }
+
+    // For NextNote Trait
+    pub(crate) fn next_notes(&mut self) -> Vec<Note> {
+        self.get_next_notes_window()
     }
 
     // Only makes sense with an index and as an internal method
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn notes_iter_mut(&mut self) -> std::slice::IterMut<Note> {
+        if self.index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.sequence[self.index].iter_mut()
     }
 
     // Only makes sense with an index and as an internal method
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn notes_iter(&self) -> std::slice::Iter<Note> {
+        if self.index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.sequence[self.index].iter()
     }
 
     // Only makes sense with an index and as an internal method
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn notes_len(&self) -> usize {
+        if self.index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.sequence[self.index].len()
     }
 
     // Only makes sense with an index and as an internal method
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn notes_are_empty(&self) -> bool {
+        if self.index >= self.sequence.len() {
+            panic!("Index out of bounds");
+        }
         self.sequence[self.index].is_empty()
     }
 
@@ -179,6 +222,22 @@ impl GridNoteSequence {
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn sequence_len(&self) -> usize {
         self.sequence.len()
+    }
+}
+
+impl<'a> Iterator for GridNoteSequence {
+    type Item = Vec<Note>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.index >= self.sequence.len() {
+            return None;
+        }
+        let notes = self.get_notes_at_and_advance(self.index);
+        if notes.is_empty() {
+            return None;
+        }
+
+        Some(notes)
     }
 }
 

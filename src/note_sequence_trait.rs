@@ -7,3 +7,7 @@ pub(crate) trait AppendNote {
 pub(crate) trait BuilderWrapper<SequenceType> {
     fn new() -> SequenceType; 
 }
+
+pub(crate) trait NextNotes {
+    fn next_notes(&self) -> Vec<Note>;
+}

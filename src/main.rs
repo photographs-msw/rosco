@@ -36,32 +36,29 @@ fn main() {
             "/Users/markweiss/Downloads/test.mid");
     println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
     
-    // get longest sequenst to control loop
-
-    // TODO THIS IS WRONG SEE BELOW TODO
-    // TODO REPEAT ABOVE WITH TIME GRID
-    //  MODIFY TRACK_GRID TO SUPPORT BOTH KINDS OF SEQUENCES
-    //  FOR GRID IT JUST ADANCES INDEX IN EACH TRACK SEQUENCE AND COMBINES NOTES AT THAT POSITION
-    //  FOR TIME IT GETS THE NEXT TIME WINDOW FROM EACH TRACK, FINDS THE SHORTEST END TIME,
-    //  RESETS THE CURERNET TIME IN EACH TRACK'S TIME_SEQUENCE, ADJUST THE LENGTHS OF ALL NOTES
-    //  FROM ALL TRACKS, AND THEN COMBINES TE NOTES
-    // println!("Playing MIDI file from TrackGrid");
-    // let (tx, rx) = std::sync::mpsc::channel();
-    // std::thread::spawn(move || {
-    //     for track in midi_tracks {
-    //         for notes in track.sequence.notes_iter() {
-    //             tx.send(notes).unwrap();
-    //         }
-    //     }
-    // });
-    // TOD FIX THIS TO PLAY
-    // for notes_window in rx {
-    //     let window_duration_ms = notes_window.window_duration_ms();
-    //     audio_gen::gen_notes(notes_window.notes_data.notes,
-    //                          notes_window.notes_data.notes_waveforms,
-    //                          window_duration_ms as u64);
-    // }
-    println!("Played MIDI file");
+    let num_tracks = midi_tracks.len();
+    let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
+    let track_grid = TrackGridBuilder::default()
+        .tracks(midi_tracks)
+        .track_waveforms(track_waveforms)
+        .build().unwrap();
+    
+    println!("Playing MIDI file from TrackGrid");
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        for notes_data in track_grid {
+            tx.send(notes_data).unwrap();
+        }
+    });
+    // TODO LAST UNSOLVED PROBLEM IS HOW TD DEFINE WINDOW DURATION FOR GRID NOTE SEQUENCE
+    //  TIME NOTE SEQUENCE HAS DURATION, BUT GRID NOTE SEQUENCE DOES NOT
+    for notes_data in rx {
+        let window_duration_ms = 1000.0; // notes_window.window_duration_ms();
+        audio_gen::gen_notes(notes_data.notes,
+                             notes_data.notes_waveforms,
+                             window_duration_ms as u64);
+    }
+    println!("Played MIDI file from TrackGrid");
     
     println!("Setting up Instrument");
     // Setup MultiInstrument and Instrument
