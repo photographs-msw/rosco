@@ -126,7 +126,8 @@ impl GridNoteSequence {
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn get_notes_at_and_advance(&mut self, index: usize) -> Vec<Note> {
         if index >= self.sequence.len() {
-            panic!("Index out of bounds");
+            return vec![];
+            // panic!("Index out of bounds");
         }
         self.index += 1;
         self.sequence[index].clone()
@@ -230,9 +231,6 @@ impl<'a> Iterator for GridNoteSequence {
     type Item = Vec<Note>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if self.index >= self.sequence.len() {
-            return None;
-        }
         let notes = self.get_notes_at_and_advance(self.index);
         if notes.is_empty() {
             return None;

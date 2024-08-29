@@ -1,12 +1,12 @@
 use derive_builder::Builder;
 
 use crate::note::Note;
-use crate::note_sequence_trait::{CopySequenceNotes, NextNotes};
+use crate::note_sequence_trait::NextNotes;
 use crate::oscillator;
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
-pub(crate) struct TrackGrid<SequenceType: NextNotes + CopySequenceNotes> {
+pub(crate) struct TrackGrid<SequenceType: NextNotes> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
     pub(crate) track_waveforms: Vec<Vec<oscillator::Waveform>>,
 
@@ -25,27 +25,20 @@ pub(crate) struct NotesData {
     pub(crate) notes_waveforms: Vec<Vec<oscillator::Waveform>>,
 }
 
-impl<SequenceType: NextNotes + CopySequenceNotes> TrackGrid<SequenceType> {
+impl<SequenceType: NextNotes> TrackGrid<SequenceType> {
 
     pub(crate) fn next_notes(&mut self) -> NotesData {
         let mut notes = Vec::new();
         let mut notes_waveforms = Vec::new();
 
         for (i, track) in self.tracks.iter_mut().enumerate() {
-            let mut sequence_notes = track.sequence.copy_sequence_notes();
-            let mut new_notes = Vec::new();
-            for notes in sequence_notes.iter_mut() {
-                notes.iter().for_each(|note| {
-                    // let note_copy = NoteBuilder::default()
-                    //     .start_time_ms(note.start_time_ms)
-                    //     .duration_ms(note.duration_ms)
-                    //     .frequency(note.frequency)
-                    //     .volume(note.volume)
-                    //     .build().unwrap();
-                    new_notes.push(note)
-                });
+            let mut sequence_notes = track.sequence.next_notes();
+            let mut note_count = 0;
+            for sequence_note in sequence_notes.iter_mut() {
+                notes.push(*sequence_note);
+                note_count += 1;
             }
-            for _ in 0..new_notes.len() {
+            for _ in 0..note_count {
                 notes_waveforms.push(self.track_waveforms[i].clone());
             }
         }
@@ -57,10 +50,12 @@ impl<SequenceType: NextNotes + CopySequenceNotes> TrackGrid<SequenceType> {
     }
 }
 
-impl<SequenceType: NextNotes + CopySequenceNotes> Iterator for TrackGrid<SequenceType> {
+impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
     type Item = NotesData;
 
     fn next(&mut self) -> Option<Self::Item> {
+        println!("TrackGrid::next() called");
+        
         let notes_window = self.next_notes();
         if notes_window.notes.is_empty() {
             return None;
