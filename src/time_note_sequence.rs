@@ -3,7 +3,7 @@ use derive_builder::Builder;
 use crate::constants;
 use crate::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::{Note, NoteBuilder};
-use crate::note_sequence_trait::{AppendNote, BuilderWrapper, CopySequenceNotes, NextNotes};
+use crate::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
 
 #[allow(dead_code)]
 static INIT_START_TIME: f32 = 0.0;
@@ -31,12 +31,6 @@ impl AppendNote for TimeNoteSequence {
 impl NextNotes for TimeNoteSequence {
     fn next_notes(&mut self) -> Vec<Note> {
         self.get_next_notes_window()
-    }
-}
-
-impl CopySequenceNotes for TimeNoteSequence {
-    fn copy_sequence_notes(&mut self) -> Vec<Vec<Note>> {
-        self.sequence.clone()
     }
 }
 

@@ -6,7 +6,7 @@ use crate::oscillator;
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
-pub(crate) struct TrackGrid<SequenceType: NextNotes> {
+pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
     pub(crate) track_waveforms: Vec<Vec<oscillator::Waveform>>,
 
@@ -25,17 +25,16 @@ pub(crate) struct NotesData {
     pub(crate) notes_waveforms: Vec<Vec<oscillator::Waveform>>,
 }
 
-impl<SequenceType: NextNotes> TrackGrid<SequenceType> {
+impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
 
     pub(crate) fn next_notes(&mut self) -> NotesData {
         let mut notes = Vec::new();
         let mut notes_waveforms = Vec::new();
 
         for (i, track) in self.tracks.iter_mut().enumerate() {
-            let mut sequence_notes = track.sequence.next_notes();
             let mut note_count = 0;
-            for sequence_note in sequence_notes.iter_mut() {
-                notes.push(*sequence_note);
+            for note in track.sequence.next_notes() {
+                notes.push(note);
                 note_count += 1;
             }
             for _ in 0..note_count {
@@ -50,7 +49,7 @@ impl<SequenceType: NextNotes> TrackGrid<SequenceType> {
     }
 }
 
-impl<SequenceType: NextNotes> Iterator for TrackGrid<SequenceType> {
+impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
     type Item = NotesData;
 
     fn next(&mut self) -> Option<Self::Item> {

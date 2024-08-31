@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
 use crate::note::Note;
-use crate::note_sequence_trait::{AppendNote, BuilderWrapper, CopySequenceNotes, NextNotes};
+use crate::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct GridNoteSequence {
@@ -21,12 +21,6 @@ impl AppendNote for GridNoteSequence {
 impl NextNotes for GridNoteSequence {
     fn next_notes(&mut self) -> Vec<Note> {
         self.get_notes_at_and_advance(self.index)
-    }
-}
-
-impl CopySequenceNotes for GridNoteSequence {
-    fn copy_sequence_notes(&mut self) -> Vec<Vec<Note>> {
-        self.sequence.clone()
     }
 }
 

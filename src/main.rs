@@ -35,14 +35,14 @@ fn main() {
         midi::midi_file_to_tracks::<GridNoteSequence, GridNoteSequenceBuilder>(
             "/Users/markweiss/Downloads/test.mid");
     println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
-    
+
     let num_tracks = midi_tracks.len();
     let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
     let mut track_grid = TrackGridBuilder::default()
         .tracks(midi_tracks)
         .track_waveforms(track_waveforms)
         .build().unwrap();
-    
+
     println!("Playing MIDI file from TrackGrid");
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
@@ -63,7 +63,7 @@ fn main() {
                              window_duration_ms as u64);
     }
     println!("Played MIDI file from TrackGrid");
-    
+
     println!("Setting up Instrument");
     // Setup MultiInstrument and Instrument
     let midi_tracks_2 =

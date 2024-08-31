@@ -11,7 +11,3 @@ pub(crate) trait BuilderWrapper<SequenceType> {
 pub(crate) trait NextNotes {
     fn next_notes(&mut self) -> Vec<Note>;
 }
-
-pub(crate) trait CopySequenceNotes {
-    fn copy_sequence_notes(&mut self) -> Vec<Vec<Note>>;
-}
