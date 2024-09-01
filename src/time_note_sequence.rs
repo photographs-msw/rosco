@@ -74,6 +74,9 @@ impl TimeNoteSequence {
             self.sequence.push(notes.clone());
             self.frontier_indexes.push(max_frontier_index + 1);
         }
+        
+        // TEMP DEBUG
+        println!("DEBUG ******* Frontier Indexes: {:?}", self.frontier_indexes);
     }
 
     pub(crate) fn append_note(&mut self, note: Note) {
@@ -136,6 +139,9 @@ impl TimeNoteSequence {
         let mut window_notes = Vec::new();
 
         self.remove_completed_frontier_indexes(self.next_notes_time_ms);
+        if self.frontier_indexes.is_empty() {
+            return window_notes;
+        }
 
         let frontier_min_start_time_ms = self.get_frontier_min_start_time();
         // If the current note time is earlier than that, emit a rest note and increment
@@ -160,40 +166,43 @@ impl TimeNoteSequence {
         // If the current note time is the same as the frontier min start time, emit all notes
         // in the frontier with the same start time and increment the current notes time to the
         // earliest end time in the frontier. This is the next window emit, note to end time.
-        if float_eq(self.next_notes_time_ms, frontier_min_start_time_ms) {
-            let notes: Vec<Note> = self.get_frontier_notes()
-                .iter()
-                .flatten()
-                .filter(|note| float_eq(note.start_time_ms, self.next_notes_time_ms))
-                .map(|note| note_ref_into_note(note, self.next_notes_time_ms, end_time_ms))
-                .collect();
-            window_notes.append(&mut notes.clone());
+        if self.frontier_indexes.len() > 0 {
+            if float_eq(self.next_notes_time_ms, frontier_min_start_time_ms) {
+                let notes: Vec<Note> = self.get_frontier_notes()
+                    .iter()
+                    .flatten()
+                    .filter(|note| float_eq(note.start_time_ms, self.next_notes_time_ms))
+                    .map(|note| note_ref_into_note(note, self.next_notes_time_ms, end_time_ms))
+                    .collect();
+                window_notes.append(&mut notes.clone());
 
-            self.next_notes_time_ms = end_time_ms + constants::FLOAT_EPSILON;
-        // if notes_time_ms is greater than the frontier min start time, get all notes in the
-        // frontier that are playing at the current notes time and emit them up to end time
-        // as the next window and increment the current notes time to the end time
-        } else if self.next_notes_time_ms > frontier_min_start_time_ms {
-            let notes: Vec<Note> = self.get_frontier_notes()
-                .iter()
-                .flatten()
-                .filter(|note|
-                        float_leq(note.start_time_ms, self.next_notes_time_ms) &&
-                            float_geq(note.end_time_ms, self.next_notes_time_ms))
-                .map(|note| note_ref_into_note(note, self.next_notes_time_ms, end_time_ms))
-                .filter(|note| note.duration_ms > 0.0)
-                .collect();
-            window_notes.append(&mut notes.clone());
-
-            self.next_notes_time_ms = end_time_ms + constants::FLOAT_EPSILON;
-        } else {
-            panic!("Invalid state for next notes window");
+                // if notes_time_ms is greater than the frontier min start time, get all notes in the
+                // frontier that are playing at the current notes time and emit them up to end time
+                // as the next window and increment the current notes time to the end time
+            } else if self.frontier_indexes.len() > 0 &&
+                self.next_notes_time_ms > frontier_min_start_time_ms {
+                let notes: Vec<Note> = self.get_frontier_notes()
+                    .iter()
+                    .flatten()
+                    .filter(|note|
+                    float_leq(note.start_time_ms, self.next_notes_time_ms) &&
+                        float_geq(note.end_time_ms, self.next_notes_time_ms))
+                    .map(|note| note_ref_into_note(note, self.next_notes_time_ms, end_time_ms))
+                    .filter(|note| note.duration_ms > 0.0)
+                    .collect();
+                window_notes.append(&mut notes.clone());
+            }
         }
-
+        self.next_notes_time_ms = end_time_ms + constants::FLOAT_EPSILON;
+        
         window_notes
     }
 
     fn get_frontier_notes(&self) ->  &[Vec<Note>] {
+        
+        // TEMP DEBUG
+        println!("DEBUG ******* Frontier Indexes: {:?}", self.frontier_indexes);
+        
         let min_frontier_index = self.frontier_indexes[0];
         let max_frontier_index = self.frontier_indexes[self.frontier_indexes.len() - 1];
         &self.sequence[min_frontier_index..(max_frontier_index + 1)]
