@@ -10,13 +10,6 @@ use crate::track::Track;
 pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
     pub(crate) track_waveforms: Vec<Vec<oscillator::Waveform>>,
-
-    // TODO THIS IS EITHER PAREMETERIZED OR WE HAVE BOTH TIME AND INDEX AND IGNORE ONE
-    // #[builder(default = "0.0")]
-    // pub(crate) sample_clock_index: f32,
-
-    // #[builder(default = "0")]
-    // pub(crate) index: usize,
 }
 
 // Notes from all tracks, with associated waveforms for each note
