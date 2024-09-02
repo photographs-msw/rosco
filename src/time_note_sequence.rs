@@ -123,7 +123,7 @@ impl TimeNoteSequence {
             // not start time is current notes_time_ms
             new_note.start_time_ms = cur_notes_time_ms;
             new_note.end_time_ms = window_end_time_ms;
-            new_note.duration_ms = note.end_time_ms - note.start_time_ms;
+            new_note.duration_ms = new_note.end_time_ms - new_note.start_time_ms;
             new_note
         }
         let mut window_notes = Vec::new();
@@ -144,8 +144,8 @@ impl TimeNoteSequence {
 
         // TEMP DEBUG
         // println!("DEBUG FRONTIER_MIN_START_TIME: {:#?}", window_start_time_ms);
-        println!("DEBUG NOTES_TIME: {:#?}", self.cur_notes_time_ms);
-        println!("DEBUG FRONTIER MIN_END_TIME: {:#?}", window_end_time_ms);
+        // println!("DEBUG NOTES_TIME: {:#?}", self.cur_notes_time_ms);
+        // println!("DEBUG FRONTIER MIN_END_TIME: {:#?}", window_end_time_ms);
 
         // If the current note time is earlier than that, emit a rest note and increment
         // the current notes time to the frontier min start time + epsilon
@@ -164,7 +164,7 @@ impl TimeNoteSequence {
             self.cur_notes_time_ms = window_start_time_ms + constants::FLOAT_EPSILON;
 
             // TEMP DEBUG
-            println!("DEBUG REST WINDOW_NOTES_RETURNED: {:#?}", window_notes);
+            // println!("DEBUG REST WINDOW_NOTES_RETURNED: {:#?}", window_notes);
 
             return window_notes;
         }
@@ -200,7 +200,7 @@ impl TimeNoteSequence {
         self.cur_notes_time_ms = window_end_time_ms + constants::FLOAT_EPSILON;
 
         // TEMP DEBUG
-        println!("DEBUG WINDOW_NOTES_RETURNED: {:#?}", window_notes);
+        // println!("DEBUG WINDOW_NOTES_RETURNED: {:#?}", window_notes);
 
         window_notes
     }
@@ -269,7 +269,7 @@ impl TimeNoteSequence {
         let mut end_time_ms = f32::MAX;
 
         // TEMP DEBUG
-        println!("DEBUG IN GET_FRONTIER_MIN_END_TIME FRONTIER NOTES: {:#?}", self.get_frontier_notes());
+        // println!("DEBUG IN GET_FRONTIER_MIN_END_TIME FRONTIER NOTES: {:#?}", self.get_frontier_notes());
         
         // First pass, is what is the earliest end time in the future, after note_time_ms
         // for a note that starts on or before note_time_ms and ends after it
@@ -372,62 +372,62 @@ mod test_time_note_sequence {
         // 1 start 0 - 500
         let mut notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 1);
-        assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 0.0);
-        assert_float_eq(notes_window[0].end_time_ms, 1000.0);
+        assert_float_eq(notes_window[0].end_time_ms, 500.0);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
 
         // 1 500 - 1000
         // 2 start 500 - 1000
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 2);
-        assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 500.0);
         assert_float_eq(notes_window[0].end_time_ms, 1000.0);
-        assert_float_eq(notes_window[1].duration_ms, 500.0);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[1].start_time_ms, 500.0);
-        assert_float_eq(notes_window[1].end_time_ms, 1500.0);
+        assert_float_eq(notes_window[1].end_time_ms, 1000.0);
+        assert_float_eq(notes_window[1].duration_ms, 500.0);
 
         // 2 1000 - 1500
         // 3 start 1000 - 1500
         // 4 start 1000 - 1500
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 3);
-        assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 1000.0);
         assert_float_eq(notes_window[0].end_time_ms, 1500.0);
-        assert_float_eq(notes_window[1].duration_ms, 500.0);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[1].start_time_ms, 1000.0);
-        assert_float_eq(notes_window[1].end_time_ms, 2000.0);
-        assert_float_eq(notes_window[2].duration_ms, 500.0);
+        assert_float_eq(notes_window[1].end_time_ms, 1500.0);
+        assert_float_eq(notes_window[1].duration_ms, 500.0);
         assert_float_eq(notes_window[2].start_time_ms, 1000.0);
-        assert_float_eq(notes_window[2].end_time_ms, 2000.0);
+        assert_float_eq(notes_window[2].end_time_ms, 1500.0);
+        assert_float_eq(notes_window[2].duration_ms, 500.0);
 
         // 3 1500 - 2000
         // 4 1500 - 2000
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 2);
-        assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 1500.0);
         assert_float_eq(notes_window[0].end_time_ms, 2000.0);
-        assert_float_eq(notes_window[1].duration_ms, 500.0);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[1].start_time_ms, 1500.0);
         assert_float_eq(notes_window[1].end_time_ms, 2000.0);
+        assert_float_eq(notes_window[1].duration_ms, 500.0);
         
         // Rest 2000 - 2500
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 1);
-        assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[0].start_time_ms, 2000.0);
         assert_float_eq(notes_window[0].end_time_ms, 2500.0);
+        assert_float_eq(notes_window[0].duration_ms, 500.0);
         // 0 volume because it is a rest note
         assert_float_eq(notes_window[0].volume, 0.0);
         
         // 5 start 2500 - 3500
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 1);
-        assert_float_eq(notes_window[0].duration_ms, 1000.0);
         assert_float_eq(notes_window[0].start_time_ms, 2500.0);
         assert_float_eq(notes_window[0].end_time_ms, 3500.0);
+        assert_float_eq(notes_window[0].duration_ms, 1000.0);
     }
 
     #[test]
