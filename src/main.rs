@@ -39,7 +39,7 @@ fn main() {
     
     let num_tracks = midi_grid_tracks.len();
     let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
-    let mut track_grid = TrackGridBuilder::default()
+    let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
         .track_waveforms(track_waveforms)
         .build().unwrap();
@@ -78,7 +78,7 @@ fn main() {
 
     let num_tracks = midi_time_tracks.len();
     let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
-    let mut track_grid = TrackGridBuilder::default()
+    let track_grid = TrackGridBuilder::default()
         .tracks(midi_time_tracks)
         .track_waveforms(track_waveforms)
         .build().unwrap();

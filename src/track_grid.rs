@@ -15,8 +15,8 @@ pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     // #[builder(default = "0.0")]
     // pub(crate) sample_clock_index: f32,
 
-    #[builder(default = "0")]
-    pub(crate) index: usize,
+    // #[builder(default = "0")]
+    // pub(crate) index: usize,
 }
 
 // Notes from all tracks, with associated waveforms for each note

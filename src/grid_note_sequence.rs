@@ -30,6 +30,7 @@ impl BuilderWrapper<GridNoteSequence> for GridNoteSequenceBuilder {
     }
 }
 
+#[allow(dead_code)]
 impl GridNoteSequence {
 
     pub(crate) fn append_notes(&mut self, notes: &Vec<Note>) {
