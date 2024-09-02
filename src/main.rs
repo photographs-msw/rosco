@@ -27,7 +27,6 @@ fn main() {
     println!("Args collected\nwaveforms: {}, frequency: {}, volume: {}, duration_ms: {}",
              waveforms_arg, frequency, volume, duration_ms);
 
-    // TODO TEST TIMESEQUENCEBUILDER
     println!("Loading MIDI file");
     // Test loading MIDI file and playing back using multi-track, polyphonic grid with one
     // set of waveforms per track, notes per track, playing notes in windows of when they are active
@@ -49,13 +48,16 @@ fn main() {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         for notes_data in track_grid {
-            println!( "notes_data: {:?}", notes_data);
+            // TEMP DEBUG
+            // println!( "notes_data: {:#?}", notes_data);
     
             tx.send(notes_data).unwrap();
         }
     });
     for notes_data in rx {
-        println!( "notes_data: {:?}", notes_data);
+    
+        // TEMP DEBUG
+        println!( "\n=====> notes_data in playback\n: {:#?}", notes_data);
     
         // TODO LAST UNSOLVED PROBLEM IS HOW TD DEFINE WINDOW DURATION FOR GRID NOTE SEQUENCE
         //  TIME NOTE SEQUENCE HAS DURATION, BUT GRID NOTE SEQUENCE DOES NOT
@@ -66,6 +68,9 @@ fn main() {
     }
     println!("Played MIDI file from TrackGrid GridNoteSequence");
 
+    // #####
+    
+    println!("Loading MIDI file");
     let midi_time_tracks =
         midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
             "/Users/markweiss/Downloads/test.mid");
@@ -77,28 +82,30 @@ fn main() {
         .tracks(midi_time_tracks)
         .track_waveforms(track_waveforms)
         .build().unwrap();
-
+    
     println!("Playing MIDI file from TrackGrid TimeNoteSequence");
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         for notes_data in track_grid {
-            println!( "notes_data: {:?}", notes_data);
-
+            // TEMP DEBUG
+            // println!( "notes_data: {:?}", notes_data);
+    
             tx.send(notes_data).unwrap();
         }
     });
     for notes_data in rx {
-        println!( "notes_data: {:?}", notes_data);
-
-        // TODO LAST UNSOLVED PROBLEM IS HOW TD DEFINE WINDOW DURATION FOR GRID NOTE SEQUENCE
+        // TEMP DEBUG
+        // println!( "\n=====> notes_data in playback\n: {:#?}", notes_data);
+    
         //  TIME NOTE SEQUENCE HAS DURATION, BUT GRID NOTE SEQUENCE DOES NOT
-        let window_duration_ms = 1000.0; // notes_window.window_duration_ms();
         audio_gen::gen_notes(notes_data.notes,
                              notes_data.notes_waveforms,
-                             window_duration_ms as u64);
+                             notes_data.window_duration_ms as u64);
     }
     println!("Played MIDI file from TrackGrid TimeNoteSequence");
-    
+
+    // ####################################
+
     println!("Setting up Instrument");
     // Setup MultiInstrument and Instrument
     let midi_tracks_2 =
@@ -115,7 +122,7 @@ fn main() {
         .build().unwrap();
     midi_multi_instrument.loop_once();
     println!("Set up Instrument");
-    
+
     println!("Setting up MultiInstrument");
     let waveforms_3 = oscillator::get_waveforms(&waveforms_arg);
     let waveform_4 = oscillator::get_waveforms(&waveforms_arg);
@@ -127,7 +134,7 @@ fn main() {
         .tracks()
         .build().unwrap();
     println!("Set up MultiInstrument");
-    
+
     println!("Setting up Notes for MultiInstrument");
     // builder with default volume
     let note_1: Note = NoteBuilder::default()
@@ -144,7 +151,7 @@ fn main() {
         .end_time_ms()
         .build().unwrap();
     println!("Set up Notes for MultiInstrument");
-    
+
     println!("Adding Notes to MultiInstrument");
     // Test MultiInstrument, primitive concurrent playback that simply gets the next note to play
     // from each track
@@ -163,7 +170,7 @@ fn main() {
     multi_instrument.loop_n(2);
     multi_instrument.play_notes_direct(vec![note_1, note_2]);
     println!("Played Notes on MultiInstrument");
-    
+
     println!("Setting up Notes for Instrument");
     // Test single Instrument
     // override default builder volume of 1.0
@@ -187,12 +194,12 @@ fn main() {
         .end_time_ms()
         .build().unwrap();
     println!("Set up Notes for Instrument");
-    
+
     println!("Adding Notes to Instrument");
     instrument.add_note(note_3);
     instrument.add_note(note_4);
     println!("Added Notes to Instrument");
-    
+
     println!("Playing Notes on Instrument");
     instrument.play_note_and_advance(0);
     instrument.set_volume(0.25);
