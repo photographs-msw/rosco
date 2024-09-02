@@ -1,10 +1,10 @@
 use std::hash::{Hash, Hasher};
 
 use derive_builder::Builder;
-use float_eq::float_eq;
 
-use crate::constants::{FLOAT_EQ_TOLERANCE, NO_TRACK};
+use crate::constants::NO_TRACK;
 use crate::envelope::{Envelope, EnvelopePair};
+use crate::float_utils::float_eq;
 
 pub(crate) static INIT_START_TIME: f32 = 0.0;
 pub(crate) static DEFAULT_VOLUME: f32 = 1.0;
@@ -33,6 +33,17 @@ pub(crate) struct Note {
     pub(crate) track_num: i16,
 }
 
+impl PartialEq for Note {
+    fn eq(&self, other: &Self) -> bool {
+        float_eq(self.frequency, other.frequency) &&
+        float_eq(self.duration_ms, other.duration_ms) &&
+        float_eq(self.volume, other.volume) &&
+        float_eq(self.start_time_ms, other.start_time_ms) &&
+        float_eq(self.end_time_ms, other.end_time_ms) &&
+        self.track_num == other.track_num &&
+        self.envelope == other.envelope
+    }
+}
 impl Eq for Note {}
 
 impl Hash for Note {
@@ -43,17 +54,6 @@ impl Hash for Note {
         self.start_time_ms.to_bits().hash(state);
         self.end_time_ms.to_bits().hash(state);
         self.track_num.hash(state);
-    }
-}
-
-impl PartialEq for Note {
-    fn eq(&self, other: &Self) -> bool {
-        float_eq!(self.frequency, other.frequency, rmax <= FLOAT_EQ_TOLERANCE) &&
-            float_eq!(self.duration_ms, other.duration_ms, rmax <= FLOAT_EQ_TOLERANCE) &&
-            float_eq!(self.volume, other.volume, rmax <= FLOAT_EQ_TOLERANCE) &&
-            float_eq!(self.start_time_ms, other.end_time_ms, rmax <= FLOAT_EQ_TOLERANCE) &&
-            float_eq!(self.end_time_ms, other.end_time_ms, rmax <= FLOAT_EQ_TOLERANCE) &&
-            self.track_num == other.track_num
     }
 }
 

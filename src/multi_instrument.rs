@@ -3,8 +3,9 @@ use crate::audio_gen;
 use crate::track::{Track, TrackBuilder};
 use crate::note;
 use crate::note::Note;
+use crate::note_sequence_trait::AppendNote;
 use crate::oscillator;
-use crate::sequence::SequenceBuilder;
+use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 
 #[derive(Builder, Debug)]
 pub(crate) struct MultiInstrument {
@@ -15,7 +16,7 @@ pub(crate) struct MultiInstrument {
 
     // user can call tracks() to build with empty tracks or add_tracks() to add tracks on build
     #[builder(public, setter(custom))]
-    pub(crate) tracks: Vec<Track>,
+    pub(crate) tracks: Vec<Track<GridNoteSequence>>,
 }
 
 impl MultiInstrumentBuilder {
@@ -24,7 +25,7 @@ impl MultiInstrumentBuilder {
         let num_tracks = self.num_tracks.unwrap();
         self.tracks =
             Some(vec![TrackBuilder::default()
-                          .sequence(SequenceBuilder::default().build().unwrap())
+                          .sequence(GridNoteSequenceBuilder::default().build().unwrap())
                           .volume(1.0 / num_tracks as f32)
                           .build().unwrap(); num_tracks]);
         self
@@ -32,7 +33,7 @@ impl MultiInstrumentBuilder {
 
     // overriding setting in builder allowing the caller to add tracks on build
     #[allow(dead_code)]
-    pub (crate) fn add_tracks(&mut self, tracks: Vec<Track>) -> &mut Self {
+    pub (crate) fn add_tracks(&mut self, tracks: Vec<Track<GridNoteSequence>>) -> &mut Self {
         self.tracks = Some(tracks);
         self
     }
@@ -51,7 +52,7 @@ impl MultiInstrument {
         let max_note_duration_ms = note::max_note_duration_ms(&notes);
         audio_gen::gen_notes(notes, self.track_waveforms.clone(), max_note_duration_ms);
         for channel in self.tracks.iter_mut() {
-            channel.sequence.advance();
+            channel.sequence.increment();
         }
     }
 
@@ -78,13 +79,13 @@ impl MultiInstrument {
     pub(crate) fn add_note_to_track(&mut self, track_num: usize, note: Note) {
         self.validate_track_num(track_num);
 
-        self.tracks[track_num].sequence.add_note(note);
+        self.tracks[track_num].sequence.append_note(note);
     }
 
     pub(crate) fn add_note_to_tracks(&mut self, note: Note) {
         self.validate_has_tracks();
         self.tracks.iter_mut().for_each(
-            |track| track.sequence.add_note(note)
+            |track| track.sequence.append_note(note)
         );
     }
 
@@ -105,7 +106,7 @@ impl MultiInstrument {
         }
 
         for (track_num, note) in track_nums.iter().zip(chord) {
-            self.tracks[*track_num].sequence.add_note(note);
+            self.tracks[*track_num].sequence.append_note(note);
         }
     }
 
