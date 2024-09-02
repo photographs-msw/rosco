@@ -158,6 +158,8 @@ impl TimeNoteSequence {
                     .start_time_ms(self.cur_notes_time_ms)
                     .duration_ms(window_start_time_ms - self.cur_notes_time_ms)
                     .end_time_ms()
+                    .default_envelope()
+                    .track_num(1)
                     .build().unwrap()
             );
 
@@ -538,6 +540,8 @@ mod test_time_note_sequence {
             .frequency(440.0)
             .duration_ms(1000.0)
             .volume(1.0)
+            .default_envelope()
+            .track_num(1)
             .clone()
     }
 }

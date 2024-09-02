@@ -118,6 +118,8 @@ mod test_sequence_grid {
             .end_time_ms()
             .frequency(440.0)
             .volume(1.0)
+            .default_envelope()
+            .track_num(1)
             .clone()
     }
 }
