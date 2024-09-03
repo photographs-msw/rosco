@@ -3,10 +3,12 @@ use std::hash::{Hash, Hasher};
 use derive_builder::Builder;
 
 use crate::constants::NO_TRACK;
-use crate::envelope::{Envelope, EnvelopePair};
+use crate::envelope;
+use crate::envelope::Envelope;
 use crate::float_utils::float_eq;
 
 pub(crate) static INIT_START_TIME: f32 = 0.0;
+pub(crate) static INIT_END_TIME: f32 = 0.0;
 pub(crate) static DEFAULT_VOLUME: f32 = 1.0;
 
 #[allow(dead_code)]
@@ -25,12 +27,23 @@ pub(crate) struct Note {
     #[allow(dead_code)]
     pub (crate) end_time_ms: f32,
 
+    // TODO REMOVE FROM NOTE
     // user can call default_envelope() to build with no-op envelope or can add custom envelope
     #[builder(public, setter(custom))]
     pub(crate) envelope: Envelope,
 
     #[builder(public, setter(custom))]
     pub(crate) track_num: i16,
+}
+
+pub(crate) fn default_note() -> Note {
+    NoteBuilder::default()
+        .frequency(0.0)
+        .duration_ms(0.0)
+        .volume(DEFAULT_VOLUME)
+        .envelope(envelope::default_envelope())
+        .no_track()
+        .build().unwrap()
 }
 
 impl PartialEq for Note {
@@ -73,13 +86,7 @@ impl NoteBuilder {
 
     // overriding setting in builder allowing the caller to add default no-op envelope on build
     pub(crate) fn default_envelope(&mut self) -> &mut Self {
-        self.envelope = Some(Envelope {
-            start: EnvelopePair(0.0, 0.0),
-            attack: EnvelopePair(0.5, 1.0),
-            decay: EnvelopePair(0.5, 1.0),
-            sustain: EnvelopePair(0.5, 1.0),
-            release: EnvelopePair(1.0, 0.0),
-        });
+        self.envelope = Some(envelope::default_envelope());
         self
     }
 

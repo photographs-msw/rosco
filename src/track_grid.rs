@@ -1,9 +1,10 @@
 use derive_builder::Builder;
 use crate::float_utils::{float_geq, float_leq};
 
-use crate::note::Note;
+use crate::envelope;
 use crate::note_sequence_trait::NextNotes;
 use crate::oscillator;
+use crate::playback_note::{PlaybackNoteBuilder, PlaybackNoteKind};
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
@@ -12,59 +13,54 @@ pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     pub(crate) track_waveforms: Vec<Vec<oscillator::Waveform>>,
 }
 
-// Notes from all tracks, with associated waveforms for each note
-#[derive(Clone, Debug)]
-pub(crate) struct NotesData {
-    pub(crate) notes: Vec<Note>,
-    pub(crate) notes_waveforms: Vec<Vec<oscillator::Waveform>>,
-    pub(crate) window_duration_ms: f32,
-}
-
 impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
 
-    pub(crate) fn next_notes(&mut self) -> NotesData {
-        let mut notes = Vec::new();
-        let mut notes_waveforms = Vec::new();
+    pub(crate) fn next_notes(&mut self) -> Vec<PlaybackNoteKind> {
+        let mut playback_notes = Vec::new();
         let mut min_start_time_ms = f32::MAX;
         let mut max_end_time_ms = 0.0;
 
         for (i, track) in self.tracks.iter_mut().enumerate() {
-            let mut note_count = 0;
             for note in track.sequence.next_notes() {
-                notes.push(note);
+                playback_notes.push(
+                    PlaybackNoteKind::WithOscillatorAndEnvelope(
+                        PlaybackNoteBuilder::default()
+                            .note(note)
+                            .build().unwrap(),
+                        self.track_waveforms[i].clone(),
+                        envelope::default_envelope()
+                    )
+                );
+                
                 if float_leq(note.start_time_ms, min_start_time_ms) {
                     min_start_time_ms = note.start_time_ms;
                 }
                 if float_geq(note.end_time_ms, max_end_time_ms) {
                     max_end_time_ms = note.end_time_ms;
                 }
-                note_count += 1;
-            }
-            for _ in 0..note_count {
-                notes_waveforms.push(self.track_waveforms[i].clone());
             }
         }
-
-        NotesData {
-            notes,
-            notes_waveforms,
-            window_duration_ms: max_end_time_ms - min_start_time_ms,
+        
+        for playback_note_kind in playback_notes.iter_mut() {
+            playback_note_kind.set_playback_start_time_ms(min_start_time_ms);
+            playback_note_kind.set_playback_end_time_ms(max_end_time_ms);
+            playback_note_kind.set_playback_duration_ms();
         }
+        
+        playback_notes
     }
 }
 
 impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
-    type Item = NotesData;
+    type Item = Vec<PlaybackNoteKind>;
 
     fn next(&mut self) -> Option<Self::Item> {
-        println!("TrackGrid::next() called");
-
-        let notes_window = self.next_notes();
-        if notes_window.notes.is_empty() {
+        let playback_notes= self.next_notes();
+        if playback_notes.is_empty() {
             return None;
         }
 
-        Some(notes_window)
+        Some(playback_notes)
     }
 }
 
@@ -105,8 +101,8 @@ mod test_sequence_grid {
             .build().unwrap();
 
         // expect one note to be active when sample_clock_index is 0.0
-        let note_window = track_grid.next_notes();
-        assert_eq!(note_window.notes.len(), 2);
+        let playback_notes = track_grid.next_notes();
+        assert_eq!(playback_notes.len(), 2);
     }
 
     fn setup_note() -> NoteBuilder {

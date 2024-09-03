@@ -43,7 +43,7 @@ pub(crate) fn get_notes_sample(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Wa
                                sample_clock: f32) -> f32 {
     let mut freq = 0.0;
     for (i, note) in notes.iter().enumerate() {
-        freq += note.volume *
+        freq += note.volume * // with note.envelope(sample_clock)
             get_note_sample(&channel_waveforms[i], note.frequency, sample_clock);
     }
     freq
