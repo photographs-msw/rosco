@@ -386,7 +386,6 @@ mod test_grid_note_sequence {
             .frequency(440.0)
             .duration_ms(1000.0)
             .volume(1.0)
-            .default_envelope()
             .track_num(1)
             .clone()
     }

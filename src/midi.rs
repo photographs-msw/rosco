@@ -121,7 +121,6 @@ pub(crate) fn midi_file_to_tracks<
                                                                                ticks_per_ms)
                                                                        .duration_ms(0.0)
                                                                        .end_time_ms()
-                                                                       .default_envelope()
                                                                        .track_num(channel.as_int() as i16)
                                                                        .build().unwrap()
                                             );

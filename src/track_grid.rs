@@ -116,7 +116,6 @@ mod test_sequence_grid {
             // start_time_ms and duration_ms we have to set them before end_time_ms
             .frequency(440.0)
             .volume(1.0)
-            .default_envelope()
             .track_num(1)
             .clone()
     }
