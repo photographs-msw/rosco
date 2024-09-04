@@ -88,13 +88,18 @@ mod test_sequence_grid {
                                     // Now set again here to set up the logic under test
                                     setup_note()
                                         .start_time_ms(0.0)
+                                        .duration_ms(1000.0)
+                                        .end_time_ms()
                                         .build().unwrap(),
                                     setup_note()
                                         .start_time_ms(1.0)
+                                        .duration_ms(1000.0)
+                                        .end_time_ms()
                                         .build().unwrap(),
                                 ]]).build().unwrap()
                         )
                         .volume(0.9)
+                        .default_playback_note_kind()
                         .build().unwrap()
                 ])
             .track_waveforms(vec![vec![oscillator::Waveform::Sine]])
@@ -109,9 +114,6 @@ mod test_sequence_grid {
         NoteBuilder::default()
             // Unfortunately because end_time_ms() custom builder unwraps values from
             // start_time_ms and duration_ms we have to set them before end_time_ms
-            .start_time_ms(0.0)
-            .duration_ms(1000.0)
-            .end_time_ms()
             .frequency(440.0)
             .volume(1.0)
             .default_envelope()
