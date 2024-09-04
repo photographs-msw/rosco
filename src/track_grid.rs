@@ -2,6 +2,7 @@ use derive_builder::Builder;
 use crate::float_utils::{float_geq, float_leq};
 
 use crate::envelope;
+use crate::envelope::Envelope;
 use crate::note_sequence_trait::NextNotes;
 use crate::oscillator;
 use crate::playback_note::{PlaybackNoteBuilder, PlaybackNoteKind};
@@ -11,6 +12,7 @@ use crate::track::Track;
 pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
     pub(crate) track_waveforms: Vec<Vec<oscillator::Waveform>>,
+    pub(crate) track_envelopes: Vec<Option<Envelope>>,
 }
 
 impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
@@ -28,7 +30,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                             .note(note)
                             .build().unwrap(),
                         self.track_waveforms[i].clone(),
-                        envelope::default_envelope()
+                        self.track_envelopes[i].unwrap_or(envelope::default_envelope()) 
                     )
                 );
                 
@@ -99,10 +101,11 @@ mod test_sequence_grid {
                                 ]]).build().unwrap()
                         )
                         .volume(0.9)
-                        .default_playback_note_kind()
+                        // .default_playback_note_kind()
                         .build().unwrap()
                 ])
             .track_waveforms(vec![vec![oscillator::Waveform::Sine]])
+            .track_envelopes(vec![None])
             .build().unwrap();
 
         // expect one note to be active when sample_clock_index is 0.0

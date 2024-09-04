@@ -30,52 +30,53 @@ use crate::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
 use crate::track_grid::TrackGridBuilder;
 
 fn main() {
-    // println!("Loading args");
-    // let (waveforms_arg, frequency, volume, duration_ms) = collect_args();
-    // println!("Args collected\nwaveforms: {}, frequency: {}, volume: {}, duration_ms: {}",
-    //          waveforms_arg, frequency, volume, duration_ms);
-    // 
-    // println!("Loading MIDI file");
-    // // Test loading MIDI file and playing back using multi-track, polyphonic grid with one
-    // // set of waveforms per track, notes per track, playing notes in windows of when they are active
-    // // and coordinated concurrent playback where one thread prepares the next window to play
-    // // and the other thread plays the current window
-    // let midi_grid_tracks =
-    //     midi::midi_file_to_tracks::<GridNoteSequence, GridNoteSequenceBuilder>(
-    //         "/Users/markweiss/Downloads/test.mid");
-    // println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
-    // 
-    // let num_tracks = midi_grid_tracks.len();
-    // let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
-    // let track_grid = TrackGridBuilder::default()
-    //     .tracks(midi_grid_tracks)
-    //     .track_waveforms(track_waveforms)
-    //     .build().unwrap();
-    // 
-    // println!("Playing MIDI file from TrackGrid GridNoteSequence");
-    // let (tx, rx) = std::sync::mpsc::channel();
-    // std::thread::spawn(move || {
-    //     for notes_data in track_grid {
-    //         // TEMP DEBUG
-    //         // println!( "notes_data: {:#?}", notes_data);
-    // 
-    //         tx.send(notes_data).unwrap();
-    //     }
-    // });
-    // for notes_data in rx {
-    // 
-    //     // TEMP DEBUG
-    //     println!( "\n=====> notes_data in playback\n: {:#?}", notes_data);
-    // 
-    //     // TODO LAST UNSOLVED PROBLEM IS HOW TD DEFINE WINDOW DURATION FOR GRID NOTE SEQUENCE
-    //     //  TIME NOTE SEQUENCE HAS DURATION, BUT GRID NOTE SEQUENCE DOES NOT
-    //     let window_duration_ms = 1000.0; // notes_window.window_duration_ms();
-    //     audio_gen::gen_notes(notes_data.notes,
-    //                          notes_data.notes_waveforms,
-    //                          window_duration_ms as u64);
-    // }
-    // println!("Played MIDI file from TrackGrid GridNoteSequence");
-    // 
+    println!("Loading args");
+    let (waveforms_arg, frequency, volume, duration_ms) = collect_args();
+    println!("Args collected\nwaveforms: {}, frequency: {}, volume: {}, duration_ms: {}",
+             waveforms_arg, frequency, volume, duration_ms);
+    
+    println!("Loading MIDI file");
+    // Test loading MIDI file and playing back using multi-track, polyphonic grid with one
+    // set of waveforms per track, notes per track, playing notes in windows of when they are active
+    // and coordinated concurrent playback where one thread prepares the next window to play
+    // and the other thread plays the current window
+    let midi_grid_tracks =
+        midi::midi_file_to_tracks::<GridNoteSequence, GridNoteSequenceBuilder>(
+            "/Users/markweiss/Downloads/test.mid");
+    println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
+    
+    let num_tracks = midi_grid_tracks.len();
+    let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
+    let track_grid = TrackGridBuilder::default()
+        .tracks(midi_grid_tracks)
+        .track_waveforms(track_waveforms)
+        .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
+        .build().unwrap();
+    
+    println!("Playing MIDI file from TrackGrid GridNoteSequence");
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        for notes_data in track_grid {
+            // TEMP DEBUG
+            // println!( "notes_data: {:#?}", notes_data);
+    
+            tx.send(notes_data).unwrap();
+        }
+    });
+    for playback_notes in rx {
+    
+        // TEMP DEBUG
+        println!("\n=====> playback_notes\n: {:#?}", playback_notes);
+    
+        // TODO LAST UNSOLVED PROBLEM IS HOW TD DEFINE WINDOW DURATION FOR GRID NOTE SEQUENCE
+        //  TIME NOTE SEQUENCE HAS DURATION, BUT GRID NOTE SEQUENCE DOES NOT
+        let window_duration_ms = 1000.0; // notes_window.window_duration_ms();
+        audio_gen::gen_notes(playback_notes.notes,
+                             playback_notes.notes_waveforms,
+                             window_duration_ms as u64);
+    }
+    println!("Played MIDI file from TrackGrid GridNoteSequence");
+    
     // // #####
     // 
     // println!("Loading MIDI file");

@@ -9,8 +9,6 @@ use crate::track::{Track, TrackBuilder};
 
 #[allow(dead_code)]
 pub(crate) static DEFAULT_BPM: u8 = 120;
-#[allow(dead_code)]
-static MIDI_TICKS_PER_QUARTER_NOTE: f32 = 960.0;
 static MSECS_PER_MIN: f32 = 60000.0;
 static MIDI_PITCH_TO_FREQ_HZ: [f64; 128] = [
     0.0, 8.661957218027252, 9.177023997418988, 9.722718241315029, 10.300861153527183,
@@ -163,6 +161,8 @@ pub(crate) fn midi_file_to_tracks<
             .num(midi_channel.as_int() as i16)
             .sequence(sequence.clone())
             .volume(1.0 / track_sequence_map.len() as f32)
+            // .playback_note_kind(crate::playback_note::PlaybackNoteKind::WithOscillatorAndEnvelope(
+            //     crate::playback_note::default_playback_note()))
             .build()
             .unwrap();
         tracks.push(track);
