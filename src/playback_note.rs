@@ -67,6 +67,19 @@ impl PlaybackNoteKind {
         }
     }
 
+    pub(crate) fn get_note(&self) -> Note {
+        match self {
+            PlaybackNoteKind::Base(playback_note) =>
+                playback_note.note,
+            PlaybackNoteKind::WithOscillator(playback_note, _) =>
+                playback_note.note,
+            PlaybackNoteKind::WithEnvelope(playback_note, _) =>
+                playback_note.note,
+            PlaybackNoteKind::WithOscillatorAndEnvelope(playback_note, _, _) =>
+                playback_note.note,
+        }
+    }
+
     pub(crate) fn set_playback_start_time_ms(&mut self, start_time_ms: f32) -> f32 {
         match self {
             PlaybackNoteKind::Base(playback_note) => {

@@ -4,6 +4,8 @@ use std::time;
 
 use crate::oscillator;
 use crate::note::Note;
+use crate::playback_note::PlaybackNoteKind;
+use crate::playback_note_trait::NoteOscillator;
 
 pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
     let host = cpal::default_host();
@@ -13,13 +15,23 @@ pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
     gen_note_impl::<f32>(&device, &config.into(), note, waveforms);
 }
 
-pub(crate) fn gen_notes(notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>,
-                        window_duration_ms: u64) {
+// pub(crate) fn gen_notes(notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>,
+//                         window_duration_ms: u64) {
+//     let host = cpal::default_host();
+//     let device = host.default_output_device().expect("No output device available");
+//     let config = device.default_output_config().unwrap();
+// 
+//     gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms, window_duration_ms);
+// }
+// 
+pub(crate) fn gen_notes(playback_notes: Vec<PlaybackNoteKind>, window_duration_ms: u64)
+    where PlaybackNoteKind: NoteOscillator
+{
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
 
-    gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms, window_duration_ms);
+    gen_notes_impl::<f32>(&device, &config.into(), playback_notes, window_duration_ms);
 }
 
 fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig, note: &Note,
@@ -55,16 +67,19 @@ where
     std::thread::sleep(time::Duration::from_millis(note.duration_ms as u64));
 }
 
+// fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
+//                      notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>,
+//                      max_note_duration_ms: u64)
 fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                     notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>,
-                     max_note_duration_ms: u64)
+                     playback_notes: Vec<PlaybackNoteKind>, max_note_duration_ms: u64)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
+    PlaybackNoteKind: NoteOscillator
 {
     let mut sample_clock = 0f32;
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
-        oscillator::get_notes_sample(&notes, &track_waveforms, sample_clock)
+        oscillator::get_notes_sample(&playback_notes, sample_clock)
     };
 
     let channels = config.channels as usize;

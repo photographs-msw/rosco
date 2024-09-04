@@ -1,4 +1,5 @@
-use crate::note::Note;
+use crate::playback_note::PlaybackNoteKind;
+use crate::playback_note_trait::{NoteEnvelope, NoteOscillator};
 
 pub(crate) static SAMPLE_RATE: f32 = 44100.0;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
@@ -39,15 +40,38 @@ pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_
     freq
 }
 
-pub(crate) fn get_notes_sample(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Waveform>>,
-                               sample_clock: f32) -> f32 {
+// pub(crate) fn get_notes_sample(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Waveform>>,
+//                                sample_clock: f32) -> f32 {
+//     let mut freq = 0.0;
+//     for (i, note) in notes.iter().enumerate() {
+//         freq += note.volume * // with note.envelope(sample_clock)
+//             get_note_sample(&channel_waveforms[i], note.frequency, sample_clock);
+//     }
+//     freq
+// }
+
+// NOTE: Assumes playback notes of Enum Kind that include Oscillator trait
+pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNoteKind>, sample_clock: f32) -> f32 
+    where PlaybackNoteKind: NoteOscillator
+{
     let mut freq = 0.0;
-    for (i, note) in notes.iter().enumerate() {
-        freq += note.volume * // with note.envelope(sample_clock)
-            get_note_sample(&channel_waveforms[i], note.frequency, sample_clock);
+    for playback_note_kind in playback_notes.iter() {
+        let note = playback_note_kind.get_note();
+        
+        if playback_note_kind.has_envelope() {
+            freq += note.volume *
+                playback_note_kind.envelope().unwrap().volume_factor(sample_clock) *
+                get_note_sample(
+                    &playback_note_kind.waveforms().unwrap(), note.frequency, sample_clock);
+        } else {
+            freq += note.volume *
+                get_note_sample(
+                    &playback_note_kind.waveforms().unwrap(), note.frequency, sample_clock);
+        }
     }
     freq
 }
+
 
 fn get_sin_sample(frequency: f32, sample_clock: f32) -> f32 {
     (sample_clock * frequency * TWO_PI / SAMPLE_RATE).sin()
