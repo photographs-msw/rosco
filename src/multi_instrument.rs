@@ -1,11 +1,12 @@
 use derive_builder::Builder;
-use crate::audio_gen;
+use crate::{audio_gen, envelope};
 use crate::track::{Track, TrackBuilder};
 use crate::note;
-use crate::note::Note;
+use crate::note::{max_note_duration_ms, Note};
 use crate::note_sequence_trait::AppendNote;
 use crate::oscillator;
 use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
+use crate::playback_note::{PlaybackNote, PlaybackNoteBuilder, PlaybackNoteKind};
 
 #[derive(Builder, Debug)]
 pub(crate) struct MultiInstrument {
@@ -42,18 +43,18 @@ impl MultiInstrumentBuilder {
 impl MultiInstrument {
 
     pub(crate) fn play_track_notes(&self) {
-        let notes = self.get_next_notes();
-        let max_note_duration_ms = note::max_note_duration_ms(&notes);
-        audio_gen::gen_notes(notes, self.track_waveforms.clone(), max_note_duration_ms);
+        let (playback_note_kinds, max_note_duration_ms) =
+            self.get_next_playback_note_kinds();
+        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms as u64);
     }
 
     pub(crate) fn play_track_notes_and_advance(&mut self) {
-        let notes = self.get_next_notes();
-        let max_note_duration_ms = note::max_note_duration_ms(&notes);
-        audio_gen::gen_notes(notes, self.track_waveforms.clone(), max_note_duration_ms);
+        let (playback_note_kinds, max_note_duration_ms) =
+            self.get_next_playback_note_kinds();
         for channel in self.tracks.iter_mut() {
             channel.sequence.increment();
         }
+        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms as u64);
     }
 
     pub(crate) fn reset_all_tracks(&mut self) {
@@ -125,13 +126,11 @@ impl MultiInstrument {
     }
 
     pub(crate) fn play_notes_direct(&self, notes: Vec<Note>) {
-        let max_note_duration_ms = note::max_note_duration_ms(&notes);
-        audio_gen::gen_notes(notes, self.track_waveforms.clone(), max_note_duration_ms);
+        let (playback_note_kinds, max_note_duration_ms) =
+            self.get_playback_note_kinds_direct(notes);
+        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms as u64);
     }
 
-    // TODO THIS IS ALL WRONG
-    //  NEED ACTUAL TIME BASED GRID AND CURRENT TICK AND CURRENT SET OF NOTES BEING TURNED ON/OFF
-    // deprecated
     fn get_next_notes(&self) -> Vec<Note> {
         self.tracks.iter()
             .filter(|track| !track.sequence.at_end())
@@ -141,6 +140,59 @@ impl MultiInstrument {
                 note
             })
             .collect()
+    }
+    
+    // fn get_next_playback_notes(&self) -> Vec<PlaybackNote> {
+    //     self.get_next_notes().iter()
+    //         .map(|note| {
+    //             PlaybackNoteBuilder::default()
+    //                 .note(*note)
+    //                 .build().unwrap()
+    //         })
+    //         .collect()
+    // }
+    
+    fn get_next_playback_note_kinds(&self) -> (Vec<PlaybackNoteKind>, f32) {
+        let mut max_note_duration_ms = 0.0;
+        let playback_note_kinds = self.tracks.iter()
+            .filter(|track| !track.sequence.at_end())
+            .map(|track| {
+                let note = track.sequence.get_note();
+                if note.duration_ms > max_note_duration_ms {
+                    max_note_duration_ms = note.duration_ms;
+                }
+                PlaybackNoteKind::WithOscillatorAndEnvelope(
+                    PlaybackNoteBuilder::default()
+                        .note(note)
+                        .build().unwrap(),
+                    self.track_waveforms[0].clone(),
+                    envelope::default_envelope()
+                )
+            })
+            .collect();
+        (playback_note_kinds, max_note_duration_ms)
+    }
+    
+    fn get_playback_note_kinds_direct(&self, notes: Vec<Note>) -> (Vec<PlaybackNoteKind>, f32) {
+        if notes.len() != self.track_waveforms.len() {
+            panic!("Number of notes must match number of waveforms");
+        }
+        let mut max_note_duration_ms = 0.0;
+        let playback_note_kinds = notes.iter().enumerate()
+            .map(|(i, note)| {
+                if note.duration_ms > max_note_duration_ms {
+                    max_note_duration_ms = note.duration_ms;
+                }
+                PlaybackNoteKind::WithOscillatorAndEnvelope(
+                    PlaybackNoteBuilder::default()
+                        .note(*note)
+                        .build().unwrap(),
+                    self.track_waveforms[i].clone(),
+                    envelope::default_envelope()
+                )
+            })
+            .collect();
+        (playback_note_kinds, max_note_duration_ms)
     }
 
     fn validate_track_num(&self, track_num: usize) {

@@ -56,24 +56,20 @@ fn main() {
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        for notes_data in track_grid {
+        for playback_note_kinds in track_grid {
             // TEMP DEBUG
             // println!( "notes_data: {:#?}", notes_data);
     
-            tx.send(notes_data).unwrap();
+            tx.send(playback_note_kinds).unwrap();
         }
     });
-    for playback_notes in rx {
+    for playback_note_kinds in rx {
     
         // TEMP DEBUG
-        println!("\n=====> playback_notes\n: {:#?}", playback_notes);
+        println!("\n=====> playback_notes\n: {:#?}", playback_note_kinds);
     
-        // TODO LAST UNSOLVED PROBLEM IS HOW TD DEFINE WINDOW DURATION FOR GRID NOTE SEQUENCE
-        //  TIME NOTE SEQUENCE HAS DURATION, BUT GRID NOTE SEQUENCE DOES NOT
-        let window_duration_ms = 1000.0; // notes_window.window_duration_ms();
-        audio_gen::gen_notes(playback_notes.notes,
-                             playback_notes.notes_waveforms,
-                             window_duration_ms as u64);
+        let window_duration_ms = playback_note_kinds[0].get_window_duration_ms();
+        audio_gen::gen_notes(playback_note_kinds, window_duration_ms as u64);
     }
     println!("Played MIDI file from TrackGrid GridNoteSequence");
     
