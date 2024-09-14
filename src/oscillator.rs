@@ -53,16 +53,16 @@ pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNoteKind>, sample_cl
     for playback_note_kind in playback_notes.iter() {
         let note = playback_note_kind.get_note();
         
+        let mut volume = note.volume;
+        
         if playback_note_kind.has_envelope() {
-            freq += note.volume *
-                playback_note_kind.envelope().unwrap().volume_factor(sample_clock / SAMPLE_RATE) *
-                get_note_sample(
-                    &playback_note_kind.waveforms().unwrap(), note.frequency, sample_clock);
-        } else {
-            freq += note.volume *
-                get_note_sample(
-                    &playback_note_kind.waveforms().unwrap(), note.frequency, sample_clock);
-        }
+            volume *= playback_note_kind
+                .envelope().unwrap()
+                .volume_factor(sample_clock / SAMPLE_RATE);
+        } 
+        
+        freq += volume *
+            get_note_sample(&playback_note_kind.waveforms().unwrap(), note.frequency, sample_clock);
     }
 
     freq
@@ -96,9 +96,15 @@ fn get_saw_sample(frequency: f32, sample_clock: f32) -> f32 {
         - 1.0
 }
 
-#[allow(dead_code)]
 fn get_gaussian_noise_sample() -> f32 {
     let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = thread_rng();
     normal.sample(&mut rng)
+}
+
+fn modify_sample_lfo(sample: f32, lfo_freq: f32, lfo_amp: f32, sample_clock: f32) -> f32 {
+    // Phase of the LFO: sine of (sample_clock * lfo_freq * TWO_PI / SAMPLE_RATE)
+    //  i.e. clock position * frequency of the LFO, positioned in radius, normalized by sample rate
+    // This is scaled by the amplitude of the LFO and then used to scale the sample
+    sample * (lfo_amp * (sample_clock * lfo_freq * TWO_PI / SAMPLE_RATE).sin())
 }

@@ -9,7 +9,7 @@ pub(crate) trait NoteEnvelope {
 #[allow(dead_code)]
 pub(crate) trait NoteOscillator{
     fn waveforms(&self) -> Option<Vec<Waveform>>;
-    // TODO DO WE NEED THIS OR JUST thE TRAIT?
+    // TODO DO WE NEED THIS OR JUST THE TRAIT?
     fn has_waveforms(&self) -> bool;
 }
 

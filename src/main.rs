@@ -46,9 +46,9 @@ fn main() {
     println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
 
     let envelope = EnvelopeBuilder::default()
-        .attack(EnvelopePair(0.3, 0.9))
-        .decay(EnvelopePair(0.35, 0.7))
-        .sustain(EnvelopePair(0.7, 0.65))
+        .attack(EnvelopePair(0.25, 0.9))
+        .decay(EnvelopePair(0.325, 0.75))
+        .sustain(EnvelopePair(0.75, 0.625))
         .build().unwrap();
     
     let num_tracks = midi_grid_tracks.len();
@@ -57,8 +57,8 @@ fn main() {
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
         .track_waveforms(track_waveforms)
-        // .track_envelopes(vec![Some(envelope); num_tracks])
-        .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
+        .track_envelopes(vec![Some(envelope); num_tracks])
+        // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
