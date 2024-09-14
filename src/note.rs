@@ -3,8 +3,6 @@ use std::hash::{Hash, Hasher};
 use derive_builder::Builder;
 
 use crate::constants::NO_TRACK;
-use crate::envelope;
-use crate::envelope::Envelope;
 use crate::float_utils::float_eq;
 
 // We want to set INIT_START_TIME, INIT_END_TIME and DEFAULT_DURATION as builder defaults
@@ -27,11 +25,6 @@ pub(crate) struct Note {
     #[builder(setter(custom))]
     #[allow(dead_code)]
     pub (crate) end_time_ms: f32,
-
-    // TODO REMOVE FROM NOTE
-    // user can call default_envelope() to build with no-op envelope or can add custom envelope
-    // #[builder(public, setter(custom))]
-    // pub(crate) envelope: Envelope,
 
     #[builder(public, setter(custom))]
     pub(crate) track_num: i16,
@@ -117,12 +110,13 @@ impl Note {
     }
 }
 
-pub(crate) fn max_note_duration_ms(notes: &Vec<Note>) -> u64 {
-    notes.iter()
-        .map(|note| note.duration_ms as u64)
-        .max()
-        .unwrap()
-}
+// TODO DO WE NEED THIS?
+// pub(crate) fn max_note_duration_ms(notes: &Vec<Note>) -> u64 {
+//     notes.iter()
+//         .map(|note| note.duration_ms as u64)
+//         .max()
+//         .unwrap()
+// }
 
 #[cfg(test)]
 mod test_note {

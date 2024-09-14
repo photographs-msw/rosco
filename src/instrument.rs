@@ -8,6 +8,7 @@ use crate::track::{Track, TrackBuilder};
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 
+#[allow(dead_code)]
 #[derive(Builder, Debug)]
 pub(crate) struct Instrument<> {
     waveforms: Vec<oscillator::Waveform>,
@@ -20,6 +21,7 @@ pub(crate) struct Instrument<> {
     track: Track<GridNoteSequence>,
 }
 
+#[allow(dead_code)]
 impl InstrumentBuilder {
     pub(crate) fn track(&mut self) -> &mut Self {
         self.track = Some(TrackBuilder::default()
@@ -30,6 +32,7 @@ impl InstrumentBuilder {
     }
 }
 
+#[allow(dead_code)]
 impl Instrument {
 
     pub(crate) fn add_note(&mut self, note: Note) {

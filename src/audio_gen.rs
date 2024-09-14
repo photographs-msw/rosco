@@ -7,6 +7,7 @@ use crate::note::Note;
 use crate::playback_note::PlaybackNoteKind;
 use crate::playback_note_trait::NoteOscillator;
 
+#[allow(dead_code)]
 pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
@@ -34,6 +35,7 @@ pub(crate) fn gen_notes(playback_notes: Vec<PlaybackNoteKind>, window_duration_m
     gen_notes_impl::<f32>(&device, &config.into(), playback_notes, window_duration_ms);
 }
 
+#[allow(dead_code)]
 fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig, note: &Note,
                     waveforms: Vec<oscillator::Waveform>)
 where

@@ -22,10 +22,12 @@ pub(crate) struct PlaybackNote {
     pub(crate) playback_duration_ms: f32,
 }
 
+#[allow(dead_code)]
 pub(crate) fn default_playback_note() -> PlaybackNote {
     PlaybackNoteBuilder::default().build().unwrap()
 }
 
+#[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub(crate) enum PlaybackNoteKind {
     Base(PlaybackNote),
@@ -34,6 +36,7 @@ pub(crate) enum PlaybackNoteKind {
     WithOscillatorAndEnvelope(PlaybackNote, Vec<Waveform>, Envelope),
 }
 
+#[allow(dead_code)]
 impl PlaybackNoteKind {
     pub(crate) fn default_base() -> PlaybackNoteKind {
         PlaybackNoteKind::Base(default_playback_note())
@@ -53,6 +56,7 @@ impl PlaybackNoteKind {
     }
 }
 
+#[allow(dead_code)]
 impl PlaybackNoteKind {
     pub(crate) fn get_playback_start_time_ms(&self) -> f32 {
         match self {

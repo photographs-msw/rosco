@@ -64,7 +64,7 @@ pub (crate) fn default_envelope() -> Envelope {
     Envelope {
         start: EnvelopePair(0.0, 0.0),
         attack: EnvelopePair(0.02, 1.0),
-        decay: EnvelopePair(0.02, 1.0),
+        decay: EnvelopePair(0.51, 1.0),
         sustain: EnvelopePair(0.98, 1.0),
         release: EnvelopePair(1.0, 0.0),
     }
@@ -76,6 +76,13 @@ impl Envelope {
     // TODO MOVE BOTH TO FREE FUNCTIONS AND JUST TAKE THE ADSR VALUES AS ARGS SO CAN BE
     //  A CLOSURE IN THE gen_notes CALLBACK in audio_gen
     pub(crate) fn volume_factor(&self, position: f32) -> f32 {
+        
+        // TEMP DEBUG
+        if position < 0.0 || position > 1.0 {
+            println!("POSITION: {}", position);
+            panic!("Envelope: position must be between 0.0 and 1.0");
+        }
+        
         if position < self.attack.0 {
             self.volume_for_segment_position(self.start, self.attack, position)
         } else if position < self.decay.0 {
@@ -95,8 +102,8 @@ impl Envelope {
         let end_volume= end.1;
 
         let slope = (end_volume - start_volume) / (end_position - start_position);
-        let intercept = start_volume - slope * start_position;
-        // y = mx + b, where slope = m and intercept = b
+        let intercept = start_volume - (slope * start_position);
+        // y = mx + b, where slope = m and intercept = b, so b = y - mx
         // so the value along the line for any position
         slope * position + intercept
     }
@@ -127,9 +134,11 @@ mod test_envelope {
            .build().unwrap();
 
         assert_float_eq(envelope.volume_factor(0.0), 0.0);
+        assert_float_eq(envelope.volume_factor(0.15), 0.45);
         assert_float_eq(envelope.volume_factor(0.3), 0.9);
         assert_float_eq(envelope.volume_factor(0.35), 0.7);
         assert_float_eq(envelope.volume_factor(0.6), 0.65);
+        assert_float_eq(envelope.volume_factor(0.8), 0.325);
         assert_float_eq(envelope.volume_factor(1.0), 0.0);
     }
 }

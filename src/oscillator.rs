@@ -60,7 +60,7 @@ pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNoteKind>, sample_cl
         
         if playback_note_kind.has_envelope() {
             freq += note.volume *
-                playback_note_kind.envelope().unwrap().volume_factor(sample_clock) *
+                playback_note_kind.envelope().unwrap().volume_factor(sample_clock / SAMPLE_RATE) *
                 get_note_sample(
                     &playback_note_kind.waveforms().unwrap(), note.frequency, sample_clock);
         } else {
@@ -69,6 +69,7 @@ pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNoteKind>, sample_cl
                     &playback_note_kind.waveforms().unwrap(), note.frequency, sample_clock);
         }
     }
+
     freq
 }
 

@@ -1,13 +1,13 @@
 use derive_builder::Builder;
 use crate::{audio_gen, envelope};
 use crate::track::{Track, TrackBuilder};
-use crate::note;
-use crate::note::{max_note_duration_ms, Note};
+use crate::note::Note;
 use crate::note_sequence_trait::AppendNote;
 use crate::oscillator;
 use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
-use crate::playback_note::{PlaybackNote, PlaybackNoteBuilder, PlaybackNoteKind};
+use crate::playback_note::{PlaybackNoteBuilder, PlaybackNoteKind};
 
+#[allow(dead_code)]
 #[derive(Builder, Debug)]
 pub(crate) struct MultiInstrument {
     track_waveforms: Vec<Vec<oscillator::Waveform>>,
@@ -20,6 +20,7 @@ pub(crate) struct MultiInstrument {
     pub(crate) tracks: Vec<Track<GridNoteSequence>>,
 }
 
+#[allow(dead_code)]
 impl MultiInstrumentBuilder {
     // builds with empty tracks, the default setter in the builder
     pub(crate) fn tracks(&mut self) -> &mut Self {
@@ -40,6 +41,7 @@ impl MultiInstrumentBuilder {
     }
 }
 
+#[allow(dead_code)]
 impl MultiInstrument {
 
     pub(crate) fn play_track_notes(&self) {
