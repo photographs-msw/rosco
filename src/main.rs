@@ -20,8 +20,8 @@ mod playback_note_trait;
 
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 
-// use crate::envelope::EnvelopeBuilder;
-// use crate::envelope_pair::EnvelopePair;
+use crate::envelope::EnvelopeBuilder;
+use crate::envelope_pair::EnvelopePair;
 use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 // use crate::instrument::InstrumentBuilder;
 // use crate::multi_instrument::{MultiInstrumentBuilder};
@@ -44,12 +44,20 @@ fn main() {
         midi::midi_file_to_tracks::<GridNoteSequence, GridNoteSequenceBuilder>(
             "/Users/markweiss/Downloads/test.mid");
     println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
+
+    let envelope = EnvelopeBuilder::default()
+        .attack(EnvelopePair(0.3, 0.9))
+        .decay(EnvelopePair(0.35, 0.7))
+        .sustain(EnvelopePair(0.7, 0.65))
+        .build().unwrap();
     
     let num_tracks = midi_grid_tracks.len();
     let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
+    
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
         .track_waveforms(track_waveforms)
+        // .track_envelopes(vec![Some(envelope); num_tracks])
         .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
         .build().unwrap();
     
@@ -57,21 +65,18 @@ fn main() {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         for playback_note_kinds in track_grid {
-            // TEMP DEBUG
-            // println!( "notes_data: {:#?}", notes_data);
-    
             tx.send(playback_note_kinds).unwrap();
         }
     });
     for playback_note_kinds in rx {
     
         // TEMP DEBUG
-        println!("\n=====> playback_notes\n: {:#?}", playback_note_kinds);
+        // println!("\n=====> playback_notes\n: {:#?}", playback_note_kinds);
     
         let window_duration_ms = playback_note_kinds[0].get_window_duration_ms();
         audio_gen::gen_notes(playback_note_kinds, window_duration_ms as u64);
     }
-    println!("Played MIDI file from TrackGrid GridNoteSequence");
+    // println!("Played MIDI file from TrackGrid GridNoteSequence");
     
     // // #####
     // 

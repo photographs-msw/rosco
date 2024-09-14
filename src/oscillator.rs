@@ -1,3 +1,5 @@
+use rand::thread_rng;
+use rand_distr::{Distribution, Normal};
 use crate::playback_note::PlaybackNoteKind;
 use crate::playback_note_trait::{NoteEnvelope, NoteOscillator};
 
@@ -6,20 +8,22 @@ static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
 #[derive(Clone, Debug)]
 pub(crate) enum Waveform {
-    Sine,
-    Triangle,
-    Square,
+    GaussianNoise,
     Saw,
+    Sine,
+    Square,
+    Triangle,
 }
 
 pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
     waveform_arg.split(",")
         .map( |waveform| {
             let matched = match waveform {
-                "sine" => Waveform::Sine,
-                "triangle" => Waveform::Triangle,
-                "square" => Waveform::Square,
+                "gaussian_noise" => Waveform::GaussianNoise,
                 "saw" => Waveform::Saw,
+                "sine" => Waveform::Sine,
+                "square" => Waveform::Square,
+                "triangle" => Waveform::Triangle,
                 _ => Waveform::Sine,
             };
             matched
@@ -31,24 +35,15 @@ pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_
     let mut freq = 0.0;
     for waveform in waveforms {
         freq += match waveform {
-            Waveform::Sine => get_sin_sample(frequency, sample_clock),
-            Waveform::Triangle => get_triangle_sample(frequency, sample_clock),
-            Waveform::Square => get_square_sample(frequency, sample_clock),
+            Waveform::GaussianNoise => get_gaussian_noise_sample(),
             Waveform::Saw => get_saw_sample(frequency, sample_clock),
+            Waveform::Sine => get_sin_sample(frequency, sample_clock),
+            Waveform::Square => get_square_sample(frequency, sample_clock),
+            Waveform::Triangle => get_triangle_sample(frequency, sample_clock),
         };
     }
     freq
 }
-
-// pub(crate) fn get_notes_sample(notes: &Vec<Note>, channel_waveforms: &Vec<Vec<Waveform>>,
-//                                sample_clock: f32) -> f32 {
-//     let mut freq = 0.0;
-//     for (i, note) in notes.iter().enumerate() {
-//         freq += note.volume * // with note.envelope(sample_clock)
-//             get_note_sample(&channel_waveforms[i], note.frequency, sample_clock);
-//     }
-//     freq
-// }
 
 // NOTE: Assumes playback notes of Enum Kind that include Oscillator trait
 pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNoteKind>, sample_clock: f32) -> f32 
@@ -73,6 +68,7 @@ pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNoteKind>, sample_cl
     freq
 }
 
+// /////////////
 
 fn get_sin_sample(frequency: f32, sample_clock: f32) -> f32 {
     (sample_clock * frequency * TWO_PI / SAMPLE_RATE).sin()
@@ -98,4 +94,11 @@ fn get_saw_sample(frequency: f32, sample_clock: f32) -> f32 {
         - ((frequency / SAMPLE_RATE * sample_clock) + 0.5)
         .floor()).abs()
         - 1.0
+}
+
+#[allow(dead_code)]
+fn get_gaussian_noise_sample() -> f32 {
+    let normal = Normal::new(0.0, 1.0).unwrap();
+    let mut rng = thread_rng();
+    normal.sample(&mut rng)
 }
