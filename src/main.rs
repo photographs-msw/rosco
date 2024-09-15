@@ -16,6 +16,7 @@ mod playback_note;
 mod time_note_sequence;
 mod track;
 mod track_grid;
+mod sample_effect_trait;
 
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 
@@ -53,8 +54,8 @@ fn main() {
         .build().unwrap();
 
     let lfo = oscillator::LFOBuilder::default()
-        .frequency(2205.0)
-        .amplitude(0.25)
+        .frequency(22.5)
+        .amplitude(0.5)
         .waveforms(vec![oscillator::Waveform::Sine])
         .build().unwrap();
     

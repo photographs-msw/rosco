@@ -3,6 +3,7 @@ use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
 use crate::playback_note::PlaybackNote;
+use crate::sample_effect_trait::ApplyEffect;
 
 pub(crate) static SAMPLE_RATE: f32 = 44100.0;
 pub(crate) static DEFAULT_LFO_AMPLITUDE: f32 = 0.5;
@@ -64,7 +65,8 @@ pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNote>, sample_clock:
         
         if playback_note.has_lfos {
             for lfo in playback_note.lfos.clone().unwrap() {
-                volume *= lfo.get_lfo_sample(volume, sample_clock);
+                // volume += lfo.get_lfo_sample(volume, sample_clock);
+                volume = lfo.apply_effect(volume, note.frequency, sample_clock);
             }
         }
         
@@ -154,5 +156,11 @@ impl LFOBuilder {
 impl LFO {
     fn get_lfo_sample(&self, sample: f32, sample_clock: f32) -> f32 {
         sample * self.amplitude * get_note_sample(&self.waveforms, self.frequency, sample_clock)
+    }
+}
+
+impl ApplyEffect for LFO {
+    fn apply_effect(&self, sample: f32, _frequency: f32, sample_clock: f32) -> f32 {
+        sample + self.get_lfo_sample(sample, sample_clock)
     }
 }
