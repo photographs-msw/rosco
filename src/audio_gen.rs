@@ -5,7 +5,6 @@ use std::time;
 use crate::oscillator;
 use crate::note::Note;
 use crate::playback_note::PlaybackNote;
-// use crate::playback_note_trait::NoteOscillator;
 
 #[allow(dead_code)]
 pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {

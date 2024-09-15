@@ -122,8 +122,7 @@ impl TimeNoteSequence {
             let mut new_note = note.clone();
             // not start time is current notes_time_ms
             new_note.start_time_ms = cur_notes_time_ms;
-            new_note.end_time_ms = window_end_time_ms;
-            new_note.duration_ms = new_note.end_time_ms - new_note.start_time_ms;
+            new_note.duration_ms =  window_end_time_ms - new_note.start_time_ms;
             new_note
         }
         let mut window_notes = Vec::new();
@@ -145,7 +144,6 @@ impl TimeNoteSequence {
                     .volume(0.0)
                     .start_time_ms(self.cur_notes_time_ms)
                     .duration_ms(window_start_time_ms - self.cur_notes_time_ms)
-                    .end_time_ms()
                     .track_num(1)
                     .build().unwrap()
             );
@@ -177,7 +175,7 @@ impl TimeNoteSequence {
                 .flatten()
                 .filter(|note|
                 float_leq(note.start_time_ms, self.cur_notes_time_ms) &&
-                    float_geq(note.end_time_ms, self.cur_notes_time_ms))
+                    float_geq(note.end_time_ms(), self.cur_notes_time_ms))
                 .map(|note| note_ref_into_note(note, self.cur_notes_time_ms, window_end_time_ms))
                 .filter(|note| note.duration_ms > 0.0)
                 .collect();
@@ -203,7 +201,7 @@ impl TimeNoteSequence {
         for i in 0..self.frontier_indexes.len() {
             if self.sequence[self.frontier_indexes[i]].iter().all(
                     |note|
-                    float_leq(note.end_time_ms, note_time_ms)) {
+                    float_leq(note.end_time_ms(), note_time_ms)) {
                 frontier_indexes_to_pop_front += 1;
             }
         }
@@ -242,9 +240,9 @@ impl TimeNoteSequence {
         // for a note that starts on or before note_time_ms and ends after it
         for note in self.get_frontier_notes().iter().flatten() {
             if float_leq(note.start_time_ms, note_time_ms) &&
-                    note.end_time_ms > note_time_ms &&
-                    note.end_time_ms < end_time_ms {
-                end_time_ms = note.end_time_ms;
+                    note.end_time_ms() > note_time_ms &&
+                    note.end_time_ms() < end_time_ms {
+                end_time_ms = note.end_time_ms();
             }
         }
 
@@ -298,23 +296,18 @@ mod test_time_note_sequence {
     fn test_get_next_notes_window() {
         let note_1 = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
         let note_2 = setup_note()
             .start_time_ms(500.0)
-            .end_time_ms()
             .build().unwrap();
         let note_3 = setup_note()
             .start_time_ms(1000.0)
-            .end_time_ms()
             .build().unwrap();
         let note_4 = setup_note()
             .start_time_ms(1000.0)
-            .end_time_ms()
             .build().unwrap();
         let note_5 = setup_note()
             .start_time_ms(2500.0)
-            .end_time_ms()
             .build().unwrap();
         let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
 
@@ -340,7 +333,7 @@ mod test_time_note_sequence {
         let mut notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 1);
         assert_float_eq(notes_window[0].start_time_ms, 0.0);
-        assert_float_eq(notes_window[0].end_time_ms, 500.0);
+        assert_float_eq(notes_window[0].end_time_ms(), 500.0);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
 
         // 1 500 - 1000
@@ -348,10 +341,10 @@ mod test_time_note_sequence {
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 2);
         assert_float_eq(notes_window[0].start_time_ms, 500.0);
-        assert_float_eq(notes_window[0].end_time_ms, 1000.0);
+        assert_float_eq(notes_window[0].end_time_ms(), 1000.0);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[1].start_time_ms, 500.0);
-        assert_float_eq(notes_window[1].end_time_ms, 1000.0);
+        assert_float_eq(notes_window[1].end_time_ms(), 1000.0);
         assert_float_eq(notes_window[1].duration_ms, 500.0);
 
         // 2 1000 - 1500
@@ -360,13 +353,13 @@ mod test_time_note_sequence {
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 3);
         assert_float_eq(notes_window[0].start_time_ms, 1000.0);
-        assert_float_eq(notes_window[0].end_time_ms, 1500.0);
+        assert_float_eq(notes_window[0].end_time_ms(), 1500.0);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[1].start_time_ms, 1000.0);
-        assert_float_eq(notes_window[1].end_time_ms, 1500.0);
+        assert_float_eq(notes_window[1].end_time_ms(), 1500.0);
         assert_float_eq(notes_window[1].duration_ms, 500.0);
         assert_float_eq(notes_window[2].start_time_ms, 1000.0);
-        assert_float_eq(notes_window[2].end_time_ms, 1500.0);
+        assert_float_eq(notes_window[2].end_time_ms(), 1500.0);
         assert_float_eq(notes_window[2].duration_ms, 500.0);
 
         // 3 1500 - 2000
@@ -374,17 +367,17 @@ mod test_time_note_sequence {
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 2);
         assert_float_eq(notes_window[0].start_time_ms, 1500.0);
-        assert_float_eq(notes_window[0].end_time_ms, 2000.0);
+        assert_float_eq(notes_window[0].end_time_ms(), 2000.0);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
         assert_float_eq(notes_window[1].start_time_ms, 1500.0);
-        assert_float_eq(notes_window[1].end_time_ms, 2000.0);
+        assert_float_eq(notes_window[1].end_time_ms(), 2000.0);
         assert_float_eq(notes_window[1].duration_ms, 500.0);
         
         // Rest 2000 - 2500
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 1);
         assert_float_eq(notes_window[0].start_time_ms, 2000.0);
-        assert_float_eq(notes_window[0].end_time_ms, 2500.0);
+        assert_float_eq(notes_window[0].end_time_ms(), 2500.0);
         assert_float_eq(notes_window[0].duration_ms, 500.0);
         // 0 volume because it is a rest note
         assert_float_eq(notes_window[0].volume, 0.0);
@@ -393,7 +386,7 @@ mod test_time_note_sequence {
         notes_window = sequence.get_next_notes_window();
         assert_eq!(notes_window.len(), 1);
         assert_float_eq(notes_window[0].start_time_ms, 2500.0);
-        assert_float_eq(notes_window[0].end_time_ms, 3500.0);
+        assert_float_eq(notes_window[0].end_time_ms(), 3500.0);
         assert_float_eq(notes_window[0].duration_ms, 1000.0);
     }
 
@@ -401,23 +394,18 @@ mod test_time_note_sequence {
     fn test_insert() {
         let note_1 = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
         let note_2 = setup_note()
             .start_time_ms(500.0)
-            .end_time_ms()
             .build().unwrap();
         let note_3 = setup_note()
             .start_time_ms(1000.0)
-            .end_time_ms()
             .build().unwrap();
         let note_4 = setup_note()
             .start_time_ms(1000.0)
-            .end_time_ms()
             .build().unwrap();
         let note_5 = setup_note()
             .start_time_ms(2500.0)
-            .end_time_ms()
             .build().unwrap();
         let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
         
@@ -454,23 +442,18 @@ mod test_time_note_sequence {
     fn test_insert_multi_position() {
         let note_1 = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
         let note_2 = setup_note()
             .start_time_ms(500.0)
-            .end_time_ms()
             .build().unwrap();
         let note_3 = setup_note()
             .start_time_ms(1000.0)
-            .end_time_ms()
             .build().unwrap();
         let note_4 = setup_note()
             .start_time_ms(1000.0)
-            .end_time_ms()
             .build().unwrap();
         let note_5 = setup_note()
             .start_time_ms(2500.0)
-            .end_time_ms()
             .build().unwrap();
         let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
 

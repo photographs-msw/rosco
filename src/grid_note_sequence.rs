@@ -245,7 +245,6 @@ mod test_grid_note_sequence {
     fn test_append_note() {
         let note = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
 
         let sequence = GridNoteSequenceBuilder::default()
@@ -260,11 +259,9 @@ mod test_grid_note_sequence {
     fn test_append_notes() {
         let note_1 = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
         let note_2 = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
 
         let sequence = GridNoteSequenceBuilder::default()
@@ -282,23 +279,18 @@ mod test_grid_note_sequence {
     fn test_insert_notes_get_notes_at() {
         let note_1 = setup_note()
             .start_time_ms(2.0)
-            .end_time_ms()
             .build().unwrap();
         let note_2 = setup_note()
             .start_time_ms(2.0)
-            .end_time_ms()
             .build().unwrap();
         let note_3 = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
         let note_4 = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
         let note_5 = setup_note()
             .start_time_ms(1.0)
-            .end_time_ms()
             .build().unwrap();
 
         let mut sequence = GridNoteSequenceBuilder::default()
@@ -318,15 +310,12 @@ mod test_grid_note_sequence {
     fn test_insert_note_increment_decrement_get_note_at() {
         let note_1 = setup_note()
             .start_time_ms(1.0)
-            .end_time_ms()
             .build().unwrap();
         let note_2 = setup_note()
             .start_time_ms(2.0)
-            .end_time_ms()
             .build().unwrap();
         let note_3 = setup_note()
             .start_time_ms(0.0)
-            .end_time_ms()
             .build().unwrap();
 
         let mut sequence = GridNoteSequenceBuilder::default()
@@ -371,7 +360,6 @@ mod test_grid_note_sequence {
     fn test_insert_invalid_note() {
         let note_1 = setup_note()
             .start_time_ms(-1.0)
-            .end_time_ms()
             .build().unwrap();
 
         let mut sequence = GridNoteSequenceBuilder::default()
@@ -383,10 +371,7 @@ mod test_grid_note_sequence {
 
     fn setup_note() -> NoteBuilder {
         NoteBuilder::default()
-            .frequency(440.0)
             .duration_ms(1000.0)
-            .volume(1.0)
-            .track_num(1)
             .clone()
     }
 }

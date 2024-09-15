@@ -44,8 +44,8 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                 if float_leq(note.start_time_ms, min_start_time_ms) {
                     min_start_time_ms = note.start_time_ms;
                 }
-                if float_geq(note.end_time_ms, max_end_time_ms) {
-                    max_end_time_ms = note.end_time_ms;
+                if float_geq(note.end_time_ms(), max_end_time_ms) {
+                    max_end_time_ms = note.end_time_ms();
                 }
             }
         }
@@ -97,12 +97,10 @@ mod test_sequence_grid {
                                     setup_note()
                                         .start_time_ms(0.0)
                                         .duration_ms(1000.0)
-                                        .end_time_ms()
                                         .build().unwrap(),
                                     setup_note()
                                         .start_time_ms(1.0)
                                         .duration_ms(1000.0)
-                                        .end_time_ms()
                                         .build().unwrap(),
                                 ]]).build().unwrap()
                         )
@@ -120,12 +118,6 @@ mod test_sequence_grid {
     }
 
     fn setup_note() -> NoteBuilder {
-        NoteBuilder::default()
-            // Unfortunately because end_time_ms() custom builder unwraps values from
-            // start_time_ms and duration_ms we have to set them before end_time_ms
-            .frequency(440.0)
-            .volume(1.0)
-            .track_num(1)
-            .clone()
+        NoteBuilder::default().clone()
     }
 }

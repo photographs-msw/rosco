@@ -118,7 +118,6 @@ pub(crate) fn midi_file_to_tracks<
                                                                            ticks_since_start.as_int() as f32 /
                                                                                ticks_per_ms)
                                                                        .duration_ms(0.0)
-                                                                       .end_time_ms()
                                                                        .track_num(channel.as_int() as i16)
                                                                        .build().unwrap()
                                             );
@@ -221,8 +220,7 @@ fn handle_note_off<SequenceType: AppendNote>(note_key: NoteKey,
     // Add the last tick delta to the note duration, copy the note to the output track sequence
     // and remove it from the current notes map
     let mut note = track_notes_map.get_mut(&note_key).unwrap().clone();
-    note.end_time_ms = ms_since_start;
-    note.duration_ms = note.end_time_ms - note.start_time_ms;
+    note.duration_ms = ms_since_start - note.start_time_ms;
     track_sequence_map.get_mut(&note_key.channel).unwrap().append_note(note);
     track_notes_map.remove(&note_key);
 
