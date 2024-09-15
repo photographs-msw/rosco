@@ -58,14 +58,14 @@ pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNote>, sample_clock:
         let mut volume = note.volume;
         
         if playback_note.has_envelope {
-            volume *= playback_note
-                .envelope.unwrap()
-                .volume_factor(sample_clock / SAMPLE_RATE);
+            // freq is unused here but passed for trait interface
+            volume = playback_note
+                .envelope.clone().unwrap()
+                .apply_effect(volume, freq, sample_clock / SAMPLE_RATE);
         }
         
         if playback_note.has_lfos {
             for lfo in playback_note.lfos.clone().unwrap() {
-                // volume += lfo.get_lfo_sample(volume, sample_clock);
                 volume = lfo.apply_effect(volume, note.frequency, sample_clock);
             }
         }

@@ -3,6 +3,7 @@ use std::hash::Hash;
 use derive_builder::Builder;
 
 use crate::envelope_pair::EnvelopePair;
+use crate::sample_effect_trait::ApplyEffect;
 
 // State for an ADSR envelope. User sets the position from the start where attack, decay, sustain
 // and release end, and the volume level at each of these positions. The envelope defaults to
@@ -119,6 +120,12 @@ impl PartialEq for Envelope {
     }
 }
 impl Eq for Envelope {}
+
+impl ApplyEffect for Envelope {
+    fn apply_effect(&self, sample: f32, _frequency: f32, sample_clock: f32) -> f32 {
+       sample * self.volume_factor(sample_clock)
+    }
+}
 
 #[cfg(test)]
 mod test_envelope {
