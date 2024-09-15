@@ -4,20 +4,20 @@ use crate::float_utils::{float_geq, float_leq};
 use crate::envelope;
 use crate::envelope::Envelope;
 use crate::note_sequence_trait::NextNotes;
-use crate::oscillator;
-use crate::playback_note::{PlaybackNoteBuilder, PlaybackNoteKind};
+use crate::oscillator::Waveform;
+use crate::playback_note::{PlaybackNoteBuilder, PlaybackNote};
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
-    pub(crate) track_waveforms: Vec<Vec<oscillator::Waveform>>,
+    pub(crate) track_waveforms: Vec<Vec<Waveform>>,
     pub(crate) track_envelopes: Vec<Option<Envelope>>,
 }
 
 impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
 
-    pub(crate) fn next_notes(&mut self) -> Vec<PlaybackNoteKind> {
+    pub(crate) fn next_notes(&mut self) -> Vec<PlaybackNote> {
         let mut playback_notes = Vec::new();
         let mut min_start_time_ms = f32::MAX;
         let mut max_end_time_ms = 0.0;
@@ -25,13 +25,12 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
         for (i, track) in self.tracks.iter_mut().enumerate() {
             for note in track.sequence.next_notes() {
                 playback_notes.push(
-                    PlaybackNoteKind::WithOscillatorAndEnvelope(
-                        PlaybackNoteBuilder::default()
-                            .note(note)
-                            .build().unwrap(),
-                        self.track_waveforms[i].clone(),
-                        self.track_envelopes[i].unwrap_or(envelope::default_envelope()) 
-                    )
+                    PlaybackNoteBuilder::default()
+                        .note(note)
+                        .waveforms(self.track_waveforms[i].clone())
+                        .envelope(self.track_envelopes[i].clone()
+                            .unwrap_or(envelope::default_envelope()))
+                        .build().unwrap()
                 );
                 
                 if float_leq(note.start_time_ms, min_start_time_ms) {
@@ -43,10 +42,10 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
             }
         }
         
-        for playback_note_kind in playback_notes.iter_mut() {
-            playback_note_kind.set_playback_start_time_ms(min_start_time_ms);
-            playback_note_kind.set_playback_end_time_ms(max_end_time_ms);
-            playback_note_kind.set_playback_duration_ms();
+        for playback_note in playback_notes.iter_mut() {
+            playback_note.playback_start_time_ms = min_start_time_ms;
+            playback_note.playback_end_time_ms = max_end_time_ms;
+            playback_note.playback_duration_ms();
         }
         
         playback_notes
@@ -54,7 +53,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
 }
 
 impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
-    type Item = Vec<PlaybackNoteKind>;
+    type Item = Vec<PlaybackNote>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let playback_notes= self.next_notes();

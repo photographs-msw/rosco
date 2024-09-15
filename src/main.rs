@@ -64,17 +64,17 @@ fn main() {
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        for playback_note_kinds in track_grid {
-            tx.send(playback_note_kinds).unwrap();
+        for playback_note in track_grid {
+            tx.send(playback_note).unwrap();
         }
     });
-    for playback_note_kinds in rx {
+    for playback_note in rx {
     
         // TEMP DEBUG
         // println!("\n=====> playback_notes\n: {:#?}", playback_note_kinds);
     
-        let window_duration_ms = playback_note_kinds[0].get_window_duration_ms();
-        audio_gen::gen_notes(playback_note_kinds, window_duration_ms as u64);
+        let window_duration_ms = playback_note[0].playback_duration_ms();
+        audio_gen::gen_notes(playback_note, window_duration_ms as u64);
     }
     // println!("Played MIDI file from TrackGrid GridNoteSequence");
     

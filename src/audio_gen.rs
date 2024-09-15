@@ -4,8 +4,8 @@ use std::time;
 
 use crate::oscillator;
 use crate::note::Note;
-use crate::playback_note::PlaybackNoteKind;
-use crate::playback_note_trait::NoteOscillator;
+use crate::playback_note::PlaybackNote;
+// use crate::playback_note_trait::NoteOscillator;
 
 #[allow(dead_code)]
 pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
@@ -24,9 +24,9 @@ pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
 // 
 //     gen_notes_impl::<f32>(&device, &config.into(), notes, track_waveforms, window_duration_ms);
 // }
-// 
-pub(crate) fn gen_notes(playback_notes: Vec<PlaybackNoteKind>, window_duration_ms: u64)
-    where PlaybackNoteKind: NoteOscillator
+
+pub(crate) fn gen_notes(playback_notes: Vec<PlaybackNote>, window_duration_ms: u64)
+    // where PlaybackNoteKind: NoteOscillator
 {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
@@ -73,10 +73,10 @@ where
 //                      notes: Vec<Note>, track_waveforms: Vec<Vec<oscillator::Waveform>>,
 //                      max_note_duration_ms: u64)
 fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                     playback_notes: Vec<PlaybackNoteKind>, max_note_duration_ms: u64)
-where
-    T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
-    PlaybackNoteKind: NoteOscillator
+                     playback_notes: Vec<PlaybackNote>, max_note_duration_ms: u64)
+// where
+//     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
+//     PlaybackNoteKind: NoteOscillator
 {
     let mut sample_clock = 0f32;
     let mut next_sample = move || {

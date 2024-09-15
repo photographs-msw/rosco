@@ -1,6 +1,6 @@
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
-use crate::playback_note::PlaybackNoteKind;
+use crate::playback_note::PlaybackNote;
 use crate::playback_note_trait::{NoteEnvelope, NoteOscillator};
 
 pub(crate) static SAMPLE_RATE: f32 = 44100.0;
@@ -46,23 +46,26 @@ pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_
 }
 
 // NOTE: Assumes playback notes of Enum Kind that include Oscillator trait
-pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNoteKind>, sample_clock: f32) -> f32 
-    where PlaybackNoteKind: NoteOscillator
+pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNote>, sample_clock: f32) -> f32 
+    // where PlaybackNoteKind: NoteOscillator
 {
     let mut freq = 0.0;
-    for playback_note_kind in playback_notes.iter() {
-        let note = playback_note_kind.get_note();
-        
+    for playback_note in playback_notes.iter() {
+        let note = playback_note.note;
         let mut volume = note.volume;
         
-        if playback_note_kind.has_envelope() {
-            volume *= playback_note_kind
-                .envelope().unwrap()
+        if playback_note.has_envelope {
+            volume *= playback_note
+                .envelope.unwrap()
                 .volume_factor(sample_clock / SAMPLE_RATE);
         } 
         
+        // if playback_note.has_waveforms {
         freq += volume *
-            get_note_sample(&playback_note_kind.waveforms().unwrap(), note.frequency, sample_clock);
+            get_note_sample(&playback_note.waveforms.clone().unwrap(), note.frequency, sample_clock);
+        // } else {
+        //     panic!("PlaybackNote must have waveforms");
+        // }
     }
 
     freq
