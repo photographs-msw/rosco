@@ -16,7 +16,7 @@ mod playback_note;
 mod time_note_sequence;
 mod track;
 mod track_grid;
-mod playback_note_trait;
+// mod playback_note_trait;
 
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 
@@ -26,7 +26,7 @@ use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 // use crate::instrument::InstrumentBuilder;
 // use crate::multi_instrument::{MultiInstrumentBuilder};
 // use crate::note::{Note, NoteBuilder};
-// use crate::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
+use crate::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
 use crate::track_grid::TrackGridBuilder;
 
 fn main() {
@@ -34,7 +34,9 @@ fn main() {
     let (waveforms_arg, frequency, volume, duration_ms) = collect_args();
     println!("Args collected\nwaveforms: {}, frequency: {}, volume: {}, duration_ms: {}",
              waveforms_arg, frequency, volume, duration_ms);
-    
+
+    // ####################################
+
     println!("Loading MIDI file");
     // Test loading MIDI file and playing back using multi-track, polyphonic grid with one
     // set of waveforms per track, notes per track, playing notes in windows of when they are active
@@ -57,64 +59,62 @@ fn main() {
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
         .track_waveforms(track_waveforms)
-        .track_envelopes(vec![Some(envelope); num_tracks])
+        .track_envelopes(Some(vec![envelope; num_tracks]))
         // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
-        for playback_note in track_grid {
-            tx.send(playback_note).unwrap();
+        for playback_notes in track_grid {
+            tx.send(playback_notes).unwrap();
         }
     });
-    for playback_note in rx {
-    
+    for playback_notes in rx {
         // TEMP DEBUG
         // println!("\n=====> playback_notes\n: {:#?}", playback_note_kinds);
     
-        let window_duration_ms = playback_note[0].playback_duration_ms();
-        audio_gen::gen_notes(playback_note, window_duration_ms as u64);
+        let window_duration_ms = playback_notes[0].playback_duration_ms();
+        audio_gen::gen_notes(playback_notes, window_duration_ms as u64);
     }
-    // println!("Played MIDI file from TrackGrid GridNoteSequence");
+    println!("Played MIDI file from TrackGrid GridNoteSequence");
     
-    // // #####
-    // 
-    // println!("Loading MIDI file");
-    // let midi_time_tracks =
-    //     midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-    //         "/Users/markweiss/Downloads/test.mid");
-    // println!("Loaded MIDI file into Vec<Track<TimeNoteSequence>");
-    // 
-    // let num_tracks = midi_time_tracks.len();
-    // let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
-    // let track_grid = TrackGridBuilder::default()
-    //     .tracks(midi_time_tracks)
-    //     .track_waveforms(track_waveforms)
-    //     .build().unwrap();
-    // 
-    // println!("Playing MIDI file from TrackGrid TimeNoteSequence");
-    // let (tx, rx) = std::sync::mpsc::channel();
-    // std::thread::spawn(move || {
-    //     for notes_data in track_grid {
-    //         // TEMP DEBUG
-    //         // println!( "notes_data: {:?}", notes_data);
-    // 
-    //         tx.send(notes_data).unwrap();
-    //     }
-    // });
-    // for notes_data in rx {
-    //     // TEMP DEBUG
-    //     // println!( "\n=====> notes_data in playback\n: {:#?}", notes_data);
-    // 
-    //     //  TIME NOTE SEQUENCE HAS DURATION, BUT GRID NOTE SEQUENCE DOES NOT
-    //     audio_gen::gen_notes(notes_data.notes,
-    //                          notes_data.notes_waveforms,
-    //                          notes_data.window_duration_ms as u64);
-    // }
-    // println!("Played MIDI file from TrackGrid TimeNoteSequence");
-    // 
-    // // ####################################
+    // ####################################
+    
+    println!("Loading MIDI file");
+    let midi_time_tracks =
+        midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
+            "/Users/markweiss/Downloads/test.mid");
+    println!("Loaded MIDI file into Vec<Track<TimeNoteSequence>");
+    
+    let num_tracks = midi_time_tracks.len();
+    let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
+    // Test building TrackGrid without envelopes and getting the default
+    let track_grid = TrackGridBuilder::default()
+        .tracks(midi_time_tracks)
+        .track_waveforms(track_waveforms)
+        .build().unwrap();
+    
+    println!("Playing MIDI file from TrackGrid TimeNoteSequence");
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        for playback_notes in track_grid {
+            // TEMP DEBUG
+            // println!( "notes_data: {:?}", notes_data);
+    
+            tx.send(playback_notes).unwrap();
+        }
+    });
+    for playback_notes in rx {
+        // TEMP DEBUG
+        // println!( "\n=====> notes_data in playback\n: {:#?}", notes_data);
+    
+        let window_duration_ms = playback_notes[0].playback_duration_ms();
+        audio_gen::gen_notes(playback_notes, window_duration_ms as u64);
+    }
+    println!("Played MIDI file from TrackGrid TimeNoteSequence");
+
+    // ####################################
     // 
     // println!("Setting up Instrument");
     // // Setup MultiInstrument and Instrument

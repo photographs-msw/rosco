@@ -110,14 +110,6 @@ impl Note {
     }
 }
 
-// TODO DO WE NEED THIS?
-// pub(crate) fn max_note_duration_ms(notes: &Vec<Note>) -> u64 {
-//     notes.iter()
-//         .map(|note| note.duration_ms as u64)
-//         .max()
-//         .unwrap()
-// }
-
 #[cfg(test)]
 mod test_note {
     use crate::note::NoteBuilder;

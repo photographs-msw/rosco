@@ -1,7 +1,6 @@
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 use crate::playback_note::PlaybackNote;
-use crate::playback_note_trait::{NoteEnvelope, NoteOscillator};
 
 pub(crate) static SAMPLE_RATE: f32 = 44100.0;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
@@ -105,6 +104,7 @@ fn get_gaussian_noise_sample() -> f32 {
     normal.sample(&mut rng)
 }
 
+#[allow(dead_code)]
 fn modify_sample_lfo(sample: f32, lfo_freq: f32, lfo_amp: f32, sample_clock: f32) -> f32 {
     // Phase of the LFO: sine of (sample_clock * lfo_freq * TWO_PI / SAMPLE_RATE)
     //  i.e. clock position * frequency of the LFO, positioned in radius, normalized by sample rate

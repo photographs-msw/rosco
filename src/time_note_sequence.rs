@@ -127,25 +127,13 @@ impl TimeNoteSequence {
             new_note
         }
         let mut window_notes = Vec::new();
-
-        // TEMP DEBUG
-        // println!("DEBUG BEFORE REMOVE Frontier Indexes: {:#?}", self.frontier_indexes);
-
         self.remove_completed_frontier_indexes(self.cur_notes_time_ms);
         if self.frontier_indexes.is_empty() {
             return window_notes;
         }
 
-        // TEMP DEBUG
-        // println!("DEBUG AFTER REMOVE Frontier Indexes: {:#?}", self.frontier_indexes);
-
         let window_start_time_ms = self.get_frontier_min_start_time();
         let window_end_time_ms = self.get_frontier_min_end_time(self.cur_notes_time_ms);
-
-        // TEMP DEBUG
-        // println!("DEBUG FRONTIER_MIN_START_TIME: {:#?}", window_start_time_ms);
-        // println!("DEBUG NOTES_TIME: {:#?}", self.cur_notes_time_ms);
-        // println!("DEBUG FRONTIER MIN_END_TIME: {:#?}", window_end_time_ms);
 
         // If the current note time is earlier than that, emit a rest note and increment
         // the current notes time to the frontier min start time + epsilon
@@ -163,9 +151,6 @@ impl TimeNoteSequence {
             );
 
             self.cur_notes_time_ms = window_start_time_ms + constants::FLOAT_EPSILON;
-
-            // TEMP DEBUG
-            // println!("DEBUG REST WINDOW_NOTES_RETURNED: {:#?}", window_notes);
 
             return window_notes;
         }
@@ -200,19 +185,12 @@ impl TimeNoteSequence {
         }
         self.cur_notes_time_ms = window_end_time_ms + constants::FLOAT_EPSILON;
 
-        // TEMP DEBUG
-        // println!("DEBUG WINDOW_NOTES_RETURNED: {:#?}", window_notes);
-
         window_notes
     }
 
     fn get_frontier_notes(&self) ->  &[Vec<Note>] {
         let min_frontier_index = self.frontier_indexes[0];
         let max_frontier_index = self.frontier_indexes[self.frontier_indexes.len() - 1];
-
-        // TEMP DEBUG
-        // println!("DEBUG IN GET_FRONTIER_NOTES FRONTIER SEQUENCE MIN_INDEX: {:#?}", min_frontier_index);
-        // println!("DEBUG IN GET_FRONTIER_NOTES FRONTIER SEQUENCE MAX_INDEX: {:#?}", max_frontier_index);
 
         &self.sequence[min_frontier_index..(max_frontier_index + 1)]
     }
@@ -223,21 +201,12 @@ impl TimeNoteSequence {
         // note time, then the note hasn't been completed yet so the index is still active.
         // OTOH if all notes at an index have end times <= note_time_ms, that index is done
         for i in 0..self.frontier_indexes.len() {
-
-            // TEMP DEBUG
-            // println!("DEBUG IN REMOVE FRONTIER_INDEX: {:#?}", i);
-            // println!("DEBUG IN REMOVE FRONTIER_INDEX VALUE: {:#?}", self.frontier_indexes[i]);
-            // println!("DEBUG IN REMOVE SEQUENCE AT FRONTIER_INDEX: {:#?}", self.sequence[self.frontier_indexes[i]]);
-
             if self.sequence[self.frontier_indexes[i]].iter().all(
                     |note|
                     float_leq(note.end_time_ms, note_time_ms)) {
                 frontier_indexes_to_pop_front += 1;
             }
         }
-
-        // TEMP DEBUG
-        // println!("DEBUG IN REMOVE FRONTIER_INDEXES_TO_REMOVE: {:#?}", frontier_indexes_to_pop_front);
 
         for _ in 0..frontier_indexes_to_pop_front {
             self.frontier_indexes.pop_front();
@@ -268,9 +237,6 @@ impl TimeNoteSequence {
 
     fn get_frontier_min_end_time(&self, note_time_ms: f32) -> f32 {
         let mut end_time_ms = f32::MAX;
-
-        // TEMP DEBUG
-        // println!("DEBUG IN GET_FRONTIER_MIN_END_TIME FRONTIER NOTES: {:#?}", self.get_frontier_notes());
         
         // First pass, is what is the earliest end time in the future, after note_time_ms
         // for a note that starts on or before note_time_ms and ends after it

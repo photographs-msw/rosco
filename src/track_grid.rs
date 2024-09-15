@@ -11,8 +11,11 @@ use crate::track::Track;
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
+    
     pub(crate) track_waveforms: Vec<Vec<Waveform>>,
-    pub(crate) track_envelopes: Vec<Option<Envelope>>,
+
+    #[builder(default = "None")]
+    pub(crate) track_envelopes: Option<Vec<Envelope>>,
 }
 
 impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
@@ -23,13 +26,18 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
         let mut max_end_time_ms = 0.0;
 
         for (i, track) in self.tracks.iter_mut().enumerate() {
+            let track_envelope = if self.track_envelopes.is_none() {
+               envelope::default_envelope() 
+            } else {
+                self.track_envelopes.as_ref().unwrap()[i].clone()
+            };
+            
             for note in track.sequence.next_notes() {
                 playback_notes.push(
                     PlaybackNoteBuilder::default()
                         .note(note)
                         .waveforms(self.track_waveforms[i].clone())
-                        .envelope(self.track_envelopes[i].clone()
-                            .unwrap_or(envelope::default_envelope()))
+                        .envelope(track_envelope)
                         .build().unwrap()
                 );
                 
@@ -45,7 +53,6 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
         for playback_note in playback_notes.iter_mut() {
             playback_note.playback_start_time_ms = min_start_time_ms;
             playback_note.playback_end_time_ms = max_end_time_ms;
-            playback_note.playback_duration_ms();
         }
         
         playback_notes
@@ -70,7 +77,7 @@ mod test_sequence_grid {
     use crate::track::TrackBuilder;
     use crate::track_grid::TrackGridBuilder;
     use crate::note::NoteBuilder;
-    use crate::oscillator;
+    use crate::{envelope, oscillator};
     use crate::grid_note_sequence::GridNoteSequenceBuilder;
 
     #[test]
@@ -104,7 +111,7 @@ mod test_sequence_grid {
                         .build().unwrap()
                 ])
             .track_waveforms(vec![vec![oscillator::Waveform::Sine]])
-            .track_envelopes(vec![None])
+            .track_envelopes(Some(vec![envelope::default_envelope()]))
             .build().unwrap();
 
         // expect one note to be active when sample_clock_index is 0.0
