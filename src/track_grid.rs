@@ -4,7 +4,7 @@ use crate::float_utils::{float_geq, float_leq};
 use crate::envelope;
 use crate::envelope::Envelope;
 use crate::note_sequence_trait::NextNotes;
-use crate::oscillator::Waveform;
+use crate::oscillator::{LFO, Waveform};
 use crate::playback_note::{PlaybackNoteBuilder, PlaybackNote};
 use crate::track::Track;
 
@@ -16,6 +16,9 @@ pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
 
     #[builder(default = "None")]
     pub(crate) track_envelopes: Option<Vec<Envelope>>,
+    
+    #[builder(default = "None")]
+    pub(crate) track_lfos: Option<Vec<LFO>>,
 }
 
 impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
@@ -38,6 +41,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                         .note(note)
                         .waveforms(self.track_waveforms[i].clone())
                         .envelope(track_envelope)
+                        .lfos(self.track_lfos.as_ref().unwrap_or(&Vec::new()).clone())
                         .build().unwrap()
                 );
                 

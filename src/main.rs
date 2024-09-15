@@ -51,6 +51,12 @@ fn main() {
         .decay(EnvelopePair(0.325, 0.75))
         .sustain(EnvelopePair(0.75, 0.625))
         .build().unwrap();
+
+    let lfo = oscillator::LFOBuilder::default()
+        .frequency(2205.0)
+        .amplitude(0.25)
+        .waveforms(vec![oscillator::Waveform::Sine])
+        .build().unwrap();
     
     let num_tracks = midi_grid_tracks.len();
     let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
@@ -60,6 +66,7 @@ fn main() {
         .track_waveforms(track_waveforms)
         .track_envelopes(Some(vec![envelope; num_tracks]))
         // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
+        .track_lfos(Some(vec![lfo; num_tracks]))
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
