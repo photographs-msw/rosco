@@ -1,12 +1,10 @@
-use derive_builder::Builder;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
+use crate::constants::SAMPLE_RATE;
 use crate::playback_note::PlaybackNote;
-use crate::sample_effect_trait::ApplyEffect;
+use crate::sample_effect_trait::{ApplyEffect, BuilderWrapper};
 
-pub(crate) static SAMPLE_RATE: f32 = 44100.0;
-pub(crate) static DEFAULT_LFO_AMPLITUDE: f32 = 0.5;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
 #[derive(Clone, Debug, Hash, PartialEq)]
@@ -49,36 +47,27 @@ pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_
 }
 
 // NOTE: Assumes playback notes of Enum Kind that include Oscillator trait
-pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNote>, sample_clock: f32) -> f32 
-    // where PlaybackNoteKind: NoteOscillator
-{
-    let mut freq = 0.0;
-    for playback_note in playback_notes.iter() {
+pub(crate) fn get_notes_sample<
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType>,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType>
+>
+(playback_notes: &mut Vec<PlaybackNote<EnvelopeType, LFOType>>, sample_clock: f32) -> f32 {
+    
+    let mut out_sample = 0.0;
+    for playback_note in playback_notes.iter_mut() {
+        // get initial note sample value from its volume and waveforms
         let note = playback_note.note;
-        let mut volume = note.volume;
-        
-        if playback_note.has_envelope {
-            // freq is unused here but passed for trait interface
-            volume = playback_note
-                .envelope.clone().unwrap()
-                .apply_effect(volume, freq, sample_clock / SAMPLE_RATE);
-        }
-        
-        if playback_note.has_lfos {
-            for lfo in playback_note.lfos.clone().unwrap() {
-                volume = lfo.apply_effect(volume, note.frequency, sample_clock);
-            }
-        }
-        
-        // if playback_note.has_waveforms {
-        freq += volume *
+        let mut sample = note.volume *
             get_note_sample(&playback_note.waveforms.clone().unwrap(), note.frequency, sample_clock);
-        // } else {
-        //     panic!("PlaybackNote must have waveforms");
-        // }
+        
+        // Modify sample by applying all signal processing
+        sample = playback_note.apply_effects(sample, note.frequency, sample_clock);
+        
+        // sum each note sample into the final output
+        out_sample += sample;
     }
 
-    freq
+    out_sample
 }
 
 // /////////////
@@ -113,54 +102,4 @@ fn get_gaussian_noise_sample() -> f32 {
     let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = thread_rng();
     normal.sample(&mut rng)
-}
-
-#[allow(dead_code)]
-#[derive(Builder, Clone, Debug)]
-pub(crate) struct LFO {
-    #[builder(default = "SAMPLE_RATE / 10.0", setter(custom))]
-    pub(crate) frequency: f32,
-    
-    #[builder(default = "DEFAULT_LFO_AMPLITUDE")]
-    pub(crate) amplitude: f32,
-
-    // LFO can be a complex combination of waveforms, but we ensure square is not included
-    // because it is not a continuous waveform
-    #[builder(default = "vec![Waveform::Sine]", setter(custom))]
-    pub(crate) waveforms: Vec<Waveform>,
-}
-
-#[allow(dead_code)]
-impl LFOBuilder {
-    pub(crate) fn frequency(&mut self, frequency: f32) -> &mut Self {
-        if frequency <= 0.0 {
-            panic!("LFO frequency must be greater than 0.0");
-        }
-        if frequency > SAMPLE_RATE / 2.0 {
-            panic!("LFO frequency must be less than the Nyquist frequency");
-        }
-        self.frequency = Some(frequency);
-        self
-    }
-    
-    pub(crate) fn waveforms(&mut self, waveforms: Vec<Waveform>) -> &mut Self {
-        if waveforms.contains(&Waveform::Square) {
-            panic!("LFO cannot contain square waveform");
-        }
-        self.waveforms = Some(waveforms);
-        self
-    }
-}
-
-#[allow(dead_code)]
-impl LFO {
-    fn get_lfo_sample(&self, sample: f32, sample_clock: f32) -> f32 {
-        sample * self.amplitude * get_note_sample(&self.waveforms, self.frequency, sample_clock)
-    }
-}
-
-impl ApplyEffect for LFO {
-    fn apply_effect(&self, sample: f32, _frequency: f32, sample_clock: f32) -> f32 {
-        sample + self.get_lfo_sample(sample, sample_clock)
-    }
 }

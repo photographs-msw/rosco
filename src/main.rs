@@ -17,6 +17,7 @@ mod time_note_sequence;
 mod track;
 mod track_grid;
 mod sample_effect_trait;
+mod lfo;
 
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 

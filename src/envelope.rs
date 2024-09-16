@@ -3,7 +3,7 @@ use std::hash::Hash;
 use derive_builder::Builder;
 
 use crate::envelope_pair::EnvelopePair;
-use crate::sample_effect_trait::ApplyEffect;
+use crate::sample_effect_trait::{ApplyEffect, BuilderWrapper, CloneWrapper, NoOpEffect};
 
 // State for an ADSR envelope. User sets the position from the start where attack, decay, sustain
 // and release end, and the volume level at each of these positions. The envelope defaults to
@@ -73,16 +73,11 @@ pub (crate) fn default_envelope() -> Envelope {
 
 #[allow(dead_code)]
 impl Envelope {
-
-    // TODO MOVE BOTH TO FREE FUNCTIONS AND JUST TAKE THE ADSR VALUES AS ARGS SO CAN BE
-    //  A CLOSURE IN THE gen_notes CALLBACK in audio_gen
-    pub(crate) fn volume_factor(&self, position: f32) -> f32 {
-        
-        // TEMP DEBUG
-        if position < 0.0 || position > 1.0 {
-            println!("POSITION: {}", position);
-            panic!("Envelope: position must be between 0.0 and 1.0");
-        }
+    fn volume_factor(&self, position: f32) -> f32 {
+        // if position < 0.0 || position > 1.0 {
+        //     println!("POSITION: {}", position);
+        //     panic!("Envelope: position must be between 0.0 and 1.0");
+        // }
         
         if position < self.attack.0 {
             self.volume_for_segment_position(self.start, self.attack, position)
@@ -126,6 +121,41 @@ impl ApplyEffect for Envelope {
        sample * self.volume_factor(sample_clock)
     }
 }
+
+impl CloneWrapper<Envelope> for Envelope {
+    fn clone(&self) -> Envelope {
+        *self
+    }
+}
+
+impl BuilderWrapper<Envelope> for Envelope {
+    fn new() -> Envelope {
+        default_envelope()
+    }
+}
+
+#[derive(Clone, Copy, Debug, Hash)]
+pub(crate) struct NoOpEnvelope {}
+impl NoOpEffect for NoOpEnvelope {}
+
+impl ApplyEffect for NoOpEnvelope {
+    fn apply_effect(&self, sample: f32, _frequency: f32, _sample_clock: f32) -> f32 {
+        self.no_op(sample, _frequency, _sample_clock) 
+    }
+}
+
+impl CloneWrapper<NoOpEnvelope> for NoOpEnvelope {
+    fn clone(&self) -> NoOpEnvelope {
+        *self
+    }
+}
+
+impl BuilderWrapper<NoOpEnvelope> for NoOpEnvelope {
+    fn new() -> NoOpEnvelope {
+        NoOpEnvelope {}
+    }
+}
+
 
 #[cfg(test)]
 mod test_envelope {

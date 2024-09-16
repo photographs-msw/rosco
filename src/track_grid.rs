@@ -2,35 +2,44 @@ use derive_builder::Builder;
 use crate::float_utils::{float_geq, float_leq};
 
 use crate::envelope;
-use crate::envelope::Envelope;
 use crate::note_sequence_trait::NextNotes;
-use crate::oscillator::{LFO, Waveform};
+use crate::oscillator::Waveform;
 use crate::playback_note::{PlaybackNoteBuilder, PlaybackNote};
+use crate::sample_effect_trait::{ApplyEffect, BuilderWrapper, CloneWrapper};
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
-pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
+pub(crate) struct TrackGrid<
+    SequenceType: NextNotes + Iterator,
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + CloneWrapper<EnvelopeType>,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType>,
+> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
     
     pub(crate) track_waveforms: Vec<Vec<Waveform>>,
 
     #[builder(default = "None")]
-    pub(crate) track_envelopes: Option<Vec<Envelope>>,
+    pub(crate) track_envelopes: Option<Vec<EnvelopeType>>,
     
     #[builder(default = "None")]
-    pub(crate) track_lfos: Option<Vec<LFO>>,
+    pub(crate) track_lfos: Option<Vec<LFOType>>,
 }
 
-impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
+impl<
+    SequenceType: NextNotes + Iterator,
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + CloneWrapper<EnvelopeType>,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType> + Clone,
+>
+TrackGrid<SequenceType, EnvelopeType, LFOType> {
 
-    pub(crate) fn next_notes(&mut self) -> Vec<PlaybackNote> {
+    pub(crate) fn next_notes(&mut self) -> Vec<PlaybackNote<EnvelopeType, LFOType>> {
         let mut playback_notes = Vec::new();
         let mut min_start_time_ms = f32::MAX;
         let mut max_end_time_ms = 0.0;
 
         for (i, track) in self.tracks.iter_mut().enumerate() {
             let track_envelope = if self.track_envelopes.is_none() {
-               envelope::default_envelope() 
+                EnvelopeType::new()
             } else {
                 self.track_envelopes.as_ref().unwrap()[i].clone()
             };
