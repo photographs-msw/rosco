@@ -3,14 +3,14 @@ use std::hash::Hash;
 use derive_builder::Builder;
 
 use crate::envelope_pair::EnvelopePair;
-use crate::sample_effect_trait::{ApplyEffect, BuilderWrapper, CloneWrapper, NoOpEffect};
+use crate::sample_effect_trait::{ApplyEffect, BuilderWrapper, NoOpEffect};
 
 // State for an ADSR envelope. User sets the position from the start where attack, decay, sustain
 // and release end, and the volume level at each of these positions. The envelope defaults to
 // starting from (0, 0) and connecting from their to start, and connecting from the position
 // of the end of sustain to the end of the note, which is the release.
 #[allow(dead_code)]
-#[derive(Builder, Clone, Copy, Debug, Hash)]
+#[derive(Builder, Copy, Debug, Hash)]
 #[builder(build_fn(validate = "Self::validate"))]
 pub(crate) struct Envelope {
     #[builder(default = "EnvelopePair(0.0, 0.0)")]
@@ -122,7 +122,7 @@ impl ApplyEffect for Envelope {
     }
 }
 
-impl CloneWrapper<Envelope> for Envelope {
+impl Clone for Envelope {
     fn clone(&self) -> Envelope {
         *self
     }
@@ -134,7 +134,7 @@ impl BuilderWrapper<Envelope> for Envelope {
     }
 }
 
-#[derive(Clone, Copy, Debug, Hash)]
+#[derive(Copy, Debug, Hash)]
 pub(crate) struct NoOpEnvelope {}
 impl NoOpEffect for NoOpEnvelope {}
 
@@ -144,7 +144,7 @@ impl ApplyEffect for NoOpEnvelope {
     }
 }
 
-impl CloneWrapper<NoOpEnvelope> for NoOpEnvelope {
+impl Clone for NoOpEnvelope {
     fn clone(&self) -> NoOpEnvelope {
         *self
     }

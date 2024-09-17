@@ -48,8 +48,8 @@ pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_
 
 // NOTE: Assumes playback notes of Enum Kind that include Oscillator trait
 pub(crate) fn get_notes_sample<
-    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType>,
-    LFOType: ApplyEffect + BuilderWrapper<LFOType>
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + Send,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType> + Send
 >
 (playback_notes: &mut Vec<PlaybackNote<EnvelopeType, LFOType>>, sample_clock: f32) -> f32 {
     

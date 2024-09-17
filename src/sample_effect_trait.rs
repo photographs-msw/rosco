@@ -8,7 +8,7 @@ pub(crate) trait NoOpEffect {
     }
 }
 
-pub(crate) trait CloneWrapper<EffectType> {
+pub(crate) trait Clone<EffectType> {
     fn clone(&self) -> EffectType;
 }
 

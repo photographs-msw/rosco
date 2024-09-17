@@ -1,34 +1,33 @@
 use derive_builder::Builder;
 use crate::float_utils::{float_geq, float_leq};
 
-use crate::envelope;
 use crate::note_sequence_trait::NextNotes;
 use crate::oscillator::Waveform;
 use crate::playback_note::{PlaybackNoteBuilder, PlaybackNote};
-use crate::sample_effect_trait::{ApplyEffect, BuilderWrapper, CloneWrapper};
+use crate::sample_effect_trait::{ApplyEffect, BuilderWrapper};
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct TrackGrid<
     SequenceType: NextNotes + Iterator,
-    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + CloneWrapper<EnvelopeType>,
-    LFOType: ApplyEffect + BuilderWrapper<LFOType>,
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + Clone + Send,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType> + Send,
 > {
     pub(crate) tracks: Vec<Track<SequenceType>>,
     
     pub(crate) track_waveforms: Vec<Vec<Waveform>>,
 
-    #[builder(default = "None")]
-    pub(crate) track_envelopes: Option<Vec<EnvelopeType>>,
+    #[builder(default = "vec![EnvelopeType::new(); self.tracks.clone().unwrap().len()]")]
+    pub(crate) track_envelopes: Vec<EnvelopeType>,
     
-    #[builder(default = "None")]
-    pub(crate) track_lfos: Option<Vec<LFOType>>,
+    #[builder(default = "vec![vec![LFOType::new()]; self.tracks.clone().unwrap().len()]")]
+    pub(crate) track_lfos: Vec<Vec<LFOType>>,
 }
 
 impl<
     SequenceType: NextNotes + Iterator,
-    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + CloneWrapper<EnvelopeType>,
-    LFOType: ApplyEffect + BuilderWrapper<LFOType> + Clone,
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + Clone + Send,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType> + Clone + Send,
 >
 TrackGrid<SequenceType, EnvelopeType, LFOType> {
 
@@ -38,19 +37,13 @@ TrackGrid<SequenceType, EnvelopeType, LFOType> {
         let mut max_end_time_ms = 0.0;
 
         for (i, track) in self.tracks.iter_mut().enumerate() {
-            let track_envelope = if self.track_envelopes.is_none() {
-                EnvelopeType::new()
-            } else {
-                self.track_envelopes.as_ref().unwrap()[i].clone()
-            };
-            
             for note in track.sequence.next_notes() {
                 playback_notes.push(
                     PlaybackNoteBuilder::default()
                         .note(note)
                         .waveforms(self.track_waveforms[i].clone())
-                        .envelope(track_envelope)
-                        .lfos(self.track_lfos.as_ref().unwrap_or(&Vec::new()).clone())
+                        .envelope(self.track_envelopes[i].clone())
+                        .lfos(self.track_lfos[i].clone())
                         .build().unwrap()
                 );
                 
@@ -72,8 +65,13 @@ TrackGrid<SequenceType, EnvelopeType, LFOType> {
     }
 }
 
-impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
-    type Item = Vec<PlaybackNote>;
+impl<
+    SequenceType: NextNotes + Iterator,
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + Clone + Send,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType> + Clone + Send,
+>
+Iterator for TrackGrid<SequenceType, EnvelopeType, LFOType> {
+    type Item = Vec<PlaybackNote<EnvelopeType, LFOType>>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let playback_notes= self.next_notes();
@@ -87,11 +85,12 @@ impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
 
 #[cfg(test)]
 mod test_sequence_grid {
+    use crate::{envelope, lfo};
+    use crate::grid_note_sequence::GridNoteSequenceBuilder;
+    use crate::note::NoteBuilder;
+    use crate::oscillator;
     use crate::track::TrackBuilder;
     use crate::track_grid::TrackGridBuilder;
-    use crate::note::NoteBuilder;
-    use crate::{envelope, oscillator};
-    use crate::grid_note_sequence::GridNoteSequenceBuilder;
 
     #[test]
     fn test_active_notes_grid_sequence() {
@@ -122,7 +121,8 @@ mod test_sequence_grid {
                         .build().unwrap()
                 ])
             .track_waveforms(vec![vec![oscillator::Waveform::Sine]])
-            .track_envelopes(Some(vec![envelope::default_envelope()]))
+            .track_envelopes(vec![envelope::default_envelope()])
+            .track_lfos(vec![vec![lfo::default_lfo()]])
             .build().unwrap();
 
         // expect one note to be active when sample_clock_index is 0.0

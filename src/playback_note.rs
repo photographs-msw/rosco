@@ -6,8 +6,10 @@ use crate::note::Note;
 use crate::sample_effect_trait::{ApplyEffect, BuilderWrapper};
 
 #[derive(Builder, Clone, Debug)]
-pub(crate) struct PlaybackNote<EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType>,
-        LFOType: ApplyEffect + BuilderWrapper<LFOType>> {
+pub(crate) struct PlaybackNote<
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + Send,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType> + Send
+> {
     #[builder(default = "note::default_note()")]
     pub(crate) note: Note,
 
@@ -25,6 +27,8 @@ pub(crate) struct PlaybackNote<EnvelopeType: ApplyEffect + BuilderWrapper<Envelo
     #[builder(default = "EnvelopeType::new()")]
     pub(crate) envelope: EnvelopeType,
 
+    // TODO THIS IS A BUG IF WE WANT TO SUPPORT MULTIPLE LFOs PER TRACK, NEED Vec<Vec>>
+    //  and need to somehow initiliaze with length
     // So if not set explicitly, lfos is populated with the either hte NoOpLFO or the default LFO
     // which is a sine wave with a frequency of 1/10th of a second
     #[builder(default = "vec![LFOType::new()]")]
@@ -33,8 +37,9 @@ pub(crate) struct PlaybackNote<EnvelopeType: ApplyEffect + BuilderWrapper<Envelo
 
 #[allow(dead_code)]
 impl<
-    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType>,
-    LFOType: ApplyEffect + BuilderWrapper<LFOType>>
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + Send,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType> + Send
+>
 PlaybackNoteBuilder<EnvelopeType, LFOType> {
     
     pub(crate) fn waveforms(&mut self, waveforms: Vec<Waveform>) -> &mut Self {
@@ -45,8 +50,9 @@ PlaybackNoteBuilder<EnvelopeType, LFOType> {
 
 #[allow(dead_code)]
 impl<
-    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType>,
-    LFOType: ApplyEffect + BuilderWrapper<LFOType>>
+    EnvelopeType: ApplyEffect + BuilderWrapper<EnvelopeType> + Send,
+    LFOType: ApplyEffect + BuilderWrapper<LFOType> + Send
+>
 PlaybackNote<EnvelopeType, LFOType> {
     pub(crate) fn playback_duration_ms(&self) -> f32 {
         self.playback_end_time_ms - self.playback_start_time_ms

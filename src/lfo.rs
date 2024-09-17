@@ -41,6 +41,10 @@ impl LFOBuilder {
     }
 }
 
+pub(crate) fn default_lfo() -> LFO {
+    LFOBuilder::default().build().unwrap()
+}
+
 impl ApplyEffect for LFO {
     fn apply_effect(&self, sample: f32, _frequency: f32, sample_clock: f32) -> f32 {
         sample +

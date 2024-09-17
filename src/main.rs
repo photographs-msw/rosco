@@ -54,7 +54,7 @@ fn main() {
         .sustain(EnvelopePair(0.75, 0.625))
         .build().unwrap();
 
-    let lfo = oscillator::LFOBuilder::default()
+    let lfo = lfo::LFOBuilder::default()
         .frequency(22.5)
         .amplitude(0.5)
         .waveforms(vec![oscillator::Waveform::Sine])
@@ -66,9 +66,8 @@ fn main() {
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
         .track_waveforms(track_waveforms)
-        .track_envelopes(Some(vec![envelope; num_tracks]))
-        // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
-        .track_lfos(Some(vec![lfo; num_tracks]))
+        .track_envelopes(vec![envelope; num_tracks])
+        .track_lfos(vec![vec![lfo]; num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
@@ -78,17 +77,23 @@ fn main() {
             tx.send(playback_notes).unwrap();
         }
     });
-    for playback_notes in rx {
+    for mut playback_notes in rx {
         // TEMP DEBUG
         // println!("\n=====> playback_notes\n: {:#?}", playback_note_kinds);
     
         let window_duration_ms = playback_notes[0].playback_duration_ms();
-        audio_gen::gen_notes(playback_notes, window_duration_ms as u64);
+        audio_gen::gen_notes(&mut playback_notes, window_duration_ms as u64);
     }
     println!("Played MIDI file from TrackGrid GridNoteSequence");
     
     // ####################################
-    
+
+    let lfo = lfo::LFOBuilder::default()
+        .frequency(22.5)
+        .amplitude(0.5)
+        .waveforms(vec![oscillator::Waveform::Sine])
+        .build().unwrap();
+
     println!("Loading MIDI file");
     let midi_time_tracks =
         midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
@@ -101,6 +106,8 @@ fn main() {
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_time_tracks)
         .track_waveforms(track_waveforms)
+        .track_envelopes(vec![envelope; num_tracks])
+        .track_lfos(vec![vec![lfo]; num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid TimeNoteSequence");
@@ -113,12 +120,12 @@ fn main() {
             tx.send(playback_notes).unwrap();
         }
     });
-    for playback_notes in rx {
+    for mut playback_notes in rx {
         // TEMP DEBUG
         // println!( "\n=====> notes_data in playback\n: {:#?}", notes_data);
     
         let window_duration_ms = playback_notes[0].playback_duration_ms();
-        audio_gen::gen_notes(playback_notes, window_duration_ms as u64);
+        audio_gen::gen_notes(&mut playback_notes, window_duration_ms as u64);
     }
     println!("Played MIDI file from TrackGrid TimeNoteSequence");
 
