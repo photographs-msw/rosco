@@ -1,5 +1,6 @@
 use derive_builder::Builder;
 
+use crate::envelope;
 use crate::envelope::Envelope;
 use crate::oscillator::{LFO, Waveform};
 use crate::note;
@@ -16,21 +17,14 @@ pub(crate) struct PlaybackNote {
     #[builder(default = "note::INIT_END_TIME")]
     pub (crate) playback_end_time_ms: f32,
 
-    #[builder(default = "false")]
-    pub(crate) has_envelope: bool,
-    #[builder(default = "None", setter(custom))]
-    pub(crate) envelope: Option<Envelope>,
+    #[builder(default = "vec![Waveform::Sine]", setter(custom))]
+    pub(crate) waveforms: Vec<Waveform>,
 
-    #[allow(dead_code)]
-    #[builder(default = "false")]
-    pub(crate) has_waveforms: bool,
-    #[builder(default = "None", setter(custom))]
-    pub(crate) waveforms: Option<Vec<Waveform>>,
-    
-    #[builder(default = "false")]
-    pub(crate) has_lfos: bool,
-    #[builder(default = "None", setter(custom))]
-    pub(crate) lfos: Option<Vec<LFO>>,
+    #[builder(default = "envelope::default_envelope()", setter(custom))]
+    pub(crate) envelope: Envelope,
+
+    #[builder(default = "vec![lfo::default_lfo()]", setter(custom))]
+    pub(crate) lfos: Vec<LFO>,
 }
 
 #[allow(dead_code)]
