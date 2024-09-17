@@ -76,12 +76,10 @@ impl Envelope {
     // TODO MOVE BOTH TO FREE FUNCTIONS AND JUST TAKE THE ADSR VALUES AS ARGS SO CAN BE
     //  A CLOSURE IN THE gen_notes CALLBACK in audio_gen
     pub(crate) fn volume_factor(&self, position: f32) -> f32 {
-        
-        // TEMP DEBUG
-        if position < 0.0 || position > 1.0 {
-            println!("POSITION: {}", position);
-            panic!("Envelope: position must be between 0.0 and 1.0");
-        }
+        // if position < 0.0 || position > 1.0 {
+        //     println!("POSITION: {}", position);
+        //     panic!("Envelope: position must be between 0.0 and 1.0");
+        // }
         
         if position < self.attack.0 {
             self.volume_for_segment_position(self.start, self.attack, position)
@@ -92,6 +90,10 @@ impl Envelope {
         } else {
             self.volume_for_segment_position(self.sustain, self.release, position)
         }
+    }
+    
+    pub(crate) fn apply_effect(&self, sample: f32, position: f32) -> f32 {
+        sample * self.volume_factor(position)
     }
 
     fn volume_for_segment_position(&self, start: EnvelopePair, end: EnvelopePair,

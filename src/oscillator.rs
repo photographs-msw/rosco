@@ -1,11 +1,9 @@
-use derive_builder::Builder;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
+use crate::constants::SAMPLE_RATE;
 use crate::playback_note::PlaybackNote;
 
-pub(crate) static SAMPLE_RATE: f32 = 44100.0;
-pub(crate) static DEFAULT_LFO_AMPLITUDE: f32 = 0.5;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
 #[derive(Clone, Debug, Hash, PartialEq)]
@@ -34,9 +32,9 @@ pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
 }
 
 pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_clock: f32) -> f32 {
-    let mut freq = 0.0;
+    let mut sample = 0.0;
     for waveform in waveforms {
-        freq += match waveform {
+        sample += match waveform {
             Waveform::GaussianNoise => get_gaussian_noise_sample(),
             Waveform::Saw => get_saw_sample(frequency, sample_clock),
             Waveform::Sine => get_sin_sample(frequency, sample_clock),
@@ -44,39 +42,24 @@ pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_
             Waveform::Triangle => get_triangle_sample(frequency, sample_clock),
         };
     }
-    freq
+    sample
 }
 
 // NOTE: Assumes playback notes of Enum Kind that include Oscillator trait
 pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNote>, sample_clock: f32) -> f32 
-    // where PlaybackNoteKind: NoteOscillator
 {
-    let mut freq = 0.0;
+    let mut out_sample = 0.0;
     for playback_note in playback_notes.iter() {
         let note = playback_note.note;
-        let mut volume = note.volume;
+        let mut sample = note.volume *
+            get_note_sample(&playback_note.waveforms.clone(), note.frequency, sample_clock);
         
-        if playback_note.has_envelope {
-            volume *= playback_note
-                .envelope.unwrap()
-                .volume_factor(sample_clock / SAMPLE_RATE);
-        }
+        sample = playback_note.apply_effects(sample, sample_clock / SAMPLE_RATE);
         
-        if playback_note.has_lfos {
-            for lfo in playback_note.lfos.clone().unwrap() {
-                volume *= lfo.get_lfo_sample(volume, sample_clock);
-            }
-        }
-        
-        // if playback_note.has_waveforms {
-        freq += volume *
-            get_note_sample(&playback_note.waveforms.clone().unwrap(), note.frequency, sample_clock);
-        // } else {
-        //     panic!("PlaybackNote must have waveforms");
-        // }
+        out_sample += sample;
     }
 
-    freq
+    out_sample
 }
 
 // /////////////
@@ -111,48 +94,4 @@ fn get_gaussian_noise_sample() -> f32 {
     let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = thread_rng();
     normal.sample(&mut rng)
-}
-
-#[allow(dead_code)]
-#[derive(Builder, Clone, Debug)]
-pub(crate) struct LFO {
-    #[builder(default = "SAMPLE_RATE / 10.0", setter(custom))]
-    pub(crate) frequency: f32,
-    
-    #[builder(default = "DEFAULT_LFO_AMPLITUDE")]
-    pub(crate) amplitude: f32,
-
-    // LFO can be a complex combination of waveforms, but we ensure square is not included
-    // because it is not a continuous waveform
-    #[builder(default = "vec![Waveform::Sine]", setter(custom))]
-    pub(crate) waveforms: Vec<Waveform>,
-}
-
-#[allow(dead_code)]
-impl LFOBuilder {
-    pub(crate) fn frequency(&mut self, frequency: f32) -> &mut Self {
-        if frequency <= 0.0 {
-            panic!("LFO frequency must be greater than 0.0");
-        }
-        if frequency > SAMPLE_RATE / 2.0 {
-            panic!("LFO frequency must be less than the Nyquist frequency");
-        }
-        self.frequency = Some(frequency);
-        self
-    }
-    
-    pub(crate) fn waveforms(&mut self, waveforms: Vec<Waveform>) -> &mut Self {
-        if waveforms.contains(&Waveform::Square) {
-            panic!("LFO cannot contain square waveform");
-        }
-        self.waveforms = Some(waveforms);
-        self
-    }
-}
-
-#[allow(dead_code)]
-impl LFO {
-    fn get_lfo_sample(&self, sample: f32, sample_clock: f32) -> f32 {
-        sample * self.amplitude * get_note_sample(&self.waveforms, self.frequency, sample_clock)
-    }
 }

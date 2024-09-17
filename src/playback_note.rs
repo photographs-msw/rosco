@@ -2,7 +2,9 @@ use derive_builder::Builder;
 
 use crate::envelope;
 use crate::envelope::Envelope;
-use crate::oscillator::{LFO, Waveform};
+use crate::lfo;
+use crate::lfo::LFO;
+use crate::oscillator::Waveform;
 use crate::note;
 use crate::note::Note;
 
@@ -17,35 +19,14 @@ pub(crate) struct PlaybackNote {
     #[builder(default = "note::INIT_END_TIME")]
     pub (crate) playback_end_time_ms: f32,
 
-    #[builder(default = "vec![Waveform::Sine]", setter(custom))]
+    #[builder(default = "vec![Waveform::Sine]")]
     pub(crate) waveforms: Vec<Waveform>,
 
-    #[builder(default = "envelope::default_envelope()", setter(custom))]
+    #[builder(default = "envelope::default_envelope()")]
     pub(crate) envelope: Envelope,
 
-    #[builder(default = "vec![lfo::default_lfo()]", setter(custom))]
+    #[builder(default = "vec![lfo::default_lfo()]")]
     pub(crate) lfos: Vec<LFO>,
-}
-
-#[allow(dead_code)]
-impl PlaybackNoteBuilder {
-    pub(crate) fn envelope(&mut self, envelope: Envelope) -> &mut Self {
-        self.has_envelope = Option::from(true);
-        self.envelope = Some(Some(envelope));
-        self
-    }
-
-    pub(crate) fn waveforms(&mut self, waveforms: Vec<Waveform>) -> &mut Self {
-        self.has_waveforms = Option::from(true);
-        self.waveforms = Some(Some(waveforms));
-        self
-    }
-    
-    pub(crate) fn lfos(&mut self, lfos: Vec<LFO>) -> &mut Self {
-        self.has_lfos = Option::from(true);
-        self.lfos = Some(Some(lfos));
-        self
-    }
 }
 
 #[allow(dead_code)]
@@ -53,20 +34,17 @@ impl PlaybackNote {
     pub(crate) fn playback_duration_ms(&self) -> f32 {
         self.playback_end_time_ms - self.playback_start_time_ms
     }
-
-    pub(crate) fn set_envelope(&mut self, envelope: Envelope) {
-        self.envelope = Some(envelope);
-        self.has_envelope = true;
-    }
-
-    pub(crate) fn set_waveforms(&mut self, waveforms: Vec<Waveform>) {
-        self.waveforms = Some(waveforms);
-        self.has_waveforms = true;
-    }
     
-    pub(crate) fn set_lfos(&mut self, lfos: Vec<LFO>) {
-        self.lfos = Some(lfos);
-        self.has_lfos = true;
+    pub(crate) fn apply_effects(&self, sample: f32, sample_position: f32) -> f32 {
+        let mut output_sample = sample;
+        
+        output_sample = self.envelope.apply_effect(output_sample, sample_position);
+        
+        for lfo in self.lfos.iter() {
+            output_sample = lfo.apply_effect(output_sample, sample_position);
+        }
+        
+        output_sample
     }
 }
 
@@ -77,7 +55,9 @@ pub(crate) fn default_playback_note() -> PlaybackNote {
 
 #[cfg(test)]
 mod test_playback_note {
-    use crate::oscillator::LFOBuilder;
+    use crate::envelope;
+    use crate::lfo;
+    use crate::oscillator::Waveform;
     use crate::playback_note::PlaybackNoteBuilder;
 
     #[test]
@@ -87,12 +67,9 @@ mod test_playback_note {
         assert_eq!(playback_note.playback_start_time_ms, crate::note::INIT_START_TIME);
         assert_eq!(playback_note.playback_end_time_ms, crate::note::INIT_END_TIME);
         assert_eq!(playback_note.playback_duration_ms(), crate::note::DEFAULT_DURATION);
-        assert_eq!(playback_note.has_envelope, false);
-        assert_eq!(playback_note.has_waveforms, false);
-        assert_eq!(playback_note.has_lfos, false);
-        assert_eq!(playback_note.envelope.is_none(), true);
-        assert_eq!(playback_note.waveforms.is_none(), true);
-        assert_eq!(playback_note.lfos.is_none(), true);
+        assert_eq!(playback_note.envelope, envelope::default_envelope());
+        assert_eq!(playback_note.waveforms, vec![Waveform::Sine]);
+        assert_eq!(playback_note.lfos, vec![lfo::default_lfo()]);
     }
 
     #[test]
@@ -100,33 +77,22 @@ mod test_playback_note {
         let playback_note = PlaybackNoteBuilder::default()
             .envelope(crate::envelope::default_envelope())
             .build().unwrap();
-        assert_eq!(playback_note.has_envelope, true);
-        assert_eq!(playback_note.envelope.is_some(), true);
-        assert_eq!(playback_note.has_waveforms, false);
-        assert_eq!(playback_note.waveforms.is_none(), true);
+        assert_eq!(playback_note.envelope, envelope::default_envelope());
     }
     
     #[test]
     fn test_playback_note_with_waveforms() {
         let playback_note = PlaybackNoteBuilder::default()
-            .waveforms(vec![crate::oscillator::Waveform::Sine])
+            .waveforms(vec![Waveform::Saw])
             .build().unwrap();
-        assert_eq!(playback_note.has_envelope, false);
-        assert_eq!(playback_note.envelope.is_none(), true);
-        assert_eq!(playback_note.has_waveforms, true);
-        assert_eq!(playback_note.waveforms.is_some(), true);
+        assert_eq!(playback_note.waveforms, vec![Waveform::Saw]);
     }
     
     #[test]
     fn test_playback_note_with_lfos() {
         let playback_note = PlaybackNoteBuilder::default()
-            .lfos(vec![LFOBuilder::default().build().unwrap()])
+            .lfos(vec![lfo::default_lfo()])
             .build().unwrap();
-        assert_eq!(playback_note.has_envelope, false);
-        assert_eq!(playback_note.envelope.is_none(), true);
-        assert_eq!(playback_note.has_waveforms, false);
-        assert_eq!(playback_note.waveforms.is_none(), true);
-        assert_eq!(playback_note.has_lfos, true);
-        assert_eq!(playback_note.lfos.is_some(), true);
+        assert_eq!(playback_note.lfos, vec![lfo::default_lfo()]);
     }
 }

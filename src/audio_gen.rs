@@ -2,7 +2,7 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use std::time;
 
-use crate::oscillator;
+use crate::{constants, oscillator};
 use crate::note::Note;
 use crate::playback_note::PlaybackNote;
 
@@ -16,7 +16,6 @@ pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
 }
 
 pub(crate) fn gen_notes(playback_notes: Vec<PlaybackNote>, window_duration_ms: u64)
-    // where PlaybackNoteKind: NoteOscillator
 {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
@@ -37,7 +36,7 @@ where
     let note_volume = /*note.envelope.volume_factor() * */ note.volume.clone();
     let frequency = note.frequency.clone();
     let mut next_sample = move || {
-        sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
+        sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
         note_volume * oscillator::get_note_sample(&waveforms, frequency, sample_clock)
     };
 
@@ -62,7 +61,7 @@ fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
 {
     let mut sample_clock = 0f32;
     let mut next_sample = move || {
-        sample_clock = (sample_clock + 1.0) % oscillator::SAMPLE_RATE;
+        sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
         oscillator::get_notes_sample(&playback_notes, sample_clock)
     };
 

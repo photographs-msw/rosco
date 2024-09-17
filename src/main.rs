@@ -16,6 +16,7 @@ mod playback_note;
 mod time_note_sequence;
 mod track;
 mod track_grid;
+mod lfo;
 
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 
@@ -52,7 +53,7 @@ fn main() {
         .sustain(EnvelopePair(0.75, 0.625))
         .build().unwrap();
 
-    let lfo = oscillator::LFOBuilder::default()
+    let lfo = lfo::LFOBuilder::default()
         .frequency(2205.0)
         .amplitude(0.25)
         .waveforms(vec![oscillator::Waveform::Sine])
@@ -64,9 +65,9 @@ fn main() {
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
         .track_waveforms(track_waveforms)
-        .track_envelopes(Some(vec![envelope; num_tracks]))
+        .track_envelopes(vec![envelope; num_tracks])
         // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
-        .track_lfos(Some(vec![lfo; num_tracks]))
+        .track_lfos(vec![vec![lfo]; num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
