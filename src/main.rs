@@ -48,13 +48,13 @@ fn main() {
     println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
 
     let envelope = EnvelopeBuilder::default()
-        .attack(EnvelopePair(0.05, 0.9))
-        .decay(EnvelopePair(0.05, 0.9))
-        .sustain(EnvelopePair(0.95, 0.9))
+        .attack(EnvelopePair(0.15, 0.9))
+        .decay(EnvelopePair(0.35, 0.88))
+        .sustain(EnvelopePair(0.85, 0.9))
         .build().unwrap();
 
     let lfo = lfo::LFOBuilder::default()
-        .frequency(2205.0)
+        .frequency(44.1)
         .amplitude(0.25)
         .waveforms(vec![oscillator::Waveform::Sine])
         .build().unwrap();
@@ -90,13 +90,13 @@ fn main() {
 
     let envelope = EnvelopeBuilder::default()
         .attack(EnvelopePair(0.15, 0.8))
-        .decay(EnvelopePair(0.25, 0.7))
+        .decay(EnvelopePair(0.18, 0.7))
         .sustain(EnvelopePair(0.85, 0.8))
         .build().unwrap();
 
     let lfo = lfo::LFOBuilder::default()
-        .frequency(2205.0)
-        .amplitude(0.35)
+        .frequency(22.05)
+        .amplitude(0.95)
         .waveforms(vec![oscillator::Waveform::Sine])
         .build().unwrap();
 
