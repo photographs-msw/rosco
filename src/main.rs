@@ -60,6 +60,11 @@ fn main() {
         .waveforms(vec![oscillator::Waveform::Sine])
         .build().unwrap();
     
+    let flange = flange::FlangeBuilder::default()
+        .window_size(20)
+        .sample_buffer()
+        .build().unwrap();
+    
     let num_tracks = midi_grid_tracks.len();
     let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
     
@@ -69,6 +74,7 @@ fn main() {
         .track_envelopes(vec![envelope; num_tracks])
         // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
         .track_lfos(vec![vec![lfo]; num_tracks])
+        .track_flangers(vec![flange; num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
@@ -101,6 +107,11 @@ fn main() {
         .waveforms(vec![oscillator::Waveform::Sine])
         .build().unwrap();
 
+    let flange = flange::FlangeBuilder::default()
+        .window_size(20)
+        .sample_buffer()
+        .build().unwrap();
+
     println!("Loading MIDI file");
     let midi_time_tracks =
         midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
@@ -116,6 +127,7 @@ fn main() {
         .track_envelopes(vec![envelope; num_tracks])
         // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
         .track_lfos(vec![vec![lfo]; num_tracks])
+        .track_flangers(vec![flange; num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid TimeNoteSequence");

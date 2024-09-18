@@ -46,10 +46,10 @@ pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_
 }
 
 // NOTE: Assumes playback notes of Enum Kind that include Oscillator trait
-pub(crate) fn get_notes_sample(playback_notes: &Vec<PlaybackNote>, sample_clock: f32) -> f32
+pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_clock: f32) -> f32
 {
     let mut out_sample = 0.0;
-    for playback_note in playback_notes.iter() {
+    for playback_note in playback_notes.iter_mut() {
         let note = playback_note.note;
         let mut sample = note.volume *
             get_note_sample(&playback_note.waveforms.clone(), note.frequency, sample_clock);

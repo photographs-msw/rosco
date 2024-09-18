@@ -2,6 +2,8 @@ use derive_builder::Builder;
 
 use crate::envelope;
 use crate::envelope::Envelope;
+use crate::flange;
+use crate::flange::Flange;
 use crate::lfo;
 use crate::lfo::LFO;
 use crate::oscillator::Waveform;
@@ -27,6 +29,9 @@ pub(crate) struct PlaybackNote {
 
     #[builder(default = "vec![lfo::default_lfo()]")]
     pub(crate) lfos: Vec<LFO>,
+    
+    #[builder(default = "flange::no_op_flange()")]
+    pub(crate) flange: Flange,
 }
 
 #[allow(dead_code)]
@@ -35,7 +40,7 @@ impl PlaybackNote {
         self.playback_end_time_ms - self.playback_start_time_ms
     }
     
-    pub(crate) fn apply_effects(&self, sample: f32, sample_position: f32) -> f32 {
+    pub(crate) fn apply_effects(&mut self, sample: f32, sample_position: f32) -> f32 {
         let mut output_sample = sample;
         
         output_sample = self.envelope.apply_effect(
@@ -48,6 +53,8 @@ impl PlaybackNote {
         for lfo in self.lfos.iter() {
             output_sample = lfo.apply_effect(output_sample, sample_position);
         }
+        
+        output_sample = self.flange.apply_effect(output_sample, sample_position);
         
         output_sample
     }

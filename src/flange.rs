@@ -9,7 +9,7 @@ pub(crate) struct Flange {
     #[builder(default = "SAMPLE_BUFFER_SIZE")]
     window_size: usize,
     
-    #[builder(default = "VecDeque::with_capacity(SAMPLE_BUFFER_SIZE)", setter(custom))]
+    #[builder(setter(custom))]
     sample_buffer: VecDeque<f32>,
     
     #[builder(default = "0", setter(skip))]
@@ -22,7 +22,7 @@ impl FlangeBuilder {
     // no-ops but then after that the buffer is full and the effect is applied. Allows us to 
     // avoid having to check if the buffer is full in the apply_effect method, at the cst of
     // a slight delay in the effect being applied.
-    fn sample_buffer(&mut self) -> &mut Self {
+    pub(crate) fn sample_buffer(&mut self) -> &mut Self {
         let mut buffer: VecDeque<f32> = VecDeque::with_capacity(self.window_size.unwrap());
         for _ in 0..self.window_size.unwrap() {
             buffer.push_back(0.0);
@@ -48,6 +48,7 @@ impl Flange {
 pub(crate) fn default_flange() -> Flange {
     FlangeBuilder::default()
         .window_size(SAMPLE_BUFFER_SIZE)
+        .sample_buffer()
         .build().unwrap()
 }
 
@@ -55,5 +56,6 @@ pub(crate) fn default_flange() -> Flange {
 pub(crate) fn no_op_flange() -> Flange {
     FlangeBuilder::default()
         .window_size(0)
+        .sample_buffer()
         .build().unwrap()
 }

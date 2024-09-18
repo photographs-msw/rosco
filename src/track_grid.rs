@@ -3,6 +3,8 @@ use crate::float_utils::{float_geq, float_leq};
 
 use crate::envelope;
 use crate::envelope::Envelope;
+use crate::flange;
+use crate::flange::Flange;
 use crate::note_sequence_trait::NextNotes;
 use crate::lfo;
 use crate::lfo::LFO;
@@ -21,6 +23,9 @@ pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
 
     #[builder(default = "vec![vec![lfo::default_lfo()]; self.tracks.clone().unwrap().len()]")]
     pub(crate) track_lfos: Vec<Vec<LFO>>,
+
+    #[builder(default = "vec![flange::no_op_flange(); self.tracks.clone().unwrap().len()]")]
+    pub(crate) track_flangers: Vec<Flange>,
 }
 
 impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
@@ -38,6 +43,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                         .waveforms(self.track_waveforms[i].clone())
                         .envelope(self.track_envelopes[i].clone())
                         .lfos(self.track_lfos[i].clone())
+                        .flange(self.track_flangers[i].clone())
                         .build().unwrap()
                 );
 

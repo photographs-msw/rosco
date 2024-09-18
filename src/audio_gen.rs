@@ -1,4 +1,3 @@
-use std::collections::VecDeque;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use std::time;
@@ -32,7 +31,7 @@ where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
     let mut sample_clock = 0f32;
-    
+
     // TODO HOW TO GET POSITION ON EACH ITERATION AND GET VOLUME FACTOR IN THE CALLBACK
     let note_volume = note.volume.clone();
     let frequency = note.frequency.clone();
@@ -58,12 +57,12 @@ where
 }
 
 fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                     playback_notes: Vec<PlaybackNote>, max_note_duration_ms: u64)
+                     mut playback_notes: Vec<PlaybackNote>, max_note_duration_ms: u64)
 {
     let mut sample_clock = 0f32;
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
-        oscillator::get_notes_sample(&playback_notes, sample_clock)
+        oscillator::get_notes_sample(&mut playback_notes, sample_clock)
     };
 
     let channels = config.channels as usize;
