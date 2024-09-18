@@ -4,7 +4,7 @@ mod audio_gen;
 mod constants;
 mod envelope;
 mod envelope_pair;
-mod flange;
+mod flanger;
 mod float_utils;
 mod grid_note_sequence;
 mod instrument;
@@ -18,6 +18,7 @@ mod playback_note;
 mod time_note_sequence;
 mod track;
 mod track_grid;
+mod track_effects;
 
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 
@@ -43,7 +44,7 @@ fn main() {
     // set of waveforms per track, notes per track, playing notes in windows of when they are active
     // and coordinated concurrent playback where one thread prepares the next window to play
     // and the other thread plays the current window
-    let midi_grid_tracks =
+    let mut midi_grid_tracks =
         midi::midi_file_to_tracks::<GridNoteSequence, GridNoteSequenceBuilder>(
             "/Users/markweiss/Downloads/test.mid");
     println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
@@ -60,21 +61,26 @@ fn main() {
         .waveforms(vec![oscillator::Waveform::Sine])
         .build().unwrap();
     
-    let flange = flange::FlangeBuilder::default()
+    let flange = flanger::FlangerBuilder::default()
         .window_size(20)
         .sample_buffer()
         .build().unwrap();
     
+    let track_effects = track_effects::TrackEffectsBuilder::default()
+        .envelopes(vec![envelope])
+        .lfos(vec![lfo])
+        .flangers(vec![flange])
+        .build().unwrap();
+    for track in midi_grid_tracks.iter_mut() {
+        track.effects = track_effects.clone();
+    }
+
     let num_tracks = midi_grid_tracks.len();
     let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
-    
+   
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
         .track_waveforms(track_waveforms)
-        .track_envelopes(vec![envelope; num_tracks])
-        // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
-        .track_lfos(vec![vec![lfo]; num_tracks])
-        .track_flangers(vec![flange; num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
@@ -95,39 +101,22 @@ fn main() {
     
     // ####################################
 
-    let envelope = EnvelopeBuilder::default()
-        .attack(EnvelopePair(0.15, 0.8))
-        .decay(EnvelopePair(0.18, 0.7))
-        .sustain(EnvelopePair(0.85, 0.8))
-        .build().unwrap();
-
-    let lfo = lfo::LFOBuilder::default()
-        .frequency(22.05)
-        .amplitude(0.95)
-        .waveforms(vec![oscillator::Waveform::Sine])
-        .build().unwrap();
-
-    let flange = flange::FlangeBuilder::default()
-        .window_size(20)
-        .sample_buffer()
-        .build().unwrap();
-
     println!("Loading MIDI file");
-    let midi_time_tracks =
+    let mut midi_time_tracks =
         midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
             "/Users/markweiss/Downloads/test.mid");
     println!("Loaded MIDI file into Vec<Track<TimeNoteSequence>");
-    
+
+    for track in midi_time_tracks.iter_mut() {
+        track.effects = track_effects.clone();
+    }
     let num_tracks = midi_time_tracks.len();
     let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
+    
     // Test building TrackGrid without envelopes and getting the default
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_time_tracks)
         .track_waveforms(track_waveforms)
-        .track_envelopes(vec![envelope; num_tracks])
-        // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
-        .track_lfos(vec![vec![lfo]; num_tracks])
-        .track_flangers(vec![flange; num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid TimeNoteSequence");

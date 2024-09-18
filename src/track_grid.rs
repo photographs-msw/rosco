@@ -3,8 +3,7 @@ use crate::float_utils::{float_geq, float_leq};
 
 use crate::envelope;
 use crate::envelope::Envelope;
-use crate::flange;
-use crate::flange::Flange;
+use crate::flanger::Flanger;
 use crate::note_sequence_trait::NextNotes;
 use crate::lfo;
 use crate::lfo::LFO;
@@ -18,14 +17,14 @@ pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     
     pub(crate) track_waveforms: Vec<Vec<Waveform>>,
 
-    #[builder(default = "vec![envelope::default_envelope(); self.tracks.clone().unwrap().len()]")]
-    pub(crate) track_envelopes: Vec<Envelope>,
-
-    #[builder(default = "vec![vec![lfo::default_lfo()]; self.tracks.clone().unwrap().len()]")]
-    pub(crate) track_lfos: Vec<Vec<LFO>>,
-
-    #[builder(default = "vec![flange::no_op_flange(); self.tracks.clone().unwrap().len()]")]
-    pub(crate) track_flangers: Vec<Flange>,
+    // #[builder(default = "vec![envelope::default_envelope(); self.tracks.clone().unwrap().len()]")]
+    // pub(crate) track_envelopes: Vec<Envelope>,
+    // 
+    // #[builder(default = "vec![vec![lfo::default_lfo()]; self.tracks.clone().unwrap().len()]")]
+    // pub(crate) track_lfos: Vec<Vec<LFO>>,
+    // 
+    // #[builder(default = "vec![flange::no_op_flange(); self.tracks.clone().unwrap().len()]")]
+    // pub(crate) track_flangers: Vec<Flanger>,
 }
 
 impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
@@ -41,9 +40,9 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                     PlaybackNoteBuilder::default()
                         .note(note)
                         .waveforms(self.track_waveforms[i].clone())
-                        .envelope(self.track_envelopes[i].clone())
-                        .lfos(self.track_lfos[i].clone())
-                        .flange(self.track_flangers[i].clone())
+                        .envelopes(track.effects.envelopes.clone())
+                        .lfos(track.effects.lfos.clone())
+                        .flangers(track.effects.flangers.clone())
                         .build().unwrap()
                 );
 
@@ -80,11 +79,12 @@ impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
 
 #[cfg(test)]
 mod test_sequence_grid {
-    use crate::track::TrackBuilder;
-    use crate::track_grid::TrackGridBuilder;
-    use crate::note::NoteBuilder;
-    use crate::{envelope, lfo, oscillator};
+    use crate::{envelope, flanger, lfo, oscillator};
     use crate::grid_note_sequence::GridNoteSequenceBuilder;
+    use crate::note::NoteBuilder;
+    use crate::track::TrackBuilder;
+    use crate::track_effects::TrackEffectsBuilder;
+    use crate::track_grid::TrackGridBuilder;
 
     #[test]
     fn test_active_notes_grid_sequence() {
@@ -111,12 +111,16 @@ mod test_sequence_grid {
                                 ]]).build().unwrap()
                         )
                         .volume(0.9)
-                        // .default_playback_note_kind()
+                        .effects(
+                            TrackEffectsBuilder::default()
+                                .envelopes(vec![envelope::default_envelope()])
+                                .lfos(vec![lfo::default_lfo()])
+                                .flangers(vec![flanger::no_op_flanger()])
+                                .build().unwrap()
+                        )
                         .build().unwrap()
                 ])
             .track_waveforms(vec![vec![oscillator::Waveform::Sine]])
-            .track_envelopes(vec![envelope::default_envelope()])
-            .track_lfos(vec![vec![lfo::default_lfo()]])
             .build().unwrap();
 
         // expect one note to be active when sample_clock_index is 0.0

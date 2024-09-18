@@ -5,7 +5,7 @@ static SAMPLE_BUFFER_SIZE: usize = 20;
 
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug, PartialEq)]
-pub(crate) struct Flange {
+pub(crate) struct Flanger {
     #[builder(default = "SAMPLE_BUFFER_SIZE")]
     window_size: usize,
     
@@ -17,7 +17,7 @@ pub(crate) struct Flange {
 }
 
 #[allow(dead_code)]
-impl FlangeBuilder {
+impl FlangerBuilder {
     // Initialize sample buffer to size with zeros. THis makes the first n calls up to window size
     // no-ops but then after that the buffer is full and the effect is applied. Allows us to 
     // avoid having to check if the buffer is full in the apply_effect method, at the cst of
@@ -33,10 +33,9 @@ impl FlangeBuilder {
 }
 
 #[allow(dead_code)]
-impl Flange {
+impl Flanger {
     pub(crate) fn apply_effect(&mut self, sample: f32, _sample_clock: f32) -> f32 {
-        // Fill the buffer in a rolling window with the current sample
-        // TODO this is a bit of a hack, we should probably just use a circular buffer
+        // circular buffer of most recent camples in window, effect uses the oldest sample
         self.sample_buffer.insert(self.insert_index % self.window_size, sample);
         self.insert_index += 1;
         
@@ -45,16 +44,16 @@ impl Flange {
 }
 
 #[allow(dead_code)]
-pub(crate) fn default_flange() -> Flange {
-    FlangeBuilder::default()
+pub(crate) fn default_flanger() -> Flanger {
+    FlangerBuilder::default()
         .window_size(SAMPLE_BUFFER_SIZE)
         .sample_buffer()
         .build().unwrap()
 }
 
 #[allow(dead_code)]
-pub(crate) fn no_op_flange() -> Flange {
-    FlangeBuilder::default()
+pub(crate) fn no_op_flanger() -> Flanger {
+    FlangerBuilder::default()
         .window_size(0)
         .sample_buffer()
         .build().unwrap()

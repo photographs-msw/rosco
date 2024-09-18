@@ -2,8 +2,8 @@ use derive_builder::Builder;
 
 use crate::envelope;
 use crate::envelope::Envelope;
-use crate::flange;
-use crate::flange::Flange;
+use crate::flanger;
+use crate::flanger::Flanger;
 use crate::lfo;
 use crate::lfo::LFO;
 use crate::oscillator::Waveform;
@@ -24,14 +24,15 @@ pub(crate) struct PlaybackNote {
     #[builder(default = "vec![Waveform::Sine]")]
     pub(crate) waveforms: Vec<Waveform>,
 
-    #[builder(default = "envelope::default_envelope()")]
-    pub(crate) envelope: Envelope,
+    // Effects loaded from track.effects
+    #[builder(default = "Vec::new()")]
+    pub(crate) envelopes: Vec<Envelope>,
 
-    #[builder(default = "vec![lfo::default_lfo()]")]
+    #[builder(default = "Vec::new()")]
     pub(crate) lfos: Vec<LFO>,
-    
-    #[builder(default = "flange::no_op_flange()")]
-    pub(crate) flange: Flange,
+
+    #[builder(default = "Vec::new()")]
+    pub(crate) flangers: Vec<Flanger>,
 }
 
 #[allow(dead_code)]
@@ -39,22 +40,25 @@ impl PlaybackNote {
     pub(crate) fn playback_duration_ms(&self) -> f32 {
         self.playback_end_time_ms - self.playback_start_time_ms
     }
-    
+
     pub(crate) fn apply_effects(&mut self, sample: f32, sample_position: f32) -> f32 {
         let mut output_sample = sample;
-        
-        output_sample = self.envelope.apply_effect(
-            output_sample,
-            ((self.playback_start_time_ms - self.note.start_time_ms) /
-                (self.note.end_time_ms() - self.note.start_time_ms)) + sample_position
-        );
-                                                      // + (sample_position / 1000.0));
-        
+
+        for envelope in self.envelopes.iter() {
+            output_sample = envelope.apply_effect(
+                output_sample,
+                ((self.playback_start_time_ms - self.note.start_time_ms) /
+                    (self.note.end_time_ms() - self.note.start_time_ms)) + sample_position
+            );
+        }
+
         for lfo in self.lfos.iter() {
             output_sample = lfo.apply_effect(output_sample, sample_position);
         }
-        
-        output_sample = self.flange.apply_effect(output_sample, sample_position);
+
+        for flanger in self.flangers.iter_mut() {
+            output_sample = flanger.apply_effect(output_sample, sample_position);
+        }
         
         output_sample
     }
@@ -68,6 +72,7 @@ pub(crate) fn default_playback_note() -> PlaybackNote {
 #[cfg(test)]
 mod test_playback_note {
     use crate::envelope;
+    use crate::flanger;
     use crate::lfo;
     use crate::oscillator::Waveform;
     use crate::playback_note::PlaybackNoteBuilder;
@@ -79,25 +84,26 @@ mod test_playback_note {
         assert_eq!(playback_note.playback_start_time_ms, crate::note::INIT_START_TIME);
         assert_eq!(playback_note.playback_end_time_ms, crate::note::INIT_END_TIME);
         assert_eq!(playback_note.playback_duration_ms(), crate::note::DEFAULT_DURATION);
-        assert_eq!(playback_note.envelope, envelope::default_envelope());
         assert_eq!(playback_note.waveforms, vec![Waveform::Sine]);
-        assert_eq!(playback_note.lfos, vec![lfo::default_lfo()]);
+        assert_eq!(playback_note.envelopes.is_empty(), true);
+        assert_eq!(playback_note.lfos.is_empty(), true);
+        assert_eq!(playback_note.flangers.is_empty(), true);
     }
 
-    #[test]
-    fn test_playback_note_with_envelope() {
-        let playback_note = PlaybackNoteBuilder::default()
-            .envelope(crate::envelope::default_envelope())
-            .build().unwrap();
-        assert_eq!(playback_note.envelope, envelope::default_envelope());
-    }
-    
     #[test]
     fn test_playback_note_with_waveforms() {
         let playback_note = PlaybackNoteBuilder::default()
             .waveforms(vec![Waveform::Saw])
             .build().unwrap();
         assert_eq!(playback_note.waveforms, vec![Waveform::Saw]);
+    }
+
+    #[test]
+    fn test_playback_note_with_envelope() {
+        let playback_note = PlaybackNoteBuilder::default()
+            .envelopes(vec![envelope::default_envelope()])
+            .build().unwrap();
+        assert_eq!(playback_note.envelopes, vec![envelope::default_envelope()]);
     }
     
     #[test]
@@ -107,4 +113,13 @@ mod test_playback_note {
             .build().unwrap();
         assert_eq!(playback_note.lfos, vec![lfo::default_lfo()]);
     }
+
+    #[test]
+    fn test_playback_note_with_flangers() {
+        let playback_note = PlaybackNoteBuilder::default()
+            .flangers(vec![flanger::default_flanger()])
+            .build().unwrap();
+        assert_eq!(playback_note.flangers, vec![flanger::default_flanger()]);
+    }
+    
 }

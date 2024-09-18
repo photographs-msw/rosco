@@ -1,6 +1,8 @@
 use derive_builder::Builder;
 
 use crate::constants::NO_TRACK;
+use crate::track_effects;
+use crate::track_effects::TrackEffects;
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 
@@ -14,6 +16,9 @@ pub(crate) struct Track<SequenceType> {
     pub(crate) volume: f32,
 
     pub(crate) sequence: SequenceType,
+
+    #[builder(default = "track_effects::no_op_effects()")]
+    pub(crate) effects: TrackEffects,
 }
 
 impl<SequenceType> Track<SequenceType> {}
