@@ -91,7 +91,7 @@ impl Envelope {
             self.volume_for_segment_position(self.sustain, self.release, position)
         }
     }
-    
+
     pub(crate) fn apply_effect(&self, sample: f32, position: f32) -> f32 {
         sample * self.volume_factor(position)
     }

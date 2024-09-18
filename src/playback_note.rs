@@ -38,7 +38,12 @@ impl PlaybackNote {
     pub(crate) fn apply_effects(&self, sample: f32, sample_position: f32) -> f32 {
         let mut output_sample = sample;
         
-        output_sample = self.envelope.apply_effect(output_sample, sample_position);
+        output_sample = self.envelope.apply_effect(
+            output_sample,
+            ((self.playback_start_time_ms - self.note.start_time_ms) /
+                (self.note.end_time_ms() - self.note.start_time_ms)) + sample_position
+        );
+                                                      // + (sample_position / 1000.0));
         
         for lfo in self.lfos.iter() {
             output_sample = lfo.apply_effect(output_sample, sample_position);

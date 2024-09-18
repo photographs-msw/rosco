@@ -40,7 +40,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                         .lfos(self.track_lfos[i].clone())
                         .build().unwrap()
                 );
-                
+
                 if float_leq(note.start_time_ms, min_start_time_ms) {
                     min_start_time_ms = note.start_time_ms;
                 }

@@ -79,11 +79,6 @@ pub(crate) fn midi_file_to_tracks<
                 midly::TrackEvent { delta, kind} => {
                     ticks_since_start += *delta;
                     
-                    // TEMP DEBUG
-                    // println!("DEBUG MIDI_DELTA: {}", delta.as_int());
-                    // println!("DEBUG TICKS_SINCE_START: {}", ticks_since_start);
-                    // println!("DEBUG DELTA_AS_DURATION_MS: {}", delta.as_int() as f32 / ticks_per_ms);
-
                     match kind {
                         midly::TrackEventKind::Midi { channel, message } => {
                             match message {

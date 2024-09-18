@@ -48,9 +48,9 @@ fn main() {
     println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
 
     let envelope = EnvelopeBuilder::default()
-        .attack(EnvelopePair(0.25, 0.9))
-        .decay(EnvelopePair(0.325, 0.75))
-        .sustain(EnvelopePair(0.75, 0.625))
+        .attack(EnvelopePair(0.05, 0.9))
+        .decay(EnvelopePair(0.05, 0.9))
+        .sustain(EnvelopePair(0.95, 0.9))
         .build().unwrap();
 
     let lfo = lfo::LFOBuilder::default()
@@ -87,7 +87,19 @@ fn main() {
     println!("Played MIDI file from TrackGrid GridNoteSequence");
     
     // ####################################
-    
+
+    let envelope = EnvelopeBuilder::default()
+        .attack(EnvelopePair(0.15, 0.8))
+        .decay(EnvelopePair(0.25, 0.7))
+        .sustain(EnvelopePair(0.85, 0.8))
+        .build().unwrap();
+
+    let lfo = lfo::LFOBuilder::default()
+        .frequency(2205.0)
+        .amplitude(0.35)
+        .waveforms(vec![oscillator::Waveform::Sine])
+        .build().unwrap();
+
     println!("Loading MIDI file");
     let midi_time_tracks =
         midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
@@ -100,21 +112,21 @@ fn main() {
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_time_tracks)
         .track_waveforms(track_waveforms)
+        .track_envelopes(vec![envelope; num_tracks])
+        // .track_envelopes(vec![Some(envelope::default_envelope()); num_tracks])
+        .track_lfos(vec![vec![lfo]; num_tracks])
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid TimeNoteSequence");
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         for playback_notes in track_grid {
-            // TEMP DEBUG
-            // println!( "notes_data: {:?}", notes_data);
-    
             tx.send(playback_notes).unwrap();
         }
     });
     for playback_notes in rx {
         // TEMP DEBUG
-        // println!( "\n=====> notes_data in playback\n: {:#?}", notes_data);
+        // println!( "\n=====> PLAYBACK NOTES IN RECEIVE \n: {:#?}", playback_notes);
     
         let window_duration_ms = playback_notes[0].playback_duration_ms();
         audio_gen::gen_notes(playback_notes, window_duration_ms as u64);

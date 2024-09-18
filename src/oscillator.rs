@@ -1,7 +1,7 @@
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
-use crate::constants::SAMPLE_RATE;
+use crate::constants::SAMPLE_RATE;  // khz samples per second
 use crate::playback_note::PlaybackNote;
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
