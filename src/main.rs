@@ -4,9 +4,11 @@ mod audio_gen;
 mod constants;
 mod envelope;
 mod envelope_pair;
+mod flange;
 mod float_utils;
 mod grid_note_sequence;
 mod instrument;
+mod lfo;
 mod midi;
 mod multi_instrument;
 mod note;
@@ -16,7 +18,6 @@ mod playback_note;
 mod time_note_sequence;
 mod track;
 mod track_grid;
-mod lfo;
 
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 

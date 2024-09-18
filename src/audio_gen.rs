@@ -1,3 +1,4 @@
+use std::collections::VecDeque;
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use std::time;
@@ -33,7 +34,7 @@ where
     let mut sample_clock = 0f32;
     
     // TODO HOW TO GET POSITION ON EACH ITERATION AND GET VOLUME FACTOR IN THE CALLBACK
-    let note_volume = /*note.envelope.volume_factor() * */ note.volume.clone();
+    let note_volume = note.volume.clone();
     let frequency = note.frequency.clone();
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
