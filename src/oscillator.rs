@@ -1,7 +1,7 @@
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
-use crate::constants::SAMPLE_RATE;  // khz samples per second
+use crate::constants::{NYQUIST_FREQUENCY, SAMPLE_RATE};  // khz samples per second
 use crate::playback_note::PlaybackNote;
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
@@ -59,6 +59,11 @@ pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_cl
         out_sample += sample;
     }
 
+    if out_sample > NYQUIST_FREQUENCY {
+        out_sample = NYQUIST_FREQUENCY;
+    } else if out_sample < -NYQUIST_FREQUENCY {
+        out_sample = -NYQUIST_FREQUENCY;
+    } 
     out_sample
 }
 
