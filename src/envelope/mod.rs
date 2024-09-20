@@ -2,7 +2,9 @@ use std::hash::Hash;
 
 use derive_builder::Builder;
 
-use crate::envelope_pair::EnvelopePair;
+use envelope_pair::EnvelopePair;
+
+pub mod envelope_pair;
 
 // State for an ADSR envelope. User sets the position from the start where attack, decay, sustain
 // and release end, and the volume level at each of these positions. The envelope defaults to
@@ -60,6 +62,7 @@ impl EnvelopeBuilder {
     }
 }
 
+#[allow(dead_code)]
 pub (crate) fn default_envelope() -> Envelope {
     Envelope {
         start: EnvelopePair(0.0, 0.0),
@@ -125,7 +128,7 @@ impl Eq for Envelope {}
 #[cfg(test)]
 mod test_envelope {
     use crate::envelope::{EnvelopeBuilder, EnvelopePair};
-    use crate::float_utils::assert_float_eq;
+    use crate::common::float_utils::assert_float_eq;
 
     #[test]
     fn test_volume_factor() {

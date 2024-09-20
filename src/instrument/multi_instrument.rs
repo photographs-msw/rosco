@@ -1,11 +1,11 @@
 use derive_builder::Builder;
 
 use crate::audio_gen;
-use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
+use crate::audio_gen::oscillator;
 use crate::note::Note;
-use crate::note_sequence_trait::AppendNote;
-use crate::oscillator;
-use crate::playback_note::{PlaybackNote, PlaybackNoteBuilder};
+use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
+use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
+use crate::sequence::note_sequence_trait::AppendNote;
 use crate::track::{Track, TrackBuilder};
 
 #[allow(dead_code)]
@@ -36,7 +36,7 @@ impl MultiInstrumentBuilder {
 
     // overriding setting in builder allowing the caller to add tracks on build
     #[allow(dead_code)]
-    pub (crate) fn add_tracks(&mut self, tracks: Vec<Track<GridNoteSequence>>) -> &mut Self {
+    pub(crate) fn add_tracks(&mut self, tracks: Vec<Track<GridNoteSequence>>) -> &mut Self {
         self.tracks = Some(tracks);
         self
     }

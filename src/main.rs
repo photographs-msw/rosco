@@ -1,35 +1,26 @@
 extern crate derive_builder;
 
 mod audio_gen;
-mod constants;
+mod common;
+mod effect;
 mod envelope;
-mod envelope_pair;
-mod flanger;
-mod float_utils;
-mod grid_note_sequence;
 mod instrument;
-mod lfo;
 mod midi;
-mod multi_instrument;
 mod note;
-mod note_sequence_trait;
-mod oscillator;
-mod playback_note;
-mod time_note_sequence;
+mod sequence;
 mod track;
-mod track_grid;
-mod track_effects;
 
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 
+use crate::effect::{flanger, lfo};
 use crate::envelope::EnvelopeBuilder;
-use crate::envelope_pair::EnvelopePair;
-use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
+use envelope::envelope_pair::EnvelopePair;
+use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 // use crate::instrument::InstrumentBuilder;
 // use crate::multi_instrument::{MultiInstrumentBuilder};
 // use crate::note::{Note, NoteBuilder};
-use crate::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
-use crate::track_grid::TrackGridBuilder;
+use crate::sequence::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
+use crate::track::track_grid::TrackGridBuilder;
 
 fn main() {
     println!("Loading args");
@@ -58,7 +49,7 @@ fn main() {
     let lfo = lfo::LFOBuilder::default()
         .frequency(44.1)
         .amplitude(0.25)
-        .waveforms(vec![oscillator::Waveform::Sine])
+        .waveforms(vec![audio_gen::oscillator::Waveform::Sine])
         .build().unwrap();
     
     let flange = flanger::FlangerBuilder::default()
@@ -66,7 +57,7 @@ fn main() {
         .sample_buffer()
         .build().unwrap();
     
-    let track_effects = track_effects::TrackEffectsBuilder::default()
+    let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
         .lfos(vec![lfo])
         .flangers(vec![flange])
@@ -76,7 +67,8 @@ fn main() {
     }
 
     let num_tracks = midi_grid_tracks.len();
-    let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
+    let track_waveforms =
+        vec![audio_gen::oscillator::get_waveforms(&waveforms_arg); num_tracks];
    
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
@@ -111,7 +103,8 @@ fn main() {
         track.effects = track_effects.clone();
     }
     let num_tracks = midi_time_tracks.len();
-    let track_waveforms = vec![oscillator::get_waveforms(&waveforms_arg); num_tracks];
+    let track_waveforms =
+        vec![audio_gen::oscillator::get_waveforms(&waveforms_arg); num_tracks];
     
     // Test building TrackGrid without envelopes and getting the default
     let track_grid = TrackGridBuilder::default()

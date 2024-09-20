@@ -1,5 +1,5 @@
 use float_eq::{assert_float_eq, assert_float_ne, float_eq, float_ne};
-use crate::constants;
+use crate::common::constants;
 
 #[allow(dead_code)]
 pub(crate) fn float_eq(a: f32, b: f32) -> bool {

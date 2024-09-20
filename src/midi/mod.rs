@@ -4,7 +4,7 @@ use nodi::midly;
 use nodi::midly::num::{u28, u4, u7, u15};
 
 use crate::note::{Note, NoteBuilder};
-use crate::note_sequence_trait::{AppendNote, BuilderWrapper};
+use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper};
 use crate::track::{Track, TrackBuilder};
 
 #[allow(dead_code)]

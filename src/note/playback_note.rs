@@ -1,12 +1,9 @@
 use derive_builder::Builder;
 
-use crate::envelope;
+use crate::audio_gen::oscillator::Waveform;
 use crate::envelope::Envelope;
-use crate::flanger;
 use crate::flanger::Flanger;
-use crate::lfo;
 use crate::lfo::LFO;
-use crate::oscillator::Waveform;
 use crate::note;
 use crate::note::Note;
 
@@ -19,7 +16,7 @@ pub(crate) struct PlaybackNote {
     pub(crate) playback_start_time_ms: f32,
 
     #[builder(default = "note::INIT_END_TIME")]
-    pub (crate) playback_end_time_ms: f32,
+    pub(crate) playback_end_time_ms: f32,
 
     #[builder(default = "vec![Waveform::Sine]")]
     pub(crate) waveforms: Vec<Waveform>,
@@ -59,7 +56,7 @@ impl PlaybackNote {
         for flanger in self.flangers.iter_mut() {
             output_sample = flanger.apply_effect(output_sample, sample_position);
         }
-        
+
         output_sample
     }
 }
@@ -71,11 +68,11 @@ pub(crate) fn default_playback_note() -> PlaybackNote {
 
 #[cfg(test)]
 mod test_playback_note {
+    use crate::audio_gen::oscillator::Waveform;
     use crate::envelope;
     use crate::flanger;
     use crate::lfo;
-    use crate::oscillator::Waveform;
-    use crate::playback_note::PlaybackNoteBuilder;
+    use crate::note::playback_note::PlaybackNoteBuilder;
 
     #[test]
     fn test_default_playback_note() {
@@ -121,5 +118,5 @@ mod test_playback_note {
             .build().unwrap();
         assert_eq!(playback_note.flangers, vec![flanger::default_flanger()]);
     }
-    
+
 }

@@ -1,6 +1,6 @@
 use std::hash::{Hash, Hasher};
 
-use crate::float_utils::float_eq;
+use crate::common::float_utils::float_eq;
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct EnvelopePair (

@@ -1,8 +1,8 @@
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
-use crate::constants::{NYQUIST_FREQUENCY, SAMPLE_RATE};  // khz samples per second
-use crate::playback_note::PlaybackNote;
+use crate::common::constants::{NYQUIST_FREQUENCY, SAMPLE_RATE};  // khz samples per second
+use crate::note::playback_note::PlaybackNote;
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 

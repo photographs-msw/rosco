@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
 use crate::note::Note;
-use crate::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
+use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct GridNoteSequence {
@@ -237,9 +237,9 @@ impl<'a> Iterator for GridNoteSequence {
 
 #[cfg(test)]
 mod test_grid_note_sequence {
+    use crate::common::float_utils::float_eq;
     use crate::note::NoteBuilder;
-    use crate::float_utils::float_eq;
-    use crate::grid_note_sequence::GridNoteSequenceBuilder;
+    use crate::sequence::grid_note_sequence::GridNoteSequenceBuilder;
 
     #[test]
     fn test_append_note() {

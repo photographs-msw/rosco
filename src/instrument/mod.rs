@@ -1,10 +1,12 @@
 use derive_builder::Builder;
 
 use crate::audio_gen;
-use crate::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
+use crate::audio_gen::oscillator;
+use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 use crate::note::Note;
-use crate::oscillator;
 use crate::track::{Track, TrackBuilder};
+
+mod multi_instrument;
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 

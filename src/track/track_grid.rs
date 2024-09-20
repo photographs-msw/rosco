@@ -1,14 +1,9 @@
 use derive_builder::Builder;
-use crate::float_utils::{float_geq, float_leq};
 
-use crate::envelope;
-use crate::envelope::Envelope;
-use crate::flanger::Flanger;
-use crate::note_sequence_trait::NextNotes;
-use crate::lfo;
-use crate::lfo::LFO;
-use crate::oscillator::Waveform;
-use crate::playback_note::{PlaybackNoteBuilder, PlaybackNote};
+use crate::audio_gen::oscillator::Waveform;
+use crate::common::float_utils::{float_geq, float_leq};
+use crate::note::playback_note::{PlaybackNoteBuilder, PlaybackNote};
+use crate::sequence::note_sequence_trait::NextNotes;
 use crate::track::Track;
 
 #[derive(Builder, Clone, Debug)]
@@ -16,15 +11,6 @@ pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
     
     pub(crate) track_waveforms: Vec<Vec<Waveform>>,
-
-    // #[builder(default = "vec![envelope::default_envelope(); self.tracks.clone().unwrap().len()]")]
-    // pub(crate) track_envelopes: Vec<Envelope>,
-    // 
-    // #[builder(default = "vec![vec![lfo::default_lfo()]; self.tracks.clone().unwrap().len()]")]
-    // pub(crate) track_lfos: Vec<Vec<LFO>>,
-    // 
-    // #[builder(default = "vec![flange::no_op_flange(); self.tracks.clone().unwrap().len()]")]
-    // pub(crate) track_flangers: Vec<Flanger>,
 }
 
 impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
@@ -79,12 +65,13 @@ impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
 
 #[cfg(test)]
 mod test_sequence_grid {
-    use crate::{envelope, flanger, lfo, oscillator};
-    use crate::grid_note_sequence::GridNoteSequenceBuilder;
+    use crate::audio_gen::oscillator;
+    use crate::{envelope, flanger, lfo};
     use crate::note::NoteBuilder;
+    use crate::sequence::grid_note_sequence::GridNoteSequenceBuilder;
     use crate::track::TrackBuilder;
-    use crate::track_effects::TrackEffectsBuilder;
-    use crate::track_grid::TrackGridBuilder;
+    use crate::track::track_effects::TrackEffectsBuilder;
+    use crate::track::track_grid::TrackGridBuilder;
 
     #[test]
     fn test_active_notes_grid_sequence() {

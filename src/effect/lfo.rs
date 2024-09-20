@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
-use crate::constants::{DEFAULT_LFO_AMPLITUDE, SAMPLE_RATE};
-use crate::oscillator::{get_note_sample, Waveform};
+use crate::audio_gen::oscillator::{get_note_sample, Waveform};
+use crate::common::constants::{DEFAULT_LFO_AMPLITUDE, SAMPLE_RATE};
 
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug, PartialEq)]
@@ -48,6 +48,7 @@ impl LFO {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn default_lfo() -> LFO {
     LFOBuilder::default().build().unwrap()
 }

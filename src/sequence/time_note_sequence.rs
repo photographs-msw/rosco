@@ -1,10 +1,10 @@
 use std::collections::VecDeque;
 use derive_builder::Builder;
 
-use crate::constants;
-use crate::float_utils::{float_eq, float_geq, float_leq};
+use crate::common::constants;
+use crate::common::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::{Note, NoteBuilder};
-use crate::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
+use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
 
 #[allow(dead_code)]
 static INIT_START_TIME: f32 = 0.0;
@@ -288,9 +288,9 @@ impl<'a> Iterator for TimeNoteSequence {
 
 #[cfg(test)]
 mod test_time_note_sequence {
-    use crate::float_utils::assert_float_eq;
+    use crate::common::float_utils::assert_float_eq;
     use crate::note::NoteBuilder;
-    use crate::time_note_sequence::TimeNoteSequenceBuilder;
+    use crate::sequence::time_note_sequence::TimeNoteSequenceBuilder;
 
     #[test]
     fn test_get_next_notes_window() {

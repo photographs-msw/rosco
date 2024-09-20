@@ -2,9 +2,11 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use std::time;
 
-use crate::{constants, oscillator};
+use crate::common::constants;
 use crate::note::Note;
-use crate::playback_note::PlaybackNote;
+use crate::note::playback_note::PlaybackNote;
+
+pub mod oscillator;
 
 #[allow(dead_code)]
 pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
