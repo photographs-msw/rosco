@@ -13,8 +13,8 @@ mod track;
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 
 use crate::effect::{flanger, lfo};
-use crate::envelope::EnvelopeBuilder;
-use envelope::envelope_pair::EnvelopePair;
+use crate::envelope::envelope::EnvelopeBuilder;
+use crate::envelope::envelope_pair::EnvelopePair;
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 // use crate::instrument::InstrumentBuilder;
 // use crate::multi_instrument::{MultiInstrumentBuilder};
@@ -36,7 +36,7 @@ fn main() {
     // and coordinated concurrent playback where one thread prepares the next window to play
     // and the other thread plays the current window
     let mut midi_grid_tracks =
-        midi::midi_file_to_tracks::<GridNoteSequence, GridNoteSequenceBuilder>(
+        midi::midi::midi_file_to_tracks::<GridNoteSequence, GridNoteSequenceBuilder>(
             "/Users/markweiss/Downloads/test.mid");
     println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
 
@@ -51,12 +51,12 @@ fn main() {
         .amplitude(0.25)
         .waveforms(vec![audio_gen::oscillator::Waveform::Sine])
         .build().unwrap();
-    
+
     let flange = flanger::FlangerBuilder::default()
         .window_size(20)
         .sample_buffer()
         .build().unwrap();
-    
+
     let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
         .lfos(vec![lfo])
@@ -69,7 +69,7 @@ fn main() {
     let num_tracks = midi_grid_tracks.len();
     let track_waveforms =
         vec![audio_gen::oscillator::get_waveforms(&waveforms_arg); num_tracks];
-   
+
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
         .track_waveforms(track_waveforms)
@@ -85,9 +85,9 @@ fn main() {
     for playback_notes in rx {
         // TEMP DEBUG
         // println!("\n=====> playback_notes\n: {:#?}", playback_note_kinds);
-    
+
         let window_duration_ms = playback_notes[0].playback_duration_ms();
-        audio_gen::gen_notes(playback_notes, window_duration_ms as u64);
+        audio_gen::audio_gen::gen_notes(playback_notes, window_duration_ms as u64);
     }
     println!("Played MIDI file from TrackGrid GridNoteSequence");
     
@@ -95,7 +95,7 @@ fn main() {
 
     println!("Loading MIDI file");
     let mut midi_time_tracks =
-        midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
+        midi::midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
             "/Users/markweiss/Downloads/test.mid");
     println!("Loaded MIDI file into Vec<Track<TimeNoteSequence>");
 
@@ -105,7 +105,7 @@ fn main() {
     let num_tracks = midi_time_tracks.len();
     let track_waveforms =
         vec![audio_gen::oscillator::get_waveforms(&waveforms_arg); num_tracks];
-    
+
     // Test building TrackGrid without envelopes and getting the default
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_time_tracks)
@@ -122,9 +122,9 @@ fn main() {
     for playback_notes in rx {
         // TEMP DEBUG
         // println!( "\n=====> PLAYBACK NOTES IN RECEIVE \n: {:#?}", playback_notes);
-    
+
         let window_duration_ms = playback_notes[0].playback_duration_ms();
-        audio_gen::gen_notes(playback_notes, window_duration_ms as u64);
+        audio_gen::audio_gen::gen_notes(playback_notes, window_duration_ms as u64);
     }
     println!("Played MIDI file from TrackGrid TimeNoteSequence");
 

@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 
-use crate::envelope::Envelope;
+use crate::envelope::envelope::Envelope;
 use crate::flanger::Flanger;
 use crate::lfo::LFO;
 

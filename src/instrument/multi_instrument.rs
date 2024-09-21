@@ -1,12 +1,12 @@
 use derive_builder::Builder;
 
-use crate::audio_gen;
+use crate::audio_gen::audio_gen;
 use crate::audio_gen::oscillator;
-use crate::note::Note;
+use crate::note::note::Note;
 use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 use crate::sequence::note_sequence_trait::AppendNote;
-use crate::track::{Track, TrackBuilder};
+use crate::track::track::{Track, TrackBuilder};
 
 #[allow(dead_code)]
 #[derive(Builder, Debug)]

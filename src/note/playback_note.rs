@@ -1,11 +1,11 @@
 use derive_builder::Builder;
 
 use crate::audio_gen::oscillator::Waveform;
-use crate::envelope::Envelope;
+use crate::envelope::envelope::Envelope;
 use crate::flanger::Flanger;
 use crate::lfo::LFO;
-use crate::note;
-use crate::note::Note;
+use crate::note::note;
+use crate::note::note::Note;
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct PlaybackNote {
@@ -69,18 +69,19 @@ pub(crate) fn default_playback_note() -> PlaybackNote {
 #[cfg(test)]
 mod test_playback_note {
     use crate::audio_gen::oscillator::Waveform;
-    use crate::envelope;
+    use crate::envelope::envelope;
     use crate::flanger;
     use crate::lfo;
+    use crate::note::note;
     use crate::note::playback_note::PlaybackNoteBuilder;
 
     #[test]
     fn test_default_playback_note() {
         let playback_note = PlaybackNoteBuilder::default().build().unwrap();
-        assert_eq!(playback_note.note, crate::note::default_note());
-        assert_eq!(playback_note.playback_start_time_ms, crate::note::INIT_START_TIME);
-        assert_eq!(playback_note.playback_end_time_ms, crate::note::INIT_END_TIME);
-        assert_eq!(playback_note.playback_duration_ms(), crate::note::DEFAULT_DURATION);
+        assert_eq!(playback_note.note, note::default_note());
+        assert_eq!(playback_note.playback_start_time_ms, note::INIT_START_TIME);
+        assert_eq!(playback_note.playback_end_time_ms, note::INIT_END_TIME);
+        assert_eq!(playback_note.playback_duration_ms(), note::DEFAULT_DURATION);
         assert_eq!(playback_note.waveforms, vec![Waveform::Sine]);
         assert_eq!(playback_note.envelopes.is_empty(), true);
         assert_eq!(playback_note.lfos.is_empty(), true);
@@ -118,5 +119,4 @@ mod test_playback_note {
             .build().unwrap();
         assert_eq!(playback_note.flangers, vec![flanger::default_flanger()]);
     }
-
 }

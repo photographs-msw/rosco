@@ -4,7 +4,7 @@ use crate::audio_gen::oscillator::Waveform;
 use crate::common::float_utils::{float_geq, float_leq};
 use crate::note::playback_note::{PlaybackNoteBuilder, PlaybackNote};
 use crate::sequence::note_sequence_trait::NextNotes;
-use crate::track::Track;
+use crate::track::track::Track;
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
@@ -66,10 +66,11 @@ impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
 #[cfg(test)]
 mod test_sequence_grid {
     use crate::audio_gen::oscillator;
-    use crate::{envelope, flanger, lfo};
-    use crate::note::NoteBuilder;
+    use crate::effect::{flanger, lfo};
+    use crate::envelope::envelope;
+    use crate::note::note::NoteBuilder;
     use crate::sequence::grid_note_sequence::GridNoteSequenceBuilder;
-    use crate::track::TrackBuilder;
+    use crate::track::track::TrackBuilder;
     use crate::track::track_effects::TrackEffectsBuilder;
     use crate::track::track_grid::TrackGridBuilder;
 

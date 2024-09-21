@@ -1,4 +1,4 @@
-use crate::note::Note;
+use crate::note::note::Note;
 
 pub(crate) trait AppendNote {
     fn append_note(&mut self, note: Note);

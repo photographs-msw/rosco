@@ -3,7 +3,7 @@ use derive_builder::Builder;
 
 use crate::common::constants;
 use crate::common::float_utils::{float_eq, float_geq, float_leq};
-use crate::note::{Note, NoteBuilder};
+use crate::note::note::{Note, NoteBuilder};
 use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
 
 #[allow(dead_code)]
@@ -289,7 +289,7 @@ impl<'a> Iterator for TimeNoteSequence {
 #[cfg(test)]
 mod test_time_note_sequence {
     use crate::common::float_utils::assert_float_eq;
-    use crate::note::NoteBuilder;
+    use crate::note::note::NoteBuilder;
     use crate::sequence::time_note_sequence::TimeNoteSequenceBuilder;
 
     #[test]
