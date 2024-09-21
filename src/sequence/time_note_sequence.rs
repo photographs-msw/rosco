@@ -144,7 +144,7 @@ impl TimeNoteSequence {
                     .volume(0.0)
                     .start_time_ms(self.note_playback_time_ms)
                     .duration_ms(window_start_time_ms - self.note_playback_time_ms)
-                    .track_num(1)
+                    // .track_num(1)
                     .build().unwrap()
             );
 
@@ -488,7 +488,6 @@ mod test_time_note_sequence {
             .frequency(440.0)
             .duration_ms(1000.0)
             .volume(1.0)
-            .track_num(1)
             .clone()
     }
 }

@@ -113,7 +113,6 @@ pub(crate) fn midi_file_to_tracks<
                                                                            ticks_since_start.as_int() as f32 /
                                                                                ticks_per_ms)
                                                                        .duration_ms(0.0)
-                                                                       .track_num(channel.as_int() as i16)
                                                                        .build().unwrap()
                                             );
                                         }
@@ -155,8 +154,6 @@ pub(crate) fn midi_file_to_tracks<
             .num(midi_channel.as_int() as i16)
             .sequence(sequence.clone())
             .volume(1.0 / track_sequence_map.len() as f32)
-            // .playback_note_kind(crate::playback_note::PlaybackNoteKind::WithOscillatorAndEnvelope(
-            //     crate::playback_note::default_playback_note()))
             .build()
             .unwrap();
         tracks.push(track);

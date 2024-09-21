@@ -2,7 +2,7 @@ use std::hash::{Hash, Hasher};
 
 use derive_builder::Builder;
 
-use crate::common::constants::NO_TRACK;
+// use crate::common::constants::NO_TRACK;
 use crate::common::float_utils::float_eq;
 
 // We want to set INIT_START_TIME, INIT_END_TIME and DEFAULT_DURATION as builder defaults
@@ -29,9 +29,6 @@ pub(crate) struct Note {
 
     #[builder(default = "INIT_START_TIME")]
     pub(crate) start_time_ms: f32,
-
-    #[builder(default = "NO_TRACK")]
-    pub(crate) track_num: i16,
 }
 
 pub(crate) fn default_note() -> Note {
@@ -43,8 +40,7 @@ impl PartialEq for Note {
         float_eq(self.frequency, other.frequency) &&
             float_eq(self.duration_ms, other.duration_ms) &&
             float_eq(self.volume, other.volume) &&
-            float_eq(self.start_time_ms, other.start_time_ms) &&
-            self.track_num == other.track_num
+            float_eq(self.start_time_ms, other.start_time_ms)
     }
 }
 impl Eq for Note {}
@@ -55,7 +51,6 @@ impl Hash for Note {
         self.duration_ms.to_bits().hash(state);
         self.volume.to_bits().hash(state);
         self.start_time_ms.to_bits().hash(state);
-        self.track_num.hash(state);
     }
 }
 
