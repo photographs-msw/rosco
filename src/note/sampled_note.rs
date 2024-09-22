@@ -17,7 +17,7 @@ pub(crate) struct SampledNote {
     #[builder(default = "0", setter(skip))]
     sample_index: usize,
 
-    #[builder(default = "0.0", setter(skip))]
+    #[builder(default = "0.0")]
     pub(crate) duration_ms: f32,
 
     #[builder(default = "DEFAULT_VOLUME")]

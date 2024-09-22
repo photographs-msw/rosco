@@ -56,7 +56,8 @@ pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_cl
                         get_note_sample(&playback_note.waveforms.clone(),
                                         playback_note.note.frequency, sample_clock)
                 }
-                NoteType::Sample => playback_note.sampled_note.volume * playback_note.sampled_note.next_sample()
+                NoteType::Sample => playback_note.sampled_note.volume *
+                    playback_note.sampled_note.next_sample()
             };
 
         sample = playback_note.apply_effects(sample, sample_clock / SAMPLE_RATE);

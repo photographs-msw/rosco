@@ -60,12 +60,26 @@ impl PlaybackNote {
     pub(crate) fn apply_effects(&mut self, sample: f32, sample_position: f32) -> f32 {
         let mut output_sample = sample;
 
-        for envelope in self.envelopes.iter() {
-            output_sample = envelope.apply_effect(
-                output_sample,
-                ((self.playback_start_time_ms - self.note.start_time_ms) /
-                    (self.note.end_time_ms() - self.note.start_time_ms)) + sample_position
-            );
+        match self.note_type {
+            NoteType::Oscillator => {
+                for envelope in self.envelopes.iter() {
+                    output_sample = envelope.apply_effect(
+                        output_sample,
+                        ((self.playback_start_time_ms - self.note.start_time_ms) /
+                            (self.note.end_time_ms() - self.note.start_time_ms)) + sample_position
+                    );
+                }
+            }
+            NoteType::Sample => {
+                for envelope in self.envelopes.iter() {
+                    output_sample = envelope.apply_effect(
+                        output_sample,
+                        ((self.playback_start_time_ms - self.sampled_note.start_time_ms) /
+                            (self.sampled_note.duration_ms - self.sampled_note.start_time_ms)) +
+                            sample_position
+                    );
+                }
+            }
         }
 
         for lfo in self.lfos.iter() {

@@ -13,7 +13,9 @@ mod track;
 // TODO FIX main TO WORK WITH NEW SPLIT OFF PLAYBACK_NOTE
 
 use std::mem::{self, MaybeUninit};
+use crate::common::constants::SAMPLE_RATE;
 use crate::effect::{flanger, lfo};
+use crate::effect::flanger::default_flanger;
 use crate::envelope::envelope::EnvelopeBuilder;
 use crate::envelope::envelope_pair::EnvelopePair;
 use crate::note::sampled_note::BUF_STORAGE_SIZE;
@@ -134,31 +136,39 @@ fn main() {
     
     let sample_data = audio_gen::audio_gen::load_audio_file("/Users/markweiss/Downloads/test2.wav")
         .into_boxed_slice();
-    let mut sample_buf: Vec::<f32> = Vec::with_capacity(BUF_STORAGE_SIZE);
-    let mut i: usize = 0;
     let mut sample_buf: Vec<f32> = Vec::with_capacity(BUF_STORAGE_SIZE);
-    for (i, sample) in  sample_data[..].iter().enumerate() {
+    for sample in  sample_data[..].iter() {
         // TEMP DEBUG
-        println!("{}", sample_data[i]);
+        // println!("{}", sample_data[i]);
         
-        sample_buf.push(sample_data[i] as f32); 
+        sample_buf.push(*sample as f32); 
     }
     // let sample_buf = unsafe {
     //     mem::transmute::<_, [f32; BUF_STORAGE_SIZE]>(sample_buf)
     // };
     
     let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
-        .volume(0.001)
+        .volume(0.005)
+        .start_time_ms(0.0)
+        .duration_ms((sample_data.len() as f32 / SAMPLE_RATE) * 1000.0)
         .build().unwrap();
     sampled_note.set_sample(&sample_buf, sample_data.len());
+    // TODO BUG ENVELOPE DOES NOT WORK
     let sampled_playback_note = note::playback_note::PlaybackNoteBuilder::default()
         .note_type(note::playback_note::NoteType::Sample)
         .sampled_note(sampled_note)
+        .envelopes(vec![envelope::envelope::default_envelope()])
+        .playback_start_time_ms(0.0)
+        .playback_end_time_ms((sample_data.len() as f32 / SAMPLE_RATE) * 1000.0)
+        .lfos(vec![effect::lfo::default_lfo()])
+        .flangers(vec![effect::flanger::default_flanger()])
         .build().unwrap();
     
     audio_gen::audio_gen::gen_notes(vec![sampled_playback_note],
                                     (sample_data.len() as u64 / 44100) * 1000);
 
+    println!("Played SampledNote");
+    
     // ####################################
     // 
     // println!("Setting up Instrument");
