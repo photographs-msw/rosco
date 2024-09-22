@@ -164,9 +164,10 @@ fn main() {
         .flangers(vec![effect::flanger::default_flanger()])
         .build().unwrap();
     
-    audio_gen::audio_gen::gen_notes(vec![sampled_playback_note],
-                                    (sample_data.len() as u64 / 44100) * 1000);
-
+    for _ in 0..2 {
+        audio_gen::audio_gen::gen_notes(vec![sampled_playback_note.clone()],
+                                        (sample_data.len() as u64 / 44100) * 1000);
+    }
     println!("Played SampledNote");
     
     // ####################################
