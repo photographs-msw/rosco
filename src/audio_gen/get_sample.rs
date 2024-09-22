@@ -49,15 +49,14 @@ pub(crate) fn get_note_sample(waveforms: &Vec<Waveform>, frequency: f32, sample_
 pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_clock: f32) -> f32 {
     let mut out_sample = 0.0;
     for playback_note in playback_notes.iter_mut() {
-        let note = playback_note.note;
         let mut sample =
             match playback_note.note_type {
                 NoteType::Oscillator => {
-                    note.volume *
+                    playback_note.note.volume *
                         get_note_sample(&playback_note.waveforms.clone(),
-                                        note.frequency, sample_clock)
+                                        playback_note.note.frequency, sample_clock)
                 }
-                NoteType::Sample => playback_note.sampled_note.next_sample()
+                NoteType::Sample => playback_note.sampled_note.volume * playback_note.sampled_note.next_sample()
             };
 
         sample = playback_note.apply_effects(sample, sample_clock / SAMPLE_RATE);

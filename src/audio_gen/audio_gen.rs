@@ -25,9 +25,9 @@ pub(crate) fn gen_notes(playback_notes: Vec<PlaybackNote>, window_duration_ms: u
     gen_notes_impl::<f32>(&device, &config.into(), playback_notes, window_duration_ms);
 }
 
-pub(crate) fn load_audio_file(file_path: &str) -> Vec<f32> {
+pub(crate) fn load_audio_file(file_path: &str) -> Vec<i16> {
     let mut reader = hound::WavReader::open(file_path).unwrap();
-    let samples: Vec<f32> = reader.samples::<f32>().map(|s| s.unwrap()).collect();
+    let samples: Vec<i16> = reader.samples::<i16>().map(|s| s.unwrap()).collect();
     samples
 }
 
@@ -39,7 +39,6 @@ where
 {
     let mut sample_clock = 0f32;
 
-    // TODO HOW TO GET POSITION ON EACH ITERATION AND GET VOLUME FACTOR IN THE CALLBACK
     let note_volume = note.volume.clone();
     let frequency = note.frequency.clone();
     let mut next_sample = move || {

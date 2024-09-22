@@ -132,29 +132,32 @@ fn main() {
 
     println!("Play SampledNote");
     
-    // let sample_data = audio_gen::audio_gen::load_audio_file("/Users/markweiss/Downloads/test.wav")
-    //     .into_boxed_slice();
-    // let mut sample_buf: [MaybeUninit<f32>; BUF_STORAGE_SIZE] = unsafe {
-    //     MaybeUninit::uninit().assume_init()
-    // };
+    let sample_data = audio_gen::audio_gen::load_audio_file("/Users/markweiss/Downloads/test2.wav")
+        .into_boxed_slice();
+    let mut sample_buf: Vec::<f32> = Vec::with_capacity(BUF_STORAGE_SIZE);
     let mut i: usize = 0;
     let mut sample_buf: Vec<f32> = Vec::with_capacity(BUF_STORAGE_SIZE);
-    for elem in &mut sample_buf[..] {
-        *elem = 100.0; 
-        i += 1;
+    for (i, sample) in  sample_data[..].iter().enumerate() {
+        // TEMP DEBUG
+        println!("{}", sample_data[i]);
+        
+        sample_buf.push(sample_data[i] as f32); 
     }
     // let sample_buf = unsafe {
     //     mem::transmute::<_, [f32; BUF_STORAGE_SIZE]>(sample_buf)
     // };
     
     let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
+        .volume(0.001)
         .build().unwrap();
-    sampled_note.set_sample(&sample_buf, BUF_STORAGE_SIZE);
+    sampled_note.set_sample(&sample_buf, sample_data.len());
     let sampled_playback_note = note::playback_note::PlaybackNoteBuilder::default()
+        .note_type(note::playback_note::NoteType::Sample)
         .sampled_note(sampled_note)
         .build().unwrap();
     
-    audio_gen::audio_gen::gen_notes(vec![sampled_playback_note], 2000);
+    audio_gen::audio_gen::gen_notes(vec![sampled_playback_note],
+                                    (sample_data.len() as u64 / 44100) * 1000);
 
     // ####################################
     // 
