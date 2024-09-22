@@ -1,21 +1,40 @@
 use derive_builder::Builder;
 
-use crate::audio_gen::oscillator::Waveform;
+use crate::audio_gen::get_sample::Waveform;
 use crate::envelope::envelope::Envelope;
 use crate::flanger::Flanger;
 use crate::lfo::LFO;
+use crate::note::constants;
 use crate::note::note;
+use crate::note::sampled_note;
 use crate::note::note::Note;
+use crate::note::sampled_note::SampledNote;
+
+#[derive(Clone, Debug)]
+pub (crate) enum NoteType {
+    Oscillator,
+    Sample,
+}
+
+// TODO is clipping on some notes due to rounding from float duration to uint and not using
+//  ceiling to round?
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct PlaybackNote {
+
+    #[builder(default = "NoteType::Oscillator")]
+    pub(crate) note_type: NoteType,
+    
     #[builder(default = "note::default_note()")]
     pub(crate) note: Note,
 
-    #[builder(default = "note::INIT_START_TIME")]
+    #[builder(default = "sampled_note::default_sample_note()")]
+    pub(crate) sampled_note: SampledNote,
+
+    #[builder(default = "constants::INIT_START_TIME")]
     pub(crate) playback_start_time_ms: f32,
 
-    #[builder(default = "note::INIT_END_TIME")]
+    #[builder(default = "constants::INIT_END_TIME")]
     pub(crate) playback_end_time_ms: f32,
 
     #[builder(default = "vec![Waveform::Sine]")]
@@ -68,10 +87,11 @@ pub(crate) fn default_playback_note() -> PlaybackNote {
 
 #[cfg(test)]
 mod test_playback_note {
-    use crate::audio_gen::oscillator::Waveform;
+    use crate::audio_gen::get_sample::Waveform;
     use crate::envelope::envelope;
     use crate::flanger;
     use crate::lfo;
+    use crate::note::constants;
     use crate::note::note;
     use crate::note::playback_note::PlaybackNoteBuilder;
 
@@ -79,9 +99,9 @@ mod test_playback_note {
     fn test_default_playback_note() {
         let playback_note = PlaybackNoteBuilder::default().build().unwrap();
         assert_eq!(playback_note.note, note::default_note());
-        assert_eq!(playback_note.playback_start_time_ms, note::INIT_START_TIME);
-        assert_eq!(playback_note.playback_end_time_ms, note::INIT_END_TIME);
-        assert_eq!(playback_note.playback_duration_ms(), note::DEFAULT_DURATION);
+        assert_eq!(playback_note.playback_start_time_ms, constants::INIT_START_TIME);
+        assert_eq!(playback_note.playback_end_time_ms, constants::INIT_END_TIME);
+        assert_eq!(playback_note.playback_duration_ms(), constants::DEFAULT_DURATION);
         assert_eq!(playback_note.waveforms, vec![Waveform::Sine]);
         assert_eq!(playback_note.envelopes.is_empty(), true);
         assert_eq!(playback_note.lfos.is_empty(), true);

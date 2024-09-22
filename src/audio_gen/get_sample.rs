@@ -2,7 +2,7 @@ use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
 use crate::common::constants::{NYQUIST_FREQUENCY, SAMPLE_RATE};  // khz samples per second
-use crate::note::playback_note::PlaybackNote;
+use crate::note::playback_note::{NoteType, PlaybackNote};
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
@@ -50,8 +50,15 @@ pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_cl
     let mut out_sample = 0.0;
     for playback_note in playback_notes.iter_mut() {
         let note = playback_note.note;
-        let mut sample = note.volume *
-            get_note_sample(&playback_note.waveforms.clone(), note.frequency, sample_clock);
+        let mut sample =
+            match playback_note.note_type {
+                NoteType::Oscillator => {
+                    note.volume *
+                        get_note_sample(&playback_note.waveforms.clone(),
+                                        note.frequency, sample_clock)
+                }
+                NoteType::Sample => playback_note.sampled_note.next_sample()
+            };
 
         sample = playback_note.apply_effects(sample, sample_clock / SAMPLE_RATE);
 

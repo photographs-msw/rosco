@@ -1,6 +1,5 @@
 use derive_builder::Builder;
 
-use crate::audio_gen::oscillator::Waveform;
 use crate::common::float_utils::{float_geq, float_leq};
 use crate::note::playback_note::{PlaybackNoteBuilder, PlaybackNote};
 use crate::sequence::note_sequence_trait::NextNotes;
@@ -9,8 +8,6 @@ use crate::track::track::Track;
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
-    
-    pub(crate) track_waveforms: Vec<Vec<Waveform>>,
 }
 
 impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
@@ -20,12 +17,11 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
         let mut min_start_time_ms = f32::MAX;
         let mut max_end_time_ms = 0.0;
 
-        for (i, track) in self.tracks.iter_mut().enumerate() {
+        for track in self.tracks.iter_mut() {
             for note in track.sequence.next_notes() {
                 playback_notes.push(
                     PlaybackNoteBuilder::default()
                         .note(note)
-                        .waveforms(self.track_waveforms[i].clone())
                         .envelopes(track.effects.envelopes.clone())
                         .lfos(track.effects.lfos.clone())
                         .flangers(track.effects.flangers.clone())
@@ -65,7 +61,7 @@ impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
 
 #[cfg(test)]
 mod test_sequence_grid {
-    use crate::audio_gen::oscillator;
+    // use crate::audio_gen::oscillator;
     use crate::effect::{flanger, lfo};
     use crate::envelope::envelope;
     use crate::note::note::NoteBuilder;
@@ -108,7 +104,6 @@ mod test_sequence_grid {
                         )
                         .build().unwrap()
                 ])
-            .track_waveforms(vec![vec![oscillator::Waveform::Sine]])
             .build().unwrap();
 
         // expect one note to be active when sample_clock_index is 0.0

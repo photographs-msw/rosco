@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
 use crate::audio_gen::audio_gen;
-use crate::audio_gen::oscillator;
+use crate::audio_gen::get_sample;
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 use crate::note::note::Note;
 use crate::track::track::{Track, TrackBuilder};
@@ -11,7 +11,7 @@ static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 #[allow(dead_code)]
 #[derive(Builder, Debug)]
 pub(crate) struct Instrument<> {
-    waveforms: Vec<oscillator::Waveform>,
+    waveforms: Vec<get_sample::Waveform>,
 
     #[builder(default = "DEFAULT_TRACK_VOLUME")]
     #[allow(dead_code)]

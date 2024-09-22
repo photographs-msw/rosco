@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
 use crate::audio_gen::audio_gen;
-use crate::audio_gen::oscillator;
+use crate::audio_gen::get_sample;
 use crate::note::note::Note;
 use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
@@ -11,7 +11,7 @@ use crate::track::track::{Track, TrackBuilder};
 #[allow(dead_code)]
 #[derive(Builder, Debug)]
 pub(crate) struct MultiInstrument {
-    track_waveforms: Vec<Vec<oscillator::Waveform>>,
+    track_waveforms: Vec<Vec<get_sample::Waveform>>,
 
     #[allow(dead_code)]
     num_tracks: usize,

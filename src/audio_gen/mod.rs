@@ -1,2 +1,2 @@
 pub mod audio_gen;
-pub mod oscillator;
+pub mod get_sample;

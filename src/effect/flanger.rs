@@ -1,4 +1,5 @@
 use std::collections::VecDeque;
+
 use derive_builder::Builder;
 
 static SAMPLE_BUFFER_SIZE: usize = 20;
@@ -35,7 +36,7 @@ impl FlangerBuilder {
 #[allow(dead_code)]
 impl Flanger {
     pub(crate) fn apply_effect(&mut self, sample: f32, _sample_clock: f32) -> f32 {
-        // circular buffer of most recent camples in window, effect uses the oldest sample
+        // circular buffer of most recent samples in window, effect uses the oldest sample
         self.sample_buffer.insert(self.insert_index % self.window_size, sample);
         self.insert_index += 1;
         

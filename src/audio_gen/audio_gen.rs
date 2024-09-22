@@ -2,13 +2,13 @@ use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
 
 use std::time;
 
-use crate::audio_gen::oscillator;
+use crate::audio_gen::get_sample;
 use crate::common::constants;
 use crate::note::note::Note;
 use crate::note::playback_note::PlaybackNote;
 
 #[allow(dead_code)]
-pub(crate) fn gen_note(note: &Note, waveforms: Vec<oscillator::Waveform>) {
+pub(crate) fn gen_note(note: &Note, waveforms: Vec<get_sample::Waveform>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
@@ -25,9 +25,15 @@ pub(crate) fn gen_notes(playback_notes: Vec<PlaybackNote>, window_duration_ms: u
     gen_notes_impl::<f32>(&device, &config.into(), playback_notes, window_duration_ms);
 }
 
+pub(crate) fn load_audio_file(file_path: &str) -> Vec<f32> {
+    let mut reader = hound::WavReader::open(file_path).unwrap();
+    let samples: Vec<f32> = reader.samples::<f32>().map(|s| s.unwrap()).collect();
+    samples
+}
+
 #[allow(dead_code)]
 fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig, note: &Note,
-                    waveforms: Vec<oscillator::Waveform>)
+                    waveforms: Vec<get_sample::Waveform>)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -38,7 +44,7 @@ where
     let frequency = note.frequency.clone();
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
-        note_volume * oscillator::get_note_sample(&waveforms, frequency, sample_clock)
+        note_volume * get_sample::get_note_sample(&waveforms, frequency, sample_clock)
     };
 
     let channels = config.channels as usize;
@@ -63,7 +69,7 @@ fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
     let mut sample_clock = 0f32;
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
-        oscillator::get_notes_sample(&mut playback_notes, sample_clock)
+        get_sample::get_notes_sample(&mut playback_notes, sample_clock)
     };
 
     let channels = config.channels as usize;
