@@ -2,7 +2,7 @@ use derive_builder::Builder;
 
 use crate::audio_gen::audio_gen;
 use crate::audio_gen::get_sample;
-use crate::note::note::Note;
+use crate::note::note::PlaybackNote;
 use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 use crate::sequence::note_sequence_trait::AppendNote;
@@ -48,7 +48,7 @@ impl MultiInstrument {
     pub(crate) fn play_track_notes(&self) {
         let (playback_note_kinds, max_note_duration_ms) =
             self.get_next_playback_notes();
-        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms as u64);
+        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms);
     }
 
     pub(crate) fn play_track_notes_and_advance(&mut self) {
@@ -57,7 +57,7 @@ impl MultiInstrument {
         for channel in self.tracks.iter_mut() {
             channel.sequence.increment();
         }
-        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms as u64);
+        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms);
     }
 
     pub(crate) fn reset_all_tracks(&mut self) {
@@ -80,13 +80,13 @@ impl MultiInstrument {
         }
     }
 
-    pub(crate) fn add_note_to_track(&mut self, track_num: usize, note: Note) {
+    pub(crate) fn add_note_to_track(&mut self, track_num: usize, note: PlaybackNote) {
         self.validate_track_num(track_num);
 
         self.tracks[track_num].sequence.append_note(note);
     }
 
-    pub(crate) fn add_note_to_tracks(&mut self, note: Note) {
+    pub(crate) fn add_note_to_tracks(&mut self, note: PlaybackNote) {
         self.validate_has_tracks();
         self.tracks.iter_mut().for_each(
             |track| track.sequence.append_note(note)
@@ -94,7 +94,7 @@ impl MultiInstrument {
     }
 
     #[allow(dead_code)]
-    pub(crate) fn add_chord_to_tracks(&mut self, track_nums: Vec<usize>, chord: Vec<Note>) {
+    pub(crate) fn add_chord_to_tracks(&mut self, track_nums: Vec<usize>, chord: Vec<PlaybackNote>) {
         for track_num in &track_nums {
             self.validate_track_num(*track_num);
         }
@@ -128,13 +128,13 @@ impl MultiInstrument {
         self.tracks[track_num].volume = volume;
     }
 
-    pub(crate) fn play_notes_direct(&self, notes: Vec<Note>) {
+    pub(crate) fn play_notes_direct(&self, notes: Vec<PlaybackNote>) {
         let (playback_note_kinds, max_note_duration_ms) =
             self.get_playback_notes_direct(notes);
-        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms as u64);
+        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms);
     }
 
-    fn get_next_notes(&self) -> Vec<Note> {
+    fn get_next_notes(&self) -> Vec<PlaybackNote> {
         self.tracks.iter()
             .filter(|track| !track.sequence.at_end())
             .map(|track| {
@@ -163,7 +163,7 @@ impl MultiInstrument {
         (playback_notes, max_note_duration_ms)
     }
     
-    fn get_playback_notes_direct(&self, notes: Vec<Note>) -> (Vec<PlaybackNote>, f32) {
+    fn get_playback_notes_direct(&self, notes: Vec<PlaybackNote>) -> (Vec<PlaybackNote>, f32) {
         if notes.len() != self.track_waveforms.len() {
             panic!("Number of notes must match number of waveforms");
         }

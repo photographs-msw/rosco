@@ -3,7 +3,7 @@ use derive_builder::Builder;
 use crate::audio_gen::audio_gen;
 use crate::audio_gen::get_sample;
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
-use crate::note::note::Note;
+use crate::note::note::PlaybackNote;
 use crate::track::track::{Track, TrackBuilder};
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
@@ -35,7 +35,7 @@ impl InstrumentBuilder {
 #[allow(dead_code)]
 impl Instrument {
 
-    pub(crate) fn add_note(&mut self, note: Note) {
+    pub(crate) fn add_note(&mut self, note: PlaybackNote) {
         self.track.sequence.insert_note(note);
     }
 
@@ -70,7 +70,7 @@ impl Instrument {
         self.track.volume = volume;
     }
 
-    pub(crate) fn play_note_direct(&self, note: &Note) {
+    pub(crate) fn play_note_direct(&self, note: &PlaybackNote) {
         audio_gen::gen_note(note, self.waveforms.clone());
     }
 }

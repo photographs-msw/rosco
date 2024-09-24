@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use nodi::midly;
 use nodi::midly::num::{u28, u4, u7, u15};
 
-use crate::note::note::{Note, NoteBuilder};
+use crate::note::note::{PlaybackNote, NoteBuilder};
 use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper};
 use crate::track::track::{Track, TrackBuilder};
 
@@ -64,7 +64,7 @@ pub(crate) fn midi_file_to_tracks<
 
     // Map key is channel and pitch, so there can be more tha one notes in process on at channel
     //  but only one per pitch. This is of course a bug / limitation.
-    let mut track_notes_map: HashMap<NoteKey, Note>= HashMap::new();
+    let mut track_notes_map: HashMap<NoteKey, PlaybackNote>= HashMap::new();
     let mut track_sequence_map: HashMap<u4, SequenceType> = HashMap::new();
 
     let bpm = get_beats_per_minute(&midi);
@@ -207,7 +207,7 @@ pub(crate) fn get_ticks_per_ms(ticks_per_beat: u15, beats_per_minute: u8) -> f32
 
 fn handle_note_off<SequenceType: AppendNote>(note_key: NoteKey,
                                              ms_since_start: f32,
-                                             track_notes_map: &mut HashMap<NoteKey, Note>,
+                                             track_notes_map: &mut HashMap<NoteKey, PlaybackNote>,
                                              track_sequence_map: &mut HashMap<u4, SequenceType>) {
     // Add the last tick delta to the note duration, copy the note to the output track sequence
     // and remove it from the current notes map

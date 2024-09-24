@@ -166,7 +166,7 @@ fn main() {
     
     for _ in 0..2 {
         audio_gen::audio_gen::gen_notes(vec![sampled_playback_note.clone()],
-                                        (sample_data.len() as u64 / 44100) * 1000);
+                                        (sample_data.len() as f32 / 44100.0) * 1000.0);
     }
     println!("Played SampledNote");
     

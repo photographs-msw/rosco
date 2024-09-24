@@ -11,24 +11,32 @@ pub(crate) struct Note {
     #[builder(default = "DEFAULT_FREQUENCY")]
     pub(crate) frequency: f32,
 
-    #[builder(default = "DEFAULT_DURATION")]
-    pub(crate) duration_ms: f32,
-
     #[builder(default = "DEFAULT_VOLUME")]
     pub(crate) volume: f32,
 
     #[builder(default = "INIT_START_TIME")]
     pub(crate) start_time_ms: f32,
+
+    #[builder(default = "INIT_START_TIME")]
+    pub(crate) end_time_ms: f32,
 }
 
 pub(crate) fn default_note() -> Note {
     NoteBuilder::default().build().unwrap()
 }
 
+pub(crate) fn rest_note(start_time_ms: f32, end_time_ms: f32) -> Note {
+    NoteBuilder::default()
+        .start_time_ms(start_time_ms)
+        .end_time_ms(end_time_ms)
+        .volume(0.0)
+        .build().unwrap()
+}
+
 impl PartialEq for Note {
     fn eq(&self, other: &Self) -> bool {
         float_eq(self.frequency, other.frequency) &&
-            float_eq(self.duration_ms, other.duration_ms) &&
+            float_eq(self.duration_ms(), other.duration_ms()) &&
             float_eq(self.volume, other.volume) &&
             float_eq(self.start_time_ms, other.start_time_ms)
     }
@@ -38,7 +46,7 @@ impl Eq for Note {}
 impl Hash for Note {
     fn hash<H: Hasher>(&self, state: &mut H) {
         self.frequency.to_bits().hash(state);
-        self.duration_ms.to_bits().hash(state);
+        self.duration_ms().to_bits().hash(state);
         self.volume.to_bits().hash(state);
         self.start_time_ms.to_bits().hash(state);
     }
@@ -46,12 +54,12 @@ impl Hash for Note {
 
 #[allow(dead_code)]
 impl Note {
-    pub(crate) fn end_time_ms(&self) -> f32 {
-        self.start_time_ms + self.duration_ms
+    pub(crate) fn duration_ms(&self) -> f32 {
+        self.end_time_ms - self.start_time_ms
     }
 
     pub(crate) fn is_playing(&self, time_ms: f32) -> bool {
-        time_ms >= self.start_time_ms && time_ms < self.end_time_ms()
+        time_ms >= self.start_time_ms && time_ms < self.end_time_ms
     }
 
     pub(crate) fn is_before_playing(&self, time_ms: f32) -> bool {
@@ -59,11 +67,11 @@ impl Note {
     }
 
     pub(crate) fn is_after_playing(&self, time_ms: f32) -> bool {
-        time_ms >= self.end_time_ms()
+        time_ms >= self.end_time_ms
     }
 
     pub(crate) fn duration_position(&self, cur_time_ms: f32) -> f32 {
-        (cur_time_ms - self.start_time_ms) / self.duration_ms
+        (cur_time_ms - self.start_time_ms) / self.duration_ms()
     }
 }
 
@@ -116,7 +124,7 @@ mod test_note {
 
     fn setup_note() -> NoteBuilder {
         NoteBuilder::default()
-            .duration_ms(1000.0)
+            .end_time_ms(1000.0)
             .volume(1.0)
             .clone()
     }

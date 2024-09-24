@@ -6,11 +6,11 @@ use crate::flanger::Flanger;
 use crate::lfo::LFO;
 use crate::note::constants;
 use crate::note::note;
-use crate::note::sampled_note;
 use crate::note::note::Note;
+use crate::note::sampled_note;
 use crate::note::sampled_note::SampledNote;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq)]
 pub (crate) enum NoteType {
     Oscillator,
     Sample,
@@ -19,7 +19,7 @@ pub (crate) enum NoteType {
 // TODO is clipping on some notes due to rounding from float duration to uint and not using
 //  ceiling to round?
 
-#[derive(Builder, Clone, Debug)]
+#[derive(Builder, Clone, Debug, PartialEq)]
 pub(crate) struct PlaybackNote {
 
     #[builder(default = "NoteType::Oscillator")]
@@ -37,6 +37,7 @@ pub(crate) struct PlaybackNote {
     #[builder(default = "constants::INIT_END_TIME")]
     pub(crate) playback_end_time_ms: f32,
 
+    // TODO move to Note
     #[builder(default = "vec![Waveform::Sine]")]
     pub(crate) waveforms: Vec<Waveform>,
 
@@ -56,6 +57,41 @@ impl PlaybackNote {
     pub(crate) fn playback_duration_ms(&self) -> f32 {
         self.playback_end_time_ms - self.playback_start_time_ms
     }
+    
+    pub(crate) fn note_start_time_ms(&self) -> f32 {
+        match self.note_type {
+            NoteType::Oscillator => self.note.start_time_ms,
+            NoteType::Sample => self.sampled_note.start_time_ms,
+        }
+    }
+    
+    pub(crate) fn set_note_start_time_ms(&mut self, start_time_ms: f32) {
+        match self.note_type {
+            NoteType::Oscillator => self.note.start_time_ms = start_time_ms,
+            NoteType::Sample => self.sampled_note.start_time_ms = start_time_ms,
+        }
+    }
+    
+    pub(crate) fn note_end_time_ms(&self) -> f32 {
+        match self.note_type {
+            NoteType::Oscillator => self.note.end_time_ms,
+            NoteType::Sample => self.sampled_note.end_time_ms,
+        }
+    }
+    
+    pub(crate) fn set_note_end_time_ms(&mut self, end_time_ms: f32) {
+        match self.note_type {
+            NoteType::Oscillator => self.note.end_time_ms = end_time_ms,
+            NoteType::Sample => self.sampled_note.end_time_ms = end_time_ms,
+        }
+    }
+    
+    pub(crate) fn note_duration_ms(&self) -> f32 {
+        match self.note_type {
+            NoteType::Oscillator => self.note.duration_ms(),
+            NoteType::Sample => self.sampled_note.duration_ms(),
+        }
+    }
 
     pub(crate) fn apply_effects(&mut self, sample: f32, sample_position: f32) -> f32 {
         let mut output_sample = sample;
@@ -66,7 +102,7 @@ impl PlaybackNote {
                     output_sample = envelope.apply_effect(
                         output_sample,
                         ((self.playback_start_time_ms - self.note.start_time_ms) /
-                            (self.note.end_time_ms() - self.note.start_time_ms)) + sample_position
+                            (self.note.end_time_ms - self.note.start_time_ms)) + sample_position
                     );
                 }
             }
@@ -75,7 +111,7 @@ impl PlaybackNote {
                     output_sample = envelope.apply_effect(
                         output_sample,
                         ((self.playback_start_time_ms - self.sampled_note.start_time_ms) /
-                            (self.sampled_note.duration_ms - self.sampled_note.start_time_ms)) +
+                            (self.sampled_note.duration_ms() - self.sampled_note.start_time_ms)) +
                             sample_position
                     );
                 }
@@ -97,6 +133,23 @@ impl PlaybackNote {
 #[allow(dead_code)]
 pub(crate) fn default_playback_note() -> PlaybackNote {
     PlaybackNoteBuilder::default().build().unwrap()
+}
+
+#[allow(dead_code)]
+pub(crate) fn playback_rest_note(start_time_ms: f32, end_time_ms: f32) -> PlaybackNote {
+    PlaybackNoteBuilder::default()
+        .note_type(NoteType::Oscillator)
+        .note(note::rest_note(start_time_ms, end_time_ms))
+        .playback_start_time_ms(start_time_ms)
+        .playback_end_time_ms(end_time_ms)
+        .build().unwrap()
+}
+
+pub(crate) fn from_note(note_type: NoteType, note: Note) -> PlaybackNote {
+    PlaybackNoteBuilder::default()
+        .note_type(note_type)
+        .note(note)
+        .build().unwrap()
 }
 
 #[cfg(test)]

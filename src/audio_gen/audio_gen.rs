@@ -4,11 +4,11 @@ use std::time;
 
 use crate::audio_gen::get_sample;
 use crate::common::constants;
-use crate::note::note::Note;
+use crate::note::note::PlaybackNote;
 use crate::note::playback_note::PlaybackNote;
 
 #[allow(dead_code)]
-pub(crate) fn gen_note(note: &Note, waveforms: Vec<get_sample::Waveform>) {
+pub(crate) fn gen_note(note: &PlaybackNote, waveforms: Vec<get_sample::Waveform>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
@@ -16,13 +16,14 @@ pub(crate) fn gen_note(note: &Note, waveforms: Vec<get_sample::Waveform>) {
     gen_note_impl::<f32>(&device, &config.into(), note, waveforms);
 }
 
-pub(crate) fn gen_notes(playback_notes: Vec<PlaybackNote>, window_duration_ms: u64)
+pub(crate) fn gen_notes(playback_notes: Vec<PlaybackNote>, window_duration_ms: f32)
 {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
 
-    gen_notes_impl::<f32>(&device, &config.into(), playback_notes, window_duration_ms);
+    gen_notes_impl::<f32>(&device, &config.into(), playback_notes,
+                          window_duration_ms.ceil() as u64);
 }
 
 pub(crate) fn load_audio_file(file_path: &str) -> Vec<i16> {
@@ -32,15 +33,15 @@ pub(crate) fn load_audio_file(file_path: &str) -> Vec<i16> {
 }
 
 #[allow(dead_code)]
-fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig, note: &Note,
+fn gen_note_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig, playback_note: &PlaybackNote,
                     waveforms: Vec<get_sample::Waveform>)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
     let mut sample_clock = 0f32;
 
-    let note_volume = note.volume.clone();
-    let frequency = note.frequency.clone();
+    let note_volume = playback_note.volume.clone();
+    let frequency = playback_note.frequency.clone();
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
         note_volume * get_sample::get_note_sample(&waveforms, frequency, sample_clock)
@@ -59,7 +60,8 @@ where
     ).unwrap();
     stream.play().unwrap();
 
-    std::thread::sleep(time::Duration::from_millis(note.duration_ms as u64));
+    std::thread::sleep(time::Duration::from_millis(
+        playback_note.playback_duration_ms().ceil() as u64));
 }
 
 fn gen_notes_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
