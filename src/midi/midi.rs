@@ -4,7 +4,8 @@ use nodi::midly;
 use nodi::midly::num::{u28, u4, u7, u15};
 
 use crate::note::note::NoteBuilder;
-use crate::note::playback_note::PlaybackNote;
+use crate::note::playback_note::{NoteType, PlaybackNote, PlaybackNoteBuilder};
+use crate::note::sampled_note::SampledNoteBuilder;
 use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper};
 use crate::track::track::{Track, TrackBuilder};
 
@@ -53,11 +54,12 @@ struct NoteKey {
     pitch: u7
 }
 
+// TODO TAKE NOTE_TYPE PARAM
 pub(crate) fn midi_file_to_tracks<
     SequenceType: AppendNote + Clone,
     SequenceBuilderType: BuilderWrapper<SequenceType>
 >
-(file_name: &str) -> Vec<Track<SequenceType>> {
+(file_name: &str, note_type: NoteType) -> Vec<Track<SequenceType>> {
 
     let mut tracks: Vec<Track<SequenceType>> = Vec::new();
     let data = std::fs::read(file_name).unwrap();
@@ -104,18 +106,45 @@ pub(crate) fn midi_file_to_tracks<
                                         // Handle case of existing open note with same key by
                                         //  skipping this note if it is a duplicate
                                         if !track_notes_map.contains_key(&note_key) {
-                                            track_notes_map.insert(note_key,
-                                                                   NoteBuilder::default().
-                                                                       frequency(
-                                                                           MIDI_PITCH_TO_FREQ_HZ[key.as_int() as usize]
-                                                                               as f32)
-                                                                       .volume(vel.as_int() as f32 / 127.0f32)
-                                                                       .start_time_ms(
-                                                                           ticks_since_start.as_int() as f32 /
-                                                                               ticks_per_ms)
-                                                                       .duration_ms(0.0)
-                                                                       .build().unwrap()
-                                            );
+                                            let note_start_time_ms =
+                                                ticks_since_start.as_int() as f32 / ticks_per_ms;
+                                            match note_type {
+                                                NoteType::Oscillator => { 
+                                                    let note =
+                                                        NoteBuilder::default().
+                                                            frequency(
+                                                                MIDI_PITCH_TO_FREQ_HZ[key.as_int() as usize] as f32)
+                                                            .volume(vel.as_int() as f32 / 127.0f32)
+                                                            .start_time_ms(note_start_time_ms)
+                                                            .end_time_ms(note_start_time_ms)
+                                                            .build().unwrap();
+                                                   track_notes_map.insert(
+                                                       note_key,
+                                                       PlaybackNoteBuilder::default()
+                                                           .note_type(note_type)
+                                                           .note(note)
+                                                           .playback_start_time_ms(note_start_time_ms)
+                                                           .playback_end_time_ms(note_start_time_ms)
+                                                           .build().unwrap());
+                                                }
+                                                NoteType::Sample => {
+                                                    let sampled_note =
+                                                        SampledNoteBuilder::default()
+                                                            .volume(vel.as_int() as f32 / 127.0f32)
+                                                            .start_time_ms(note_start_time_ms)
+                                                            .end_time_ms(note_start_time_ms)
+                                                            .build().unwrap();
+                                                    track_notes_map.insert(
+                                                        note_key,
+                                                        PlaybackNoteBuilder::default()
+                                                            .note_type(note_type)
+                                                            .sampled_note(sampled_note)
+                                                            .playback_start_time_ms(note_start_time_ms)
+                                                            .playback_end_time_ms(note_start_time_ms)
+                                                            .build().unwrap());
+                                                    
+                                                }
+                                            }
                                         }
                                         // 0 volume for a note we got the start of previously
                                     } else if track_sequence_map.contains_key(channel) &&
@@ -212,9 +241,10 @@ fn handle_note_off<SequenceType: AppendNote>(note_key: NoteKey,
                                              track_sequence_map: &mut HashMap<u4, SequenceType>) {
     // Add the last tick delta to the note duration, copy the note to the output track sequence
     // and remove it from the current notes map
-    let mut note = track_notes_map.get_mut(&note_key).unwrap().clone();
-    note.duration_ms = ms_since_start - note.start_time_ms;
-    track_sequence_map.get_mut(&note_key.channel).unwrap().append_note(note);
+    let mut playback_note = track_notes_map.get_mut(&note_key).unwrap().clone();
+    playback_note.set_note_end_time_ms(
+        playback_note.note_start_time_ms() + (ms_since_start - playback_note.note_start_time_ms()));
+    track_sequence_map.get_mut(&note_key.channel).unwrap().append_note(playback_note);
     track_notes_map.remove(&note_key);
 
     // TEMP DEBUG

@@ -149,7 +149,7 @@ fn main() {
     let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
         .volume(0.005)
         .start_time_ms(0.0)
-        .duration_ms((sample_data.len() as f32 / SAMPLE_RATE) * 1000.0)
+        .end_time_ms((sample_data.len() as f32 / SAMPLE_RATE) * 1000.0)
         .build().unwrap();
     sampled_note.set_sample(&sample_buf, sample_data.len());
     // TODO BUG ENVELOPE DOES NOT WORK

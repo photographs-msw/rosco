@@ -83,18 +83,18 @@ pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_cl
 
 // /////////////
 
-fn get_sin_sample(frequency: f32, sample_clock: f32) -> f32 {
+pub(crate) fn get_sin_sample(frequency: f32, sample_clock: f32) -> f32 {
     (sample_clock * frequency * TWO_PI / SAMPLE_RATE).sin()
 }
 
-fn get_triangle_sample(frequency: f32, sample_clock: f32) -> f32 {
+pub(crate) fn get_triangle_sample(frequency: f32, sample_clock: f32) -> f32 {
     4.0 * ((frequency / SAMPLE_RATE * sample_clock)
         - ((frequency / SAMPLE_RATE * sample_clock) + 0.5)
         .floor()).abs()
         - 1.0
 }
 
-fn get_square_sample(frequency: f32, sample_clock: f32) -> f32 {
+pub(crate) fn get_square_sample(frequency: f32, sample_clock: f32) -> f32 {
     if (sample_clock * frequency / SAMPLE_RATE) % 1.0 < 0.5 {
         1.0
     } else {
@@ -102,14 +102,14 @@ fn get_square_sample(frequency: f32, sample_clock: f32) -> f32 {
     }
 }
 
-fn get_saw_sample(frequency: f32, sample_clock: f32) -> f32 {
+pub(crate) fn get_saw_sample(frequency: f32, sample_clock: f32) -> f32 {
     2.0 * ((frequency / SAMPLE_RATE * sample_clock)
         - ((frequency / SAMPLE_RATE * sample_clock) + 0.5)
         .floor()).abs()
         - 1.0
 }
 
-fn get_gaussian_noise_sample() -> f32 {
+pub(crate) fn get_gaussian_noise_sample() -> f32 {
     let normal = Normal::new(0.0, 1.0).unwrap();
     let mut rng = thread_rng();
     normal.sample(&mut rng)

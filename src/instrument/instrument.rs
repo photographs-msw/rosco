@@ -35,16 +35,16 @@ impl InstrumentBuilder {
 #[allow(dead_code)]
 impl Instrument {
 
-    pub(crate) fn add_note(&mut self, note: PlaybackNote) {
-        self.track.sequence.insert_note(note);
+    pub(crate) fn add_note(&mut self, playback_note: PlaybackNote) {
+        self.track.sequence.insert_note(playback_note);
     }
 
     pub(crate) fn play_note(&self) {
-        audio_gen::gen_note(&self.track.sequence.get_note(), self.waveforms.clone());
+        audio_gen::gen_note(self.track.sequence.get_note(), self.waveforms.clone());
     }
 
     pub(crate) fn play_note_and_advance(&mut self, index: usize) {
-        audio_gen::gen_note(&self.track.sequence.get_note_at_and_advance(index),
+        audio_gen::gen_note(self.track.sequence.get_note_at_and_advance(index),
                             self.waveforms.clone());
     }
 
@@ -53,15 +53,15 @@ impl Instrument {
     }
 
     pub(crate) fn loop_once(&self) {
-        for note in self.track.sequence.notes_iter() {
-            audio_gen::gen_note(note, self.waveforms.clone());
+        for playback_note in self.track.sequence.notes_iter() {
+            audio_gen::gen_note(playback_note.clone(), self.waveforms.clone());
         }
     }
 
     pub(crate) fn loop_n(&self, n: u8) {
         for _ in 0..n {
-            for note in self.track.sequence.notes_iter() {
-                audio_gen::gen_note(note, self.waveforms.clone());
+            for playback_note in self.track.sequence.notes_iter() {
+                audio_gen::gen_note(playback_note.clone(), self.waveforms.clone());
             }
         }
     }
@@ -70,7 +70,7 @@ impl Instrument {
         self.track.volume = volume;
     }
 
-    pub(crate) fn play_note_direct(&self, note: &PlaybackNote) {
-        audio_gen::gen_note(note, self.waveforms.clone());
+    pub(crate) fn play_note_direct(&self, playback_note: PlaybackNote) {
+        audio_gen::gen_note(playback_note, self.waveforms.clone());
     }
 }

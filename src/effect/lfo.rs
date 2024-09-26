@@ -41,10 +41,22 @@ impl LFOBuilder {
 }
 
 impl LFO {
-    pub(crate) fn apply_effect(&self, sample: f32, sample_clock: f32) -> f32 {
-        sample +
-            (sample * self.amplitude *
-                get_note_sample(&self.waveforms, self.frequency, sample_clock))
+    pub(crate) fn apply_effect(&self, mut sample: f32, sample_clock: f32) -> f32 {
+        for waveform in self.waveforms.clone() {
+            sample += match waveform {
+                Waveform::GaussianNoise =>
+                    crate::audio_gen::get_sample::get_gaussian_noise_sample(),
+                Waveform::Saw =>
+                    crate::audio_gen::get_sample::get_saw_sample(self.frequency, sample_clock),
+                Waveform::Sine =>
+                    crate::audio_gen::get_sample::get_sin_sample(self.frequency, sample_clock),
+                Waveform::Triangle =>
+                    crate::audio_gen::get_sample::get_triangle_sample(self.frequency, sample_clock),
+                // LFO cannot contain square waveform
+                Waveform::Square => 0.0
+            }
+        }
+        self.amplitude * sample
     }
 }
 
