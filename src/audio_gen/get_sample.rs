@@ -36,8 +36,8 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
     match playback_note.note_type {
         NoteType::Oscillator => {
             let mut sample = 0.0;
-            // TODO MOVE TO UNDERLYING NOTE
-            for waveform in playback_note.waveforms {
+            // TODO MOVE WAVEFORMS TO UNDERLYING NOTE
+            for waveform in playback_note.waveforms.clone() {
                 sample += match waveform {
                     Waveform::GaussianNoise => get_gaussian_noise_sample(),
                     Waveform::Saw => get_saw_sample(playback_note.note.frequency, sample_clock),
@@ -48,10 +48,13 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
                                                               sample_clock),
                 }
             }
-            playback_note.note.volume * sample
+            playback_note.apply_effects(playback_note.note.volume * sample,
+                                        sample_clock / SAMPLE_RATE)
         }
-        NoteType::Sample => {
-            playback_note.sampled_note.volume * playback_note.sampled_note.next_sample()
+        NoteType::Sample => { playback_note.apply_effects(
+            playback_note.sampled_note.volume *
+                playback_note.sampled_note.clone().next_sample(),
+            sample_clock / SAMPLE_RATE)
         }
     }
 }
@@ -60,16 +63,13 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
 pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_clock: f32) -> f32 {
     let mut out_sample = 0.0;
     for playback_note in playback_notes.iter_mut() {
-        let mut sample =
+        let sample =
             match playback_note.note_type {
                 NoteType::Oscillator => {
-                        get_note_sample(&playback_note, sample_clock)
+                        get_note_sample(playback_note, sample_clock)
                 }
                 NoteType::Sample => playback_note.sampled_note.next_sample()
             };
-
-        sample = playback_note.apply_effects(sample, sample_clock / SAMPLE_RATE);
-
         out_sample += sample;
     }
 

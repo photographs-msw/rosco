@@ -3,7 +3,7 @@ use std::hash::{Hash, Hasher};
 use derive_builder::Builder;
 
 use crate::common::float_utils::float_eq;
-use crate::note::constants::{DEFAULT_DURATION, DEFAULT_FREQUENCY, DEFAULT_VOLUME, INIT_START_TIME};
+use crate::note::constants::{DEFAULT_FREQUENCY, DEFAULT_VOLUME, INIT_START_TIME};
 
 #[allow(dead_code)]
 #[derive(Builder, Clone, Copy, Debug)]

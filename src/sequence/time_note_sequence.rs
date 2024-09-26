@@ -4,7 +4,7 @@ use derive_builder::Builder;
 use crate::common::constants;
 use crate::common::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::playback_note;
-use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
+use crate::note::playback_note::PlaybackNote;
 use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
 
 #[allow(dead_code)]

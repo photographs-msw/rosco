@@ -92,6 +92,20 @@ impl PlaybackNote {
             NoteType::Sample => self.sampled_note.duration_ms(),
         }
     }
+    
+    pub(crate) fn note_volume(&self) -> f32 {
+        match self.note_type {
+            NoteType::Oscillator => self.note.volume,
+            NoteType::Sample => self.sampled_note.volume,
+        }
+    }
+    
+    pub (crate) fn set_note_volume(&mut self, volume: f32) {
+        match self.note_type {
+            NoteType::Oscillator => self.note.volume = volume,
+            NoteType::Sample => self.sampled_note.volume = volume,
+        }
+    }
 
     pub(crate) fn apply_effects(&mut self, sample: f32, sample_position: f32) -> f32 {
         let mut output_sample = sample;

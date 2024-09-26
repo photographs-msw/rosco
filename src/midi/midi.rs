@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use nodi::midly;
 use nodi::midly::num::{u28, u4, u7, u15};
 
-use crate::note::note::{PlaybackNote, NoteBuilder};
+use crate::note::note::NoteBuilder;
+use crate::note::playback_note::PlaybackNote;
 use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper};
 use crate::track::track::{Track, TrackBuilder};
 

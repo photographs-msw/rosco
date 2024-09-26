@@ -240,21 +240,21 @@ impl<'a> Iterator for GridNoteSequence {
 //     use crate::common::float_utils::float_eq;
 //     use crate::note::note::NoteBuilder;
 //     use crate::sequence::grid_note_sequence::GridNoteSequenceBuilder;
-// 
+//
 //     #[test]
 //     fn test_append_note() {
 //         let note = setup_note()
 //             .start_time_ms(0.0)
 //             .build().unwrap();
-// 
+//
 //         let sequence = GridNoteSequenceBuilder::default()
 //             .sequence(vec![vec![note.clone()]])
 //             .index(0)
 //             .build().unwrap();
-// 
+//
 //         assert_eq!(sequence.get_notes()[0], note);
 //     }
-// 
+//
 //     #[test]
 //     fn test_append_notes() {
 //         let note_1 = setup_note()
@@ -263,18 +263,18 @@ impl<'a> Iterator for GridNoteSequence {
 //         let note_2 = setup_note()
 //             .start_time_ms(0.0)
 //             .build().unwrap();
-// 
+//
 //         let sequence = GridNoteSequenceBuilder::default()
 //             .sequence(vec![vec![note_1.clone(), note_2.clone()]])
 //             .index(0)
 //             .build().unwrap();
-// 
+//
 //         let actual = sequence.get_notes() ;
 //         assert_eq!(float_eq(actual[0].start_time_ms, note_1.start_time_ms), true);
 //         assert_eq!(actual[0], note_1);
 //         assert_eq!(actual[1], note_2);
 //     }
-// 
+//
 //     #[test]
 //     fn test_insert_notes_get_notes_at() {
 //         let note_1 = setup_note()
@@ -292,7 +292,7 @@ impl<'a> Iterator for GridNoteSequence {
 //         let note_5 = setup_note()
 //             .start_time_ms(1.0)
 //             .build().unwrap();
-// 
+//
 //         let mut sequence = GridNoteSequenceBuilder::default()
 //             .index(0)
 //             .build().unwrap();
@@ -300,12 +300,12 @@ impl<'a> Iterator for GridNoteSequence {
 //         sequence.increment();
 //         sequence.insert_notes(vec![note_3, note_4]);
 //         sequence.insert_notes(vec![note_5]);
-// 
+//
 //         assert_eq!(sequence.get_notes_at(0), vec![note_1, note_2]);
 //         assert_eq!(sequence.get_notes_at(1), vec![note_5]);
 //         assert_eq!(sequence.get_notes_at(2), vec![note_3, note_4]);
 //     }
-// 
+//
 //     #[test]
 //     fn test_insert_note_increment_decrement_get_note_at() {
 //         let note_1 = setup_note()
@@ -317,7 +317,7 @@ impl<'a> Iterator for GridNoteSequence {
 //         let note_3 = setup_note()
 //             .start_time_ms(0.0)
 //             .build().unwrap();
-// 
+//
 //         let mut sequence = GridNoteSequenceBuilder::default()
 //             .index(0)
 //             .build().unwrap();
@@ -326,7 +326,7 @@ impl<'a> Iterator for GridNoteSequence {
 //         sequence.insert_note_at(note_2, 1);
 //         sequence.decrement();
 //         sequence.insert_note(note_3);
-// 
+//
 //         // inserted at 0 and pushed to 1 by inserting note_3 at 0
 //         assert_eq!(sequence.get_note_at(0), note_3);
 //         // inserted at 1 and pushed to 2 by insert of note_2 at 1 and note_3 at 0
@@ -334,41 +334,41 @@ impl<'a> Iterator for GridNoteSequence {
 //         // inserted at 1 after note_2
 //         assert_eq!(sequence.get_note_at(2), note_2);
 //     }
-// 
+//
 //     #[test]
 //     #[should_panic(expected = "Notes to add must not be empty")]
 //     fn test_append_empty_notes() {
 //         let mut sequence = GridNoteSequenceBuilder::default()
 //             .index(0)
 //             .build().unwrap();
-// 
+//
 //         sequence.append_notes(&vec![]);
 //     }
-// 
+//
 //     #[test]
 //     #[should_panic(expected = "Notes to add must not be empty")]
 //     fn test_insert_empty_notes() {
 //         let mut sequence = GridNoteSequenceBuilder::default()
 //             .index(0)
 //             .build().unwrap();
-// 
+//
 //         sequence.insert_notes(vec![]);
 //     }
-// 
+//
 //     #[test]
 //     #[should_panic(expected = "Note start time must be >= 0.0")]
 //     fn test_insert_invalid_note() {
 //         let note_1 = setup_note()
 //             .start_time_ms(-1.0)
 //             .build().unwrap();
-// 
+//
 //         let mut sequence = GridNoteSequenceBuilder::default()
 //             .index(0)
 //             .build().unwrap();
-// 
+//
 //         sequence.insert_note(note_1);
 //     }
-// 
+//
 //     fn setup_note() -> NoteBuilder {
 //         NoteBuilder::default()
 //             .duration_ms(1000.0)

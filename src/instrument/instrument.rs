@@ -3,7 +3,7 @@ use derive_builder::Builder;
 use crate::audio_gen::audio_gen;
 use crate::audio_gen::get_sample;
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
-use crate::note::note::PlaybackNote;
+use crate::note::playback_note::PlaybackNote;
 use crate::track::track::{Track, TrackBuilder};
 
 static DEFAULT_TRACK_VOLUME: f32 = 1.0;
