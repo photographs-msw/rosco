@@ -194,6 +194,10 @@ impl TimeNoteSequence {
         self.cur_position_time_ms = window_end_time_ms + constants::FLOAT_EPSILON;
         window_playback_notes
     }
+    
+    pub(crate) fn notes_iter_mut(&mut self) -> std::slice::IterMut<Vec<PlaybackNote>> {
+        self.sequence.iter_mut()
+    }
 
     fn get_frontier_notes(&self) ->  &[Vec<PlaybackNote>] {
         let min_frontier_index = self.frontier_indexes[0];
@@ -421,98 +425,128 @@ mod test_time_note_sequence {
         assert_float_eq(pb_notes_window[0].playback_duration_ms(), 1000.0);
     }
 
-    // #[test]
-    // fn test_insert() {
-    //     let note_1 = setup_note()
-    //         .start_time_ms(0.0)
-    //         .build().unwrap();
-    //     let note_2 = setup_note()
-    //         .start_time_ms(500.0)
-    //         .build().unwrap();
-    //     let note_3 = setup_note()
-    //         .start_time_ms(1000.0)
-    //         .build().unwrap();
-    //     let note_4 = setup_note()
-    //         .start_time_ms(1000.0)
-    //         .build().unwrap();
-    //     let note_5 = setup_note()
-    //         .start_time_ms(2500.0)
-    //         .build().unwrap();
-    //     let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
-    //     
-    //     sequence.insert_note(note_5.clone());
-    //     let mut notes = sequence.get_notes_at(0);
-    //     assert_eq!(notes.len(), 1);
-    //     assert_eq!(notes[0], note_5);
-    // 
-    //     sequence.insert_note(note_2.clone());
-    //     notes = sequence.get_notes_at(0);
-    //     assert_eq!(notes.len(), 1);
-    //     assert_eq!(notes[0], note_2);
-    //     notes = sequence.get_notes_at(1);
-    //     assert_eq!(notes.len(), 1);
-    //     assert_eq!(notes[0], note_5);
-    // 
-    //     sequence.insert_note(note_3.clone());
-    //     sequence.insert_note(note_4.clone());
-    //     notes = sequence.get_notes_at(0);
-    //     assert_eq!(notes.len(), 1);
-    //     assert_eq!(notes[0], note_2);
-    //     notes = sequence.get_notes_at(1);
-    //     assert_eq!(notes.len(), 2);
-    //     assert_eq!(notes[0], note_3);
-    //     assert_eq!(notes[0], note_4);
-    //     
-    //     sequence.insert_note(note_1.clone());
-    //     notes = sequence.get_notes_at(0);
-    //     assert_eq!(notes.len(), 1);
-    //     assert_eq!(notes[0], note_1);
-    // }
-    // 
-    // #[test]
-    // fn test_insert_multi_position() {
-    //     let note_1 = setup_note()
-    //         .start_time_ms(0.0)
-    //         .build().unwrap();
-    //     let note_2 = setup_note()
-    //         .start_time_ms(500.0)
-    //         .build().unwrap();
-    //     let note_3 = setup_note()
-    //         .start_time_ms(1000.0)
-    //         .build().unwrap();
-    //     let note_4 = setup_note()
-    //         .start_time_ms(1000.0)
-    //         .build().unwrap();
-    //     let note_5 = setup_note()
-    //         .start_time_ms(2500.0)
-    //         .build().unwrap();
-    //     let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
-    // 
-    //     sequence.insert_notes_multi_position(vec![note_5.clone(), note_2.clone(),
-    //                                               note_3.clone(), note_4.clone(), note_1.clone()]);
-    //     assert_eq!(sequence.sequence.len(), 4);
-    //     assert_eq!(sequence.sequence[0].len(), 1);
-    //     assert_eq!(sequence.sequence[1].len(), 1);
-    //     assert_eq!(sequence.sequence[2].len(), 2);
-    //     assert_eq!(sequence.sequence[3].len(), 1);
-    // 
-    //     let mut notes = sequence.get_notes_at(0);
-    //     assert_eq!(notes.len(), 1);
-    //     assert_eq!(notes[0], note_1);
-    // 
-    //     notes = sequence.get_notes_at(1);
-    //     assert_eq!(notes.len(), 1);
-    //     assert_eq!(notes[0], note_2);
-    // 
-    //     notes = sequence.get_notes_at(2);
-    //     assert_eq!(notes.len(), 2);
-    //     assert_eq!(notes[0], note_3);
-    //     assert_eq!(notes[1], note_4);
-    // 
-    //     notes = sequence.get_notes_at(3);
-    //     assert_eq!(notes.len(), 1);
-    //     assert_eq!(notes[0], note_5);
-    // }
+    #[test]
+    fn test_insert() {
+        let note_1= playback_note::from_note(
+            NoteType::Oscillator, 
+            setup_note()
+                .start_time_ms(0.0)
+                .build().unwrap()
+        );
+        let note_2= playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(500.0)
+                .build().unwrap()
+        );
+        let note_3= playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(1000.0)
+                .build().unwrap()
+        );
+        let note_4= playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(1000.0)
+                .build().unwrap()
+        );
+        let note_5= playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(2500.0)
+                .build().unwrap()
+        );
+        let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
+        
+        sequence.insert_note(note_5.clone());
+        let mut notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_5);
+    
+        sequence.insert_note(note_2.clone());
+        notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_2);
+        notes = sequence.get_notes_at(1);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_5);
+    
+        sequence.insert_note(note_3.clone());
+        sequence.insert_note(note_4.clone());
+        notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_2);
+        notes = sequence.get_notes_at(1);
+        assert_eq!(notes.len(), 2);
+        assert_eq!(notes[0], note_3);
+        assert_eq!(notes[0], note_4);
+        
+        sequence.insert_note(note_1.clone());
+        notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_1);
+    }
+    
+    #[test]
+    fn test_insert_multi_position() {
+        let note_1= playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(0.0)
+                .build().unwrap()
+        );
+        let note_2= playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(500.0)
+                .build().unwrap()
+        );
+        let note_3= playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(1000.0)
+                .build().unwrap()
+        );
+        let note_4= playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(1000.0)
+                .build().unwrap()
+        );
+        let note_5= playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(2500.0)
+                .build().unwrap()
+        );
+        let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
+    
+        sequence.insert_notes_multi_position(vec![note_5.clone(), note_2.clone(),
+                                                  note_3.clone(), note_4.clone(), note_1.clone()]);
+        assert_eq!(sequence.sequence.len(), 4);
+        assert_eq!(sequence.sequence[0].len(), 1);
+        assert_eq!(sequence.sequence[1].len(), 1);
+        assert_eq!(sequence.sequence[2].len(), 2);
+        assert_eq!(sequence.sequence[3].len(), 1);
+    
+        let mut notes = sequence.get_notes_at(0);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_1);
+    
+        notes = sequence.get_notes_at(1);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_2);
+    
+        notes = sequence.get_notes_at(2);
+        assert_eq!(notes.len(), 2);
+        assert_eq!(notes[0], note_3);
+        assert_eq!(notes[1], note_4);
+    
+        notes = sequence.get_notes_at(3);
+        assert_eq!(notes.len(), 1);
+        assert_eq!(notes[0], note_5);
+    }
     
     fn setup_note() -> NoteBuilder {
         NoteBuilder::default()

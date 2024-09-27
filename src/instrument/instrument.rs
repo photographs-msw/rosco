@@ -40,12 +40,11 @@ impl Instrument {
     }
 
     pub(crate) fn play_note(&self) {
-        audio_gen::gen_note(self.track.sequence.get_note(), self.waveforms.clone());
+        audio_gen::gen_note(self.track.sequence.get_note());
     }
 
     pub(crate) fn play_note_and_advance(&mut self, index: usize) {
-        audio_gen::gen_note(self.track.sequence.get_note_at_and_advance(index),
-                            self.waveforms.clone());
+        audio_gen::gen_note(self.track.sequence.get_note_at_and_advance(index));
     }
 
     pub(crate) fn reset(&mut self) {
@@ -54,14 +53,14 @@ impl Instrument {
 
     pub(crate) fn loop_once(&self) {
         for playback_note in self.track.sequence.notes_iter() {
-            audio_gen::gen_note(playback_note.clone(), self.waveforms.clone());
+            audio_gen::gen_note(playback_note.clone());
         }
     }
 
     pub(crate) fn loop_n(&self, n: u8) {
         for _ in 0..n {
             for playback_note in self.track.sequence.notes_iter() {
-                audio_gen::gen_note(playback_note.clone(), self.waveforms.clone());
+                audio_gen::gen_note(playback_note.clone());
             }
         }
     }
@@ -71,6 +70,6 @@ impl Instrument {
     }
 
     pub(crate) fn play_note_direct(&self, playback_note: PlaybackNote) {
-        audio_gen::gen_note(playback_note, self.waveforms.clone());
+        audio_gen::gen_note(playback_note);
     }
 }

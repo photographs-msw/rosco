@@ -5,5 +5,6 @@
 pub(crate) static INIT_START_TIME: f32 = 0.0;
 pub(crate) static INIT_END_TIME: f32 = 0.0;
 pub(crate) static DEFAULT_FREQUENCY: f32 = 440.0;
-pub(crate) static DEFAULT_DURATION: f32 = 0.0;
+#[allow(dead_code)]
+pub(crate) static DEFAULT_DURATION: f32 = 0.0; // actually, it is
 pub(crate) static DEFAULT_VOLUME: f32 = 1.0;

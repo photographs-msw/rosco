@@ -6,6 +6,7 @@ use crate::note::playback_note::{NoteType, PlaybackNote};
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
+#[allow(dead_code)]
 #[derive(Clone, Debug, Hash, PartialEq)]
 pub(crate) enum Waveform {
     GaussianNoise,
@@ -15,6 +16,7 @@ pub(crate) enum Waveform {
     Triangle,
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
     waveform_arg.split(",")
         .map( |waveform| {

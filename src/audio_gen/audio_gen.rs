@@ -7,7 +7,7 @@ use crate::common::constants;
 use crate::note::playback_note::PlaybackNote;
 
 #[allow(dead_code)]
-pub(crate) fn gen_note(playback_note: PlaybackNote, waveforms: Vec<get_sample::Waveform>) {
+pub(crate) fn gen_note(playback_note: PlaybackNote) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();

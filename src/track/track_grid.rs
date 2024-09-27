@@ -22,7 +22,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
             for playback_note in track.sequence.next_notes() {
                 let note_start_time_ms = playback_note.note_start_time_ms();
                 let note_end_time_ms = playback_note.note_end_time_ms();
-                
+
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder
                         .note(playback_note.note)
@@ -81,7 +81,6 @@ impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
 
 #[cfg(test)]
 mod test_sequence_grid {
-    // use crate::audio_gen::oscillator;
     use crate::effect::{flanger, lfo};
     use crate::envelope::envelope;
     use crate::note::note::NoteBuilder;
@@ -103,27 +102,28 @@ mod test_sequence_grid {
                             GridNoteSequenceBuilder::default()
                                 .sequence(
                                     vec![vec![
-                                        PlaybackNoteBuilder::default()
-                                            .note(
-                                                setup_note()
-                                                    .start_time_ms(0.0)
-                                                    .end_time_ms(1000.0)
-                                                    .build().unwrap()
-                                            )
-                                            .playback_start_time_ms(0.0)
-                                            .playback_end_time_ms(1000.0)
+                                    PlaybackNoteBuilder::default()
+                                        .note(
+                                            setup_note()
+                                                .start_time_ms(0.0)
+                                                .end_time_ms(1000.0)
+                                                .build().unwrap()
+                                        )
+                                        .playback_start_time_ms(0.0)
+                                        .playback_end_time_ms(1000.0)
                                         .build().unwrap(),
                                     PlaybackNoteBuilder::default()
                                         .note(
-                                    setup_note()
-                                        .start_time_ms(1.0)
-                                        .end_time_ms(1000.0)
-                                        .build().unwrap()
-                                    )
+                                            setup_note()
+                                                .start_time_ms(1.0)
+                                                .end_time_ms(1000.0)
+                                                .build().unwrap()
+                                        )
                                         .playback_start_time_ms(0.0)
                                         .playback_end_time_ms(1000.0)
                                         .build().unwrap()
                                 ]])
+                                .build().unwrap()
                         )
                         .volume(0.9)
                         .effects(
@@ -134,7 +134,8 @@ mod test_sequence_grid {
                                 .build().unwrap()
                         )
                         .build().unwrap()
-                ]).build().unwrap();
+                ])
+            .build().unwrap();
 
         // expect one note to be active when sample_clock_index is 0.0
         let playback_notes = track_grid.next_notes();

@@ -57,49 +57,49 @@ impl PlaybackNote {
     pub(crate) fn playback_duration_ms(&self) -> f32 {
         self.playback_end_time_ms - self.playback_start_time_ms
     }
-    
+
     pub(crate) fn note_start_time_ms(&self) -> f32 {
         match self.note_type {
             NoteType::Oscillator => self.note.start_time_ms,
             NoteType::Sample => self.sampled_note.start_time_ms,
         }
     }
-    
+
     pub(crate) fn set_note_start_time_ms(&mut self, start_time_ms: f32) {
         match self.note_type {
             NoteType::Oscillator => self.note.start_time_ms = start_time_ms,
             NoteType::Sample => self.sampled_note.start_time_ms = start_time_ms,
         }
     }
-    
+
     pub(crate) fn note_end_time_ms(&self) -> f32 {
         match self.note_type {
             NoteType::Oscillator => self.note.end_time_ms,
             NoteType::Sample => self.sampled_note.end_time_ms,
         }
     }
-    
+
     pub(crate) fn set_note_end_time_ms(&mut self, end_time_ms: f32) {
         match self.note_type {
             NoteType::Oscillator => self.note.end_time_ms = end_time_ms,
             NoteType::Sample => self.sampled_note.end_time_ms = end_time_ms,
         }
     }
-    
+
     pub(crate) fn note_duration_ms(&self) -> f32 {
         match self.note_type {
             NoteType::Oscillator => self.note.duration_ms(),
             NoteType::Sample => self.sampled_note.duration_ms(),
         }
     }
-    
+
     pub(crate) fn note_volume(&self) -> f32 {
         match self.note_type {
             NoteType::Oscillator => self.note.volume,
             NoteType::Sample => self.sampled_note.volume,
         }
     }
-    
+
     pub (crate) fn set_note_volume(&mut self, volume: f32) {
         match self.note_type {
             NoteType::Oscillator => self.note.volume = volume,
@@ -159,6 +159,7 @@ pub(crate) fn playback_rest_note(start_time_ms: f32, end_time_ms: f32) -> Playba
         .build().unwrap()
 }
 
+#[allow(dead_code)]
 pub(crate) fn from_note(note_type: NoteType, note: Note) -> PlaybackNote {
     PlaybackNoteBuilder::default()
         .note_type(note_type)

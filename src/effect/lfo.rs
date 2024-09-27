@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 
-use crate::audio_gen::get_sample::{get_note_sample, Waveform};
+use crate::audio_gen::get_sample::Waveform;
 use crate::common::constants::{DEFAULT_LFO_AMPLITUDE, SAMPLE_RATE};
 
 #[allow(dead_code)]
