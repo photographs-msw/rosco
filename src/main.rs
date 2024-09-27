@@ -30,9 +30,9 @@ fn main() {
     let (waveforms_arg, frequency, volume, duration_ms) = collect_args();
     println!("Args collected\nwaveforms: {}, frequency: {}, volume: {}, duration_ms: {}",
              waveforms_arg, frequency, volume, duration_ms);
-    
+
     // ####################################
-    
+
     println!("Loading MIDI file");
     // Test loading MIDI file and playing back using multi-track, polyphonic grid with one
     // set of waveforms per track, notes per track, playing notes in windows of when they are active
@@ -42,19 +42,19 @@ fn main() {
         midi::midi::midi_file_to_tracks::<GridNoteSequence, GridNoteSequenceBuilder>(
             "/Users/markweiss/Downloads/test.mid", NoteType::Oscillator);
     println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
-    
+
     let envelope = EnvelopeBuilder::default()
         .attack(EnvelopePair(0.15, 0.9))
         .decay(EnvelopePair(0.35, 0.88))
         .sustain(EnvelopePair(0.85, 0.9))
         .build().unwrap();
-    
+
     let lfo = lfo::LFOBuilder::default()
         .frequency(44.1)
         .amplitude(0.25)
         .waveforms(vec![audio_gen::get_sample::Waveform::Sine])
         .build().unwrap();
-    
+
     let flange = flanger::FlangerBuilder::default()
         .window_size(20)
         .sample_buffer()
@@ -69,7 +69,7 @@ fn main() {
             playback_note.waveforms = track_waveforms[i].clone();
         }
     }
-    
+
     let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
         .lfos(vec![lfo])
@@ -78,11 +78,11 @@ fn main() {
     for track in midi_grid_tracks.iter_mut() {
         track.effects = track_effects.clone();
     }
-    
+
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_grid_tracks)
         .build().unwrap();
-    
+
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
@@ -93,14 +93,14 @@ fn main() {
     for playback_notes in rx {
         // TEMP DEBUG
         // println!("\n=====> playback_notes\n: {:#?}", playback_note_kinds);
-    
+
         let window_duration_ms = playback_notes[0].playback_duration_ms();
         audio_gen::audio_gen::gen_notes(playback_notes, window_duration_ms);
     }
     println!("Played MIDI file from TrackGrid GridNoteSequence");
-    
+
     // ####################################
-    
+
     println!("Loading MIDI file");
     let mut midi_time_tracks =
         midi::midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
@@ -114,16 +114,16 @@ fn main() {
             }
         }
     }
-    
+
     for track in midi_time_tracks.iter_mut() {
         track.effects = track_effects.clone();
     }
-    
+
     // Test building TrackGrid without envelopes and getting the default
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_time_tracks)
         .build().unwrap();
-    
+
     println!("Playing MIDI file from TrackGrid TimeNoteSequence");
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
@@ -134,7 +134,7 @@ fn main() {
     for playback_notes in rx {
         // TEMP DEBUG
         // println!( "\n=====> PLAYBACK NOTES IN RECEIVE \n: {:#?}", playback_notes);
-    
+
         let window_duration_ms = playback_notes[0].playback_duration_ms();
         audio_gen::audio_gen::gen_notes(playback_notes, window_duration_ms);
     }
@@ -163,7 +163,7 @@ fn main() {
     sampled_note.set_sample(&sample_buf, sample_data.len());
     // TODO BUG ENVELOPE DOES NOT WORK
     let sampled_playback_note = note::playback_note::PlaybackNoteBuilder::default()
-        .note_type(note::playback_note::NoteType::Sample)
+        .note_type(NoteType::Sample)
         .sampled_note(sampled_note)
         .envelopes(vec![envelope::envelope::default_envelope()])
         .playback_start_time_ms(0.0)
@@ -171,7 +171,7 @@ fn main() {
         .lfos(vec![effect::lfo::default_lfo()])
         .flangers(vec![effect::flanger::default_flanger()])
         .build().unwrap();
-    
+
     for _ in 0..2 {
         audio_gen::audio_gen::gen_notes(vec![sampled_playback_note.clone()],
                                         (sample_data.len() as f32 / 44100.0) * 1000.0);

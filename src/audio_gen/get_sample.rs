@@ -53,10 +53,14 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
             playback_note.apply_effects(playback_note.note.volume * sample,
                                         sample_clock / SAMPLE_RATE)
         }
-        NoteType::Sample => { playback_note.apply_effects(
-            playback_note.sampled_note.volume *
-                playback_note.sampled_note.clone().next_sample(),
-            sample_clock / SAMPLE_RATE)
+        NoteType::Sample => {
+            // playback_note.sampled_note.volume * playback_note.sampled_note.next_sample()
+            // playback_note.sampled_note.volume * playback_note.sampled_note.clone().next_sample()
+            
+            let volume = playback_note.sampled_note.volume;
+            let sample = playback_note.sampled_note.next_sample();
+            playback_note.apply_effects(volume * sample,
+                                        sample_clock / SAMPLE_RATE)
         }
     }
 }
@@ -67,10 +71,8 @@ pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_cl
     for playback_note in playback_notes.iter_mut() {
         let sample =
             match playback_note.note_type {
-                NoteType::Oscillator => {
-                        get_note_sample(playback_note, sample_clock)
-                }
-                NoteType::Sample => playback_note.sampled_note.next_sample()
+                NoteType::Oscillator => get_note_sample(playback_note, sample_clock),
+                NoteType::Sample => get_note_sample(playback_note, sample_clock)
             };
         out_sample += sample;
     }
