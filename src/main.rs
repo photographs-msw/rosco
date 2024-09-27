@@ -154,9 +154,21 @@ fn main() {
     // let sample_buf = unsafe {
     //     mem::transmute::<_, [f32; BUF_STORAGE_SIZE]>(sample_buf)
     // };
-    
+
+    let envelope = EnvelopeBuilder::default()
+        .attack(EnvelopePair(0.15, 0.9))
+        .decay(EnvelopePair(0.35, 0.88))
+        .sustain(EnvelopePair(0.85, 0.9))
+        .build().unwrap();
+
+    let lfo = lfo::LFOBuilder::default()
+        .frequency(1000.0)
+        .amplitude(0.25)
+        .waveforms(vec![audio_gen::get_sample::Waveform::Triangle])
+        .build().unwrap();
+
     let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
-        .volume(0.005)
+        .volume(0.0025)
         .start_time_ms(0.0)
         .end_time_ms((sample_data.len() as f32 / SAMPLE_RATE) * 1000.0)
         .build().unwrap();
@@ -165,11 +177,13 @@ fn main() {
     let sampled_playback_note = note::playback_note::PlaybackNoteBuilder::default()
         .note_type(NoteType::Sample)
         .sampled_note(sampled_note)
-        .envelopes(vec![envelope::envelope::default_envelope()])
         .playback_start_time_ms(0.0)
         .playback_end_time_ms((sample_data.len() as f32 / SAMPLE_RATE) * 1000.0)
-        .lfos(vec![effect::lfo::default_lfo()])
-        .flangers(vec![effect::flanger::default_flanger()])
+        // .envelopes(vec![envelope::envelope::default_envelope()])
+        .envelopes(vec![envelope])
+        // .lfos(vec![effect::lfo::default_lfo()])
+        .lfos(vec![lfo])
+        .flangers(vec![flanger::default_flanger()])
         .build().unwrap();
 
     for _ in 0..2 {
