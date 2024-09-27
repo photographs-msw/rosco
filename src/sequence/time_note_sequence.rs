@@ -16,7 +16,7 @@ pub(crate) struct TimeNoteSequence {
     sequence: Vec<Vec<PlaybackNote>>,
 
     #[builder(default = "0.0")]
-    cur_position_time_ms: f32,
+    cur_position_ms: f32,
 
     // All positions in the grid before this have end times earlier than next_notes_time_ms
     // Allows O(1) access to scan for next notes window vs. always scanning from the beginning
@@ -130,22 +130,22 @@ impl TimeNoteSequence {
         }
 
         let mut window_playback_notes = Vec::new();
-        self.remove_completed_frontier_indexes(self.cur_position_time_ms);
+        self.remove_completed_frontier_indexes(self.cur_position_ms);
         if self.frontier_indexes.is_empty() {
             return window_playback_notes;
         }
 
         let window_start_time_ms = self.get_frontier_min_start_time();
-        let window_end_time_ms = self.get_frontier_min_end_time(self.cur_position_time_ms);
+        let window_end_time_ms = self.get_frontier_min_end_time(self.cur_position_ms);
 
         // If the current note time is earlier than that, emit a rest note and increment
         // the current notes time to the frontier min start time + epsilon
-        if self.cur_position_time_ms < window_start_time_ms {
+        if self.cur_position_ms < window_start_time_ms {
             window_playback_notes.push(
-                playback_note::playback_rest_note(self.cur_position_time_ms, window_start_time_ms)
+                playback_note::playback_rest_note(self.cur_position_ms, window_start_time_ms)
             );
 
-            self.cur_position_time_ms = window_start_time_ms + constants::FLOAT_EPSILON;
+            self.cur_position_ms = window_start_time_ms + constants::FLOAT_EPSILON;
             return window_playback_notes;
         }
 
@@ -153,16 +153,16 @@ impl TimeNoteSequence {
         // If the current note time is the same as the frontier min start time, emit all notes
         // in the frontier with the same start time and increment the current notes time to the
         // earliest end time in the frontier. This is the next window emit, note to end time.
-        if float_eq(self.cur_position_time_ms, window_start_time_ms) {
+        if float_eq(self.cur_position_ms, window_start_time_ms) {
             let playback_notes: Vec<PlaybackNote> = self.get_frontier_notes()
                 .iter()
                 .flatten()
                 .filter(|playback_note|
-                    float_eq(playback_note.note_start_time_ms(), self.cur_position_time_ms)
+                    float_eq(playback_note.note_start_time_ms(), self.cur_position_ms)
                 )
                 .map(|playback_note|
                     note_ref_into_note(playback_note,
-                                       self.cur_position_time_ms, window_end_time_ms)
+                                       self.cur_position_ms, window_end_time_ms)
                 )
                 .collect();
 
@@ -173,17 +173,17 @@ impl TimeNoteSequence {
             // frontier that are playing at the current notes time and emit them up to end time
             // as the next window and increment the current notes time to the end time
         } else if self.frontier_indexes.len() > 0 &&
-            self.cur_position_time_ms > window_start_time_ms {
+            self.cur_position_ms > window_start_time_ms {
             let playback_notes: Vec<PlaybackNote> = self.get_frontier_notes()
                 .iter()
                 .flatten()
                 .filter(|playback_note|
-                    float_leq(playback_note.note_start_time_ms(), self.cur_position_time_ms) &&
-                    float_geq(playback_note.note_end_time_ms(), self.cur_position_time_ms)
+                    float_leq(playback_note.note_start_time_ms(), self.cur_position_ms) &&
+                    float_geq(playback_note.note_end_time_ms(), self.cur_position_ms)
                 )
                 .filter(|playback_note| playback_note.playback_duration_ms() > 0.0)
                 .map(|playback_note|
-                    note_ref_into_note(playback_note, self.cur_position_time_ms,
+                    note_ref_into_note(playback_note, self.cur_position_ms,
                                        window_end_time_ms)
                 )
                 .collect();
@@ -191,7 +191,7 @@ impl TimeNoteSequence {
             window_playback_notes.extend_from_slice(&playback_notes);
         }
 
-        self.cur_position_time_ms = window_end_time_ms + constants::FLOAT_EPSILON;
+        self.cur_position_ms = window_end_time_ms + constants::FLOAT_EPSILON;
         window_playback_notes
     }
     
@@ -310,40 +310,52 @@ mod test_time_note_sequence {
 
     #[test]
     fn test_get_next_notes_window() {
-        let pb_note_1 = playback_note::from_note(
+        let mut pb_note_1 = playback_note::from_note(
             NoteType::Oscillator,
             setup_note()
                 .start_time_ms(0.0)
                 .end_time_ms(1000.0)
                 .build().unwrap()
         );
-        let pb_note_2 = playback_note::from_note(
+        pb_note_1.playback_start_time_ms = 0.0;
+        pb_note_1.playback_end_time_ms = 1000.0;
+        let mut pb_note_2 = playback_note::from_note(
             NoteType::Oscillator,
             setup_note()
                 .start_time_ms(500.0)
                 .end_time_ms(1500.0)
                 .build().unwrap()
         );
-        let pb_note_3 = playback_note::from_note(
-            NoteType::Oscillator,
-            setup_note()
-                .start_time_ms(1000.0)
-                .end_time_ms(2000.0)
-                .build().unwrap());
-        let pb_note_4 = playback_note::from_note(
+        pb_note_2.playback_start_time_ms = 500.0;
+        pb_note_2.playback_end_time_ms = 1500.0;
+        let mut pb_note_3 = playback_note::from_note(
             NoteType::Oscillator,
             setup_note()
                 .start_time_ms(1000.0)
                 .end_time_ms(2000.0)
                 .build().unwrap()
         );
-        let pb_note_5 = playback_note::from_note(
+        pb_note_3.playback_start_time_ms = 1000.0;
+        pb_note_3.playback_end_time_ms = 2000.0;
+        let mut pb_note_4 = playback_note::from_note(
+            NoteType::Oscillator,
+            setup_note()
+                .start_time_ms(1000.0)
+                .end_time_ms(2000.0)
+                .build().unwrap()
+        );
+        pb_note_4.playback_start_time_ms = 1000.0;
+        pb_note_4.playback_end_time_ms = 2000.0;
+        let mut pb_note_5 = playback_note::from_note(
             NoteType::Oscillator,
             setup_note()
                 .start_time_ms(2500.0)
                 .end_time_ms(3500.0)
                 .build().unwrap()
         );
+        pb_note_5.playback_start_time_ms = 2500.0;
+        pb_note_5.playback_end_time_ms = 3500.0;
+        
         let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
 
         sequence.append_note(pb_note_1.clone());
