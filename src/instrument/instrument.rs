@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
 use crate::audio_gen::audio_gen;
-use crate::audio_gen::get_sample;
+use crate::audio_gen::oscillator::Waveform;
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 use crate::note::playback_note::PlaybackNote;
 use crate::track::track::{Track, TrackBuilder};
@@ -11,7 +11,7 @@ static DEFAULT_TRACK_VOLUME: f32 = 1.0;
 #[allow(dead_code)]
 #[derive(Builder, Debug)]
 pub(crate) struct Instrument<> {
-    waveforms: Vec<get_sample::Waveform>,
+    waveforms: Vec<Waveform>,
 
     #[builder(default = "DEFAULT_TRACK_VOLUME")]
     #[allow(dead_code)]
@@ -40,11 +40,11 @@ impl Instrument {
     }
 
     pub(crate) fn play_note(&self) {
-        audio_gen::gen_note(self.track.sequence.get_note());
+        audio_gen::gen_note_stream(self.track.sequence.get_note());
     }
 
     pub(crate) fn play_note_and_advance(&mut self, index: usize) {
-        audio_gen::gen_note(self.track.sequence.get_note_at_and_advance(index));
+        audio_gen::gen_note_stream(self.track.sequence.get_note_at_and_advance(index));
     }
 
     pub(crate) fn reset(&mut self) {
@@ -53,14 +53,14 @@ impl Instrument {
 
     pub(crate) fn loop_once(&self) {
         for playback_note in self.track.sequence.notes_iter() {
-            audio_gen::gen_note(playback_note.clone());
+            audio_gen::gen_note_stream(playback_note.clone());
         }
     }
 
     pub(crate) fn loop_n(&self, n: u8) {
         for _ in 0..n {
             for playback_note in self.track.sequence.notes_iter() {
-                audio_gen::gen_note(playback_note.clone());
+                audio_gen::gen_note_stream(playback_note.clone());
             }
         }
     }
@@ -70,6 +70,6 @@ impl Instrument {
     }
 
     pub(crate) fn play_note_direct(&self, playback_note: PlaybackNote) {
-        audio_gen::gen_note(playback_note);
+        audio_gen::gen_note_stream(playback_note);
     }
 }

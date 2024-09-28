@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 
-use crate::audio_gen::get_sample::Waveform;
+use crate::audio_gen::oscillator::Waveform;
 use crate::envelope::envelope::Envelope;
 use crate::flanger::Flanger;
 use crate::lfo::LFO;
@@ -169,7 +169,7 @@ pub(crate) fn from_note(note_type: NoteType, note: Note) -> PlaybackNote {
 
 #[cfg(test)]
 mod test_playback_note {
-    use crate::audio_gen::get_sample::Waveform;
+    use crate::audio_gen::oscillator::Waveform;
     use crate::envelope::envelope;
     use crate::flanger;
     use crate::lfo;

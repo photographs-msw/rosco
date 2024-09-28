@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
 use crate::audio_gen::audio_gen;
-use crate::audio_gen::get_sample::Waveform;
+use crate::audio_gen::oscillator::Waveform;
 use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 use crate::sequence::note_sequence_trait::AppendNote;
@@ -47,7 +47,7 @@ impl MultiInstrument {
     pub(crate) fn play_track_notes(&self) {
         let (playback_note_kinds, max_note_duration_ms) =
             self.get_next_playback_notes();
-        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms);
+        audio_gen::gen_notes_stream(playback_note_kinds, max_note_duration_ms);
     }
 
     pub(crate) fn play_track_notes_and_advance(&mut self) {
@@ -56,7 +56,7 @@ impl MultiInstrument {
         for channel in self.tracks.iter_mut() {
             channel.sequence.increment();
         }
-        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms);
+        audio_gen::gen_notes_stream(playback_note_kinds, max_note_duration_ms);
     }
 
     pub(crate) fn reset_all_tracks(&mut self) {
@@ -131,7 +131,7 @@ impl MultiInstrument {
         let (playback_note_kinds, max_note_duration_ms) =
             self.get_playback_notes_direct(playback_notes);
 
-        audio_gen::gen_notes(playback_note_kinds, max_note_duration_ms);
+        audio_gen::gen_notes_stream(playback_note_kinds, max_note_duration_ms);
     }
 
     fn get_next_notes(&self) -> Vec<PlaybackNote> {

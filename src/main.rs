@@ -52,7 +52,7 @@ fn main() {
     let lfo = lfo::LFOBuilder::default()
         .frequency(44.1)
         .amplitude(0.25)
-        .waveforms(vec![audio_gen::get_sample::Waveform::Sine])
+        .waveforms(vec![audio_gen::oscillator::Waveform::Sine])
         .build().unwrap();
 
     let flange = flanger::FlangerBuilder::default()
@@ -62,7 +62,7 @@ fn main() {
 
     let num_tracks = midi_grid_tracks.len();
     let track_waveforms =
-        vec![audio_gen::get_sample::get_waveforms(&waveforms_arg); num_tracks];
+        vec![audio_gen::oscillator::get_waveforms(&waveforms_arg); num_tracks];
     // TODO MOVE WAVEFORMS TO UNDERLYING NOTE
     for (i, track) in midi_grid_tracks.iter_mut().enumerate() {
         for playback_note in track.sequence.notes_iter_mut() {
@@ -95,7 +95,7 @@ fn main() {
         // println!("\n=====> playback_notes\n: {:#?}", playback_note_kinds);
 
         let window_duration_ms = playback_notes[0].playback_duration_ms();
-        audio_gen::audio_gen::gen_notes(playback_notes, window_duration_ms);
+        audio_gen::audio_gen::gen_notes_stream(playback_notes, window_duration_ms);
     }
     println!("Played MIDI file from TrackGrid GridNoteSequence");
 
@@ -136,13 +136,13 @@ fn main() {
         // println!( "\n=====> PLAYBACK NOTES IN RECEIVE \n: {:#?}", playback_notes);
 
         let window_duration_ms = playback_notes[0].playback_duration_ms();
-        audio_gen::audio_gen::gen_notes(playback_notes, window_duration_ms);
+        audio_gen::audio_gen::gen_notes_stream(playback_notes, window_duration_ms);
     }
     println!("Played MIDI file from TrackGrid TimeNoteSequence");
 
     println!("Play SampledNote");
     
-    let sample_data = audio_gen::audio_gen::load_audio_file("/Users/markweiss/Downloads/test2.wav")
+    let sample_data = audio_gen::audio_gen::read_audio_file("/Users/markweiss/Downloads/test2.wav")
         .into_boxed_slice();
     let mut sample_buf: Vec<f32> = Vec::with_capacity(BUF_STORAGE_SIZE);
     for sample in  sample_data[..].iter() {
@@ -164,7 +164,7 @@ fn main() {
     let lfo = lfo::LFOBuilder::default()
         .frequency(1000.0)
         .amplitude(0.25)
-        .waveforms(vec![audio_gen::get_sample::Waveform::Triangle])
+        .waveforms(vec![audio_gen::oscillator::Waveform::Triangle])
         .build().unwrap();
 
     let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
@@ -172,7 +172,7 @@ fn main() {
         .start_time_ms(0.0)
         .end_time_ms((sample_data.len() as f32 / SAMPLE_RATE) * 1000.0)
         .build().unwrap();
-    sampled_note.set_sample(&sample_buf, sample_data.len());
+    sampled_note.set_sample_buf(&sample_buf, sample_data.len());
     // TODO BUG ENVELOPE DOES NOT WORK
     let sampled_playback_note = note::playback_note::PlaybackNoteBuilder::default()
         .note_type(NoteType::Sample)
@@ -187,8 +187,8 @@ fn main() {
         .build().unwrap();
 
     for _ in 0..2 {
-        audio_gen::audio_gen::gen_notes(vec![sampled_playback_note.clone()],
-                                        (sample_data.len() as f32 / 44100.0) * 1000.0);
+        audio_gen::audio_gen::gen_notes_stream(vec![sampled_playback_note.clone()],
+                                               (sample_data.len() as f32 / 44100.0) * 1000.0);
     }
     println!("Played SampledNote");
     
