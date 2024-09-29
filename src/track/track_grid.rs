@@ -25,7 +25,6 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
 
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder
-                        .note(playback_note.note)
                         .envelopes(track.effects.envelopes.clone())
                         .lfos(track.effects.lfos.clone())
                         .flangers(track.effects.flangers.clone());
@@ -34,8 +33,6 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                         playback_notes.push(
                             playback_note_builder
                                 .note(playback_note.note)
-                                // TODO MOVE WAVEFORMS TO NOTE
-                                .waveforms(playback_note.waveforms)
                                 .build().unwrap()
                         );
                     }

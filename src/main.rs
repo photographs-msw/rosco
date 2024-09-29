@@ -63,10 +63,9 @@ fn main() {
     let num_tracks = midi_grid_tracks.len();
     let track_waveforms =
         vec![audio_gen::oscillator::get_waveforms(&waveforms_arg); num_tracks];
-    // TODO MOVE WAVEFORMS TO UNDERLYING NOTE
     for (i, track) in midi_grid_tracks.iter_mut().enumerate() {
         for playback_note in track.sequence.notes_iter_mut() {
-            playback_note.waveforms = track_waveforms[i].clone();
+            playback_note.note.waveforms = track_waveforms[i].clone();
         }
     }
 
@@ -110,7 +109,7 @@ fn main() {
     for (i, track) in midi_time_tracks.iter_mut().enumerate() {
         for playback_notes in track.sequence.notes_iter_mut() {
             for playback_note in playback_notes {
-                playback_note.waveforms = track_waveforms[i].clone();
+                playback_note.note.waveforms = track_waveforms[i].clone();
             }
         }
     }

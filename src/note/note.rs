@@ -1,12 +1,13 @@
 use std::hash::{Hash, Hasher};
 
 use derive_builder::Builder;
+use crate::audio_gen::oscillator::Waveform;
 
 use crate::common::float_utils::float_eq;
 use crate::note::constants::{DEFAULT_FREQUENCY, DEFAULT_VOLUME, INIT_START_TIME};
 
 #[allow(dead_code)]
-#[derive(Builder, Clone, Copy, Debug)]
+#[derive(Builder, Clone, Debug)]
 pub(crate) struct Note {
     #[builder(default = "DEFAULT_FREQUENCY")]
     pub(crate) frequency: f32,
@@ -19,6 +20,9 @@ pub(crate) struct Note {
 
     #[builder(default = "INIT_START_TIME")]
     pub(crate) end_time_ms: f32,
+
+    #[builder(default = "Vec::new()")]
+    pub(crate) waveforms: Vec<Waveform>,
 }
 
 pub(crate) fn default_note() -> Note {

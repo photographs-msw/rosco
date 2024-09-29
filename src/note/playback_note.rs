@@ -1,6 +1,5 @@
 use derive_builder::Builder;
 
-use crate::audio_gen::oscillator::Waveform;
 use crate::envelope::envelope::Envelope;
 use crate::flanger::Flanger;
 use crate::lfo::LFO;
@@ -38,9 +37,6 @@ pub(crate) struct PlaybackNote {
     pub(crate) playback_end_time_ms: f32,
 
     // TODO move to Note
-    #[builder(default = "vec![Waveform::Sine]")]
-    pub(crate) waveforms: Vec<Waveform>,
-
     // Effects loaded from track.effects
     #[builder(default = "Vec::new()")]
     pub(crate) envelopes: Vec<Envelope>,
@@ -169,7 +165,6 @@ pub(crate) fn from_note(note_type: NoteType, note: Note) -> PlaybackNote {
 
 #[cfg(test)]
 mod test_playback_note {
-    use crate::audio_gen::oscillator::Waveform;
     use crate::envelope::envelope;
     use crate::flanger;
     use crate::lfo;
@@ -184,18 +179,9 @@ mod test_playback_note {
         assert_eq!(playback_note.playback_start_time_ms, constants::INIT_START_TIME);
         assert_eq!(playback_note.playback_end_time_ms, constants::INIT_END_TIME);
         assert_eq!(playback_note.playback_duration_ms(), constants::DEFAULT_DURATION);
-        assert_eq!(playback_note.waveforms, vec![Waveform::Sine]);
         assert_eq!(playback_note.envelopes.is_empty(), true);
         assert_eq!(playback_note.lfos.is_empty(), true);
         assert_eq!(playback_note.flangers.is_empty(), true);
-    }
-
-    #[test]
-    fn test_playback_note_with_waveforms() {
-        let playback_note = PlaybackNoteBuilder::default()
-            .waveforms(vec![Waveform::Saw])
-            .build().unwrap();
-        assert_eq!(playback_note.waveforms, vec![Waveform::Saw]);
     }
 
     #[test]

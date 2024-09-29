@@ -158,8 +158,6 @@ impl MultiInstrument {
                     .note_type(playback_note.note_type)
                     .note(playback_note.note)
                     .sampled_note(playback_note.sampled_note)
-                    // TODO MOVE WAVEFORMS TO NOTE
-                    .waveforms(self.track_waveforms[track.sequence.get_index()].clone())
                     .build().unwrap()
             })
             .collect();
@@ -172,8 +170,8 @@ impl MultiInstrument {
             panic!("Number of notes must match number of waveforms");
         }
         let mut max_note_duration_ms = 0.0;
-        let ret_playback_notes = playback_notes.iter().enumerate()
-            .map(|(i, playback_note)| {
+        let ret_playback_notes = playback_notes.iter()
+            .map(|playback_note| {
                 if playback_note.note_duration_ms() > max_note_duration_ms {
                     max_note_duration_ms = playback_note.note_duration_ms();
                 }
@@ -182,8 +180,6 @@ impl MultiInstrument {
                     .note_type(ret_playback_note.note_type)
                     .note(ret_playback_note.note)
                     .sampled_note(ret_playback_note.sampled_note)
-                    // TODO MOVE WAVEFORMS TO NOTE
-                    .waveforms(self.track_waveforms[i].clone())
                     .build().unwrap()
             })
             .collect();

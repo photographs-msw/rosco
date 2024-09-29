@@ -6,7 +6,7 @@ use crate::common::constants::SAMPLE_RATE;
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
 
 #[allow(dead_code)]
-#[derive(Clone, Debug, Hash, PartialEq)]
+#[derive(Clone, Copy, Debug, Hash, PartialEq)]
 pub(crate) enum Waveform {
     GaussianNoise,
     Saw,

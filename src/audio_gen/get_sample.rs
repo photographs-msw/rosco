@@ -9,8 +9,7 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
     match playback_note.note_type {
         NoteType::Oscillator => {
             let mut sample = 0.0;
-            // TODO MOVE WAVEFORMS TO UNDERLYING NOTE
-            for waveform in playback_note.waveforms.clone() {
+            for waveform in playback_note.note.waveforms.clone() {
                 sample += match waveform {
                     Waveform::GaussianNoise => get_gaussian_noise_sample(),
                     Waveform::Saw => get_saw_sample(playback_note.note.frequency, sample_clock),
