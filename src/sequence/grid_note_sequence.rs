@@ -310,14 +310,14 @@ mod test_grid_note_sequence {
         let mut sequence= GridNoteSequenceBuilder::default()
             .index(0)
             .build().unwrap();
-        // sequence.insert_notes(vec![note_1.clone(), note_2.clone()]);
-        // sequence.increment();
-        // sequence.insert_notes(vec![note_3.clone(), note_4.clone()]);
-        // sequence.insert_notes(vec![note_5.clone()]);
-        // 
-        // assert_eq!(sequence.get_notes_at(0), vec![note_1, note_2]);
-        // assert_eq!(sequence.get_notes_at(1), vec![note_5]);
-        // assert_eq!(sequence.get_notes_at(2), vec![note_3, note_4]);
+        sequence.insert_notes(vec![note_1.clone(), note_2.clone()]);
+        sequence.increment();
+        sequence.insert_notes(vec![note_3.clone(), note_4.clone()]);
+        sequence.insert_notes(vec![note_5.clone()]);
+        
+        assert_eq!(sequence.get_notes_at(0), vec![note_1, note_2]);
+        assert_eq!(sequence.get_notes_at(1), vec![note_5]);
+        assert_eq!(sequence.get_notes_at(2), vec![note_3, note_4]);
     }
 
     #[test]

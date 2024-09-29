@@ -13,7 +13,7 @@ mod track;
 use crate::effect::{flanger, lfo};
 use crate::envelope::envelope::EnvelopeBuilder;
 use crate::envelope::envelope_pair::EnvelopePair;
-use crate::note::playback_note::{NoteType, PlaybackNote};
+use crate::note::playback_note::NoteType;
 use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
 // use crate::instrument::InstrumentBuilder;
 // use crate::multi_instrument::{MultiInstrumentBuilder};
@@ -154,49 +154,50 @@ fn main() {
 
     // ####################################
 
-    // println!("Play SampledNote");
-    //
-    // let sample_data = audio_gen::audio_gen::read_audio_file("/Users/markweiss/Downloads/test2.wav")
-    //     .into_boxed_slice();
-    // let mut sample_buf: Vec<f32> = Vec::with_capacity(BUF_STORAGE_SIZE);
-    // for sample in  sample_data[..].iter() {
-    //     sample_buf.push(*sample as f32);
-    // }
-    //
-    // let envelope = EnvelopeBuilder::default()
-    //     .attack(EnvelopePair(0.15, 0.9))
-    //     .decay(EnvelopePair(0.35, 0.88))
-    //     .sustain(EnvelopePair(0.85, 0.9))
-    //     .build().unwrap();
-    //
-    // let lfo = lfo::LFOBuilder::default()
-    //     .frequency(1000.0)
-    //     .amplitude(0.25)
-    //     .waveforms(vec![audio_gen::oscillator::Waveform::Triangle])
-    //     .build().unwrap();
-    //
-    // let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
-    //     .volume(0.0025)
-    //     .start_time_ms(0.0)
-    //     .end_time_ms((sample_data.len() as f32 / SAMPLE_RATE) * 1000.0)
-    //     .build().unwrap();
-    // sampled_note.set_sample_buf(&sample_buf, sample_data.len());
-    //
-    // let sampled_playback_note = note::playback_note::PlaybackNoteBuilder::default()
-    //     .note_type(NoteType::Sample)
-    //     .sampled_note(sampled_note)
-    //     .playback_start_time_ms(0.0)
-    //     .playback_end_time_ms((sample_data.len() as f32 / SAMPLE_RATE) * 1000.0)
-    //     .envelopes(vec![envelope])
-    //     .lfos(vec![lfo])
-    //     .flangers(vec![flanger::default_flanger()])
-    //     .build().unwrap();
-    //
-    // for _ in 0..1 {
-    //     audio_gen::audio_gen::gen_notes_stream(vec![sampled_playback_note.clone()],
-    //                                            (sample_data.len() as f32 / 44100.0) * 1000.0);
-    // }
-    // println!("Played SampledNote");
+    println!("Play SampledNote");
+    
+    let sample_data = audio_gen::audio_gen::read_audio_file("/Users/markweiss/Downloads/test2.wav")
+        .into_boxed_slice();
+    let mut sample_buf: Vec<f32> = Vec::with_capacity(note::sampled_note::BUF_STORAGE_SIZE);
+    for sample in  sample_data[..].iter() {
+        sample_buf.push(*sample as f32);
+    }
+    
+    let envelope = EnvelopeBuilder::default()
+        .attack(EnvelopePair(0.15, 0.9))
+        .decay(EnvelopePair(0.35, 0.88))
+        .sustain(EnvelopePair(0.85, 0.9))
+        .build().unwrap();
+    
+    let lfo = lfo::LFOBuilder::default()
+        .frequency(1000.0)
+        .amplitude(0.25)
+        .waveforms(vec![audio_gen::oscillator::Waveform::Triangle])
+        .build().unwrap();
+    
+    let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
+        .volume(0.0025)
+        .start_time_ms(0.0)
+        .end_time_ms((sample_data.len() as f32 / common::constants::SAMPLE_RATE) * 1000.0)
+        .build().unwrap();
+    sampled_note.set_sample_buf(&sample_buf, sample_data.len());
+    
+    let sampled_playback_note = note::playback_note::PlaybackNoteBuilder::default()
+        .note_type(NoteType::Sample)
+        .sampled_note(sampled_note)
+        .playback_start_time_ms(0.0)
+        .playback_end_time_ms((sample_data.len() as f32 / common::constants::SAMPLE_RATE)
+            * 1000.0)
+        .envelopes(vec![envelope])
+        .lfos(vec![lfo])
+        .flangers(vec![flanger::default_flanger()])
+        .build().unwrap();
+    
+    for _ in 0..1 {
+        audio_gen::audio_gen::gen_notes_stream(vec![sampled_playback_note.clone()],
+                                               (sample_data.len() as f32 / 44100.0) * 1000.0);
+    }
+    println!("Played SampledNote");
     
     // ####################################
     // 
