@@ -109,9 +109,6 @@ impl GridNoteSequence {
             return vec![];
         }
         
-        // TEMP DEBUG
-        println!("notes being returned: {:#?}", self.sequence[index].clone());
-        
         self.sequence[index].clone()
     }
     

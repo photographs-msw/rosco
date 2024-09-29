@@ -77,7 +77,7 @@ where
     let duration_ms = playback_note.playback_duration_ms();
 
     let mut next_sample = move || {
-        sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
+        sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
         get_sample::get_note_sample(&mut playback_note, sample_clock)
     };
 
@@ -100,12 +100,9 @@ where
 fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
                             mut playback_notes: Vec<PlaybackNote>, max_note_duration_ms: u64)
 {
-    // TEMP DEBUG
-    // println!("max_note_duration_ms: {}", max_note_duration_ms);
-    
     let mut sample_clock = -1.0 / SAMPLE_RATE;
     let mut next_sample = move || {
-        sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
+        sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
         get_sample::get_notes_sample(&mut playback_notes, sample_clock)
     };
 
