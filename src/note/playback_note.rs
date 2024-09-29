@@ -9,6 +9,7 @@ use crate::note::note::Note;
 use crate::note::sampled_note;
 use crate::note::sampled_note::SampledNote;
 
+#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub (crate) enum NoteType {
     Oscillator,

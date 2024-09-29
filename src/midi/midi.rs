@@ -25,7 +25,6 @@ struct NoteKey {
     pitch: u7
 }
 
-// TODO TAKE NOTE_TYPE PARAM
 pub(crate) fn midi_file_to_tracks<
     SequenceType: AppendNote + Clone,
     SequenceBuilderType: BuilderWrapper<SequenceType>
@@ -213,8 +212,8 @@ fn handle_note_off<SequenceType: AppendNote>(note_key: NoteKey,
     // Add the last tick delta to the note duration, copy the note to the output track sequence
     // and remove it from the current notes map
     let mut playback_note = track_notes_map.get_mut(&note_key).unwrap().clone();
-    playback_note.set_note_end_time_ms(
-        playback_note.note_start_time_ms() + (ms_since_start - playback_note.note_start_time_ms()));
+    playback_note.set_note_end_time_ms(ms_since_start);
+    playback_note.playback_end_time_ms = ms_since_start;
     track_sequence_map.get_mut(&note_key.channel).unwrap().append_note(playback_note);
     track_notes_map.remove(&note_key);
 

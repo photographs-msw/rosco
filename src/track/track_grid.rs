@@ -1,6 +1,5 @@
 use derive_builder::Builder;
 
-use crate::common::float_utils::{float_geq, float_leq};
 use crate::note::playback_note;
 use crate::note::playback_note::{PlaybackNoteBuilder, PlaybackNote};
 use crate::sequence::note_sequence_trait::NextNotes;
@@ -15,19 +14,18 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
 
     pub(crate) fn next_notes(&mut self) -> Vec<PlaybackNote> {
         let mut playback_notes = Vec::new();
-        let mut min_start_time_ms = f32::MAX;
-        let mut max_end_time_ms = 0.0;
 
         for track in self.tracks.iter_mut() {
             for playback_note in track.sequence.next_notes() {
-                let note_start_time_ms = playback_note.note_start_time_ms();
-                let note_end_time_ms = playback_note.note_end_time_ms();
-
+                
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder
                         .envelopes(track.effects.envelopes.clone())
                         .lfos(track.effects.lfos.clone())
-                        .flangers(track.effects.flangers.clone());
+                        .flangers(track.effects.flangers.clone())
+                        .playback_start_time_ms(playback_note.playback_start_time_ms)
+                        .playback_end_time_ms(playback_note.playback_end_time_ms);
+                
                 match playback_note.note_type {
                     playback_note::NoteType::Oscillator => {
                         playback_notes.push(
@@ -44,19 +42,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                         );
                     }
                 }
-
-                if float_leq(note_start_time_ms, min_start_time_ms) {
-                    min_start_time_ms = note_start_time_ms;
-                }
-                if float_geq(note_end_time_ms, max_end_time_ms) {
-                    max_end_time_ms = note_end_time_ms;
-                }
             }
-        }
-        
-        for playback_note in playback_notes.iter_mut() {
-            playback_note.playback_start_time_ms = min_start_time_ms;
-            playback_note.playback_end_time_ms = max_end_time_ms;
         }
         
         playback_notes
@@ -134,7 +120,6 @@ mod test_sequence_grid {
                 ])
             .build().unwrap();
 
-        // expect one note to be active when sample_clock_index is 0.0
         let playback_notes = track_grid.next_notes();
         assert_eq!(playback_notes.len(), 2);
     }

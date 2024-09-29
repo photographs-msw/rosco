@@ -4,6 +4,7 @@ use std::time;
 
 use crate::audio_gen::get_sample;
 use crate::common::constants;
+use crate::common::constants::SAMPLE_RATE;
 use crate::note::playback_note::PlaybackNote;
 
 static WAV_SPEC: hound::WavSpec  = hound::WavSpec {
@@ -29,7 +30,7 @@ pub(crate) fn gen_notes_stream(playback_notes: Vec<PlaybackNote>, window_duratio
     let config = device.default_output_config().unwrap();
 
     gen_notes_stream_impl::<f32>(&device, &config.into(), playback_notes,
-                                 window_duration_ms.ceil() as u64);
+                                 window_duration_ms as u64);
 }
 
 // This works to generate a note buffer from playback_note.note and load
@@ -49,6 +50,7 @@ pub(crate) fn gen_note_buffer(playback_note: &mut PlaybackNote) {
 }
 
 // TODO PARAMETERIZE SAMPLE TYPE TO SUPPORT LOFI AND 32-BIT
+#[allow(dead_code)]
 pub(crate) fn read_audio_file(file_path: &str) -> Vec<i16> {
     let mut reader = hound::WavReader::open(file_path).unwrap();
     let samples: Vec<i16> = reader.samples::<i16>().map(|s| s.unwrap()).collect();
@@ -71,7 +73,7 @@ fn gen_note_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
-    let mut sample_clock = -1.0;
+    let mut sample_clock = -1.0 / SAMPLE_RATE;
     let duration_ms = playback_note.playback_duration_ms();
 
     let mut next_sample = move || {
@@ -98,7 +100,10 @@ where
 fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
                             mut playback_notes: Vec<PlaybackNote>, max_note_duration_ms: u64)
 {
-    let mut sample_clock = -1.0;
+    // TEMP DEBUG
+    // println!("max_note_duration_ms: {}", max_note_duration_ms);
+    
+    let mut sample_clock = -1.0 / SAMPLE_RATE;
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % constants::SAMPLE_RATE;
         get_sample::get_notes_sample(&mut playback_notes, sample_clock)

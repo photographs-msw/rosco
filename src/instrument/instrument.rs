@@ -44,7 +44,8 @@ impl Instrument {
     }
 
     pub(crate) fn play_note_and_advance(&mut self, index: usize) {
-        audio_gen::gen_note_stream(self.track.sequence.get_note_at_and_advance(index));
+        audio_gen::gen_note_stream(self.track.sequence.get_note_at(index));
+        self.track.sequence.increment();
     }
 
     pub(crate) fn reset(&mut self) {

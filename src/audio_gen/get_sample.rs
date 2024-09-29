@@ -36,12 +36,7 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
 pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_clock: f32) -> f32 {
     let mut out_sample = 0.0;
     for playback_note in playback_notes.iter_mut() {
-        let sample =
-            match playback_note.note_type {
-                NoteType::Oscillator => get_note_sample(playback_note, sample_clock),
-                NoteType::Sample => get_note_sample(playback_note, sample_clock)
-            };
-        out_sample += sample;
+        out_sample += get_note_sample(playback_note, sample_clock);
     }
 
     if out_sample > NYQUIST_FREQUENCY {
