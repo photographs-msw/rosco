@@ -193,10 +193,10 @@ fn main() {
         .flangers(vec![flanger::default_flanger()])
         .build().unwrap();
     
-    for _ in 0..1 {
-        audio_gen::audio_gen::gen_notes_stream(vec![sampled_playback_note.clone()],
-                                               (sample_data.len() as f32 / 44100.0) * 1000.0);
-    }
+    // for _ in 0..1 {
+    //     audio_gen::audio_gen::gen_notes_stream(vec![sampled_playback_note.clone()],
+    //                                            (sample_data.len() as f32 / 44100.0) * 1000.0);
+    // }
     println!("Played SampledNote");
     
     // ####################################
