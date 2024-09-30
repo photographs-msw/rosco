@@ -98,24 +98,26 @@ where
 }
 
 fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                            mut playback_notes: Vec<PlaybackNote>, max_note_duration_ms: u64)
+                            mut playback_notes: Vec<PlaybackNote>, note_duration_ms: u64)
 {
+    // TODO MODIFY THIS TO BE THE BEGINNING AND END OF THE ORIGINAL NOTE WINDOW RATHER THAN ADDING TO DURATION
+    
     let num_fade_steps = 176;
     let mut last_sample: f32 = 0.0;
     let mut init_step_count: u64 = 0;
+    let init_num_steps = 4;
     let mut final_step_count: u64 = 0;
     let mut sample_count: u64 = 0;
     let mut sample_clock = -1.0 / SAMPLE_RATE;
+    let adjusted_duration_ms = note_duration_ms -
+        (num_fade_steps as f32 / SAMPLE_RATE).ceil() as u64;
     let mut next_sample = move || {
         // Pad with 0s up front
-        if sample_count == 0 {
+        if init_step_count < init_num_steps {
             init_step_count += 1;
-            if init_step_count == num_fade_steps {
-                sample_count += 1;
-            }
             0.0
             // the actual sound to be generated
-        } else if sample_count < (max_note_duration_ms as f32 * 44.1) as u64 {
+        } else if sample_count < (adjusted_duration_ms as f32 * 44.1) as u64 {
             sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
             sample_count += 1;
             last_sample = get_sample::get_notes_sample(&mut playback_notes, sample_clock);
@@ -129,7 +131,7 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
             if final_step_count < num_fade_steps {
                 last_sample + (step * final_step_count as f32)
             } else {
-                0.0
+                0.0  // TODO SHOULD NOT NEED THIS BLOCK
             }
         }
     };
@@ -148,8 +150,8 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
     stream.play().unwrap();
 
     // Play for actual duration plus up front padding and fade out
-    std::thread::sleep(time::Duration::from_millis(
-        max_note_duration_ms + ((num_fade_steps * 2) as f32 / SAMPLE_RATE).ceil() as u64));
+    std::thread::sleep(time::Duration::from_millis(note_duration_ms));
+        // note_duration_ms + ((num_fade_steps * 2) as f32 / SAMPLE_RATE).ceil() as u64));
 }
 
 fn write_stream<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)

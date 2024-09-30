@@ -17,6 +17,9 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
 
         for track in self.tracks.iter_mut() {
             for playback_note in track.sequence.next_notes() {
+               
+                // TEMP DEBUG
+                println!("playback_note IN GRID: {:#?}", playback_note);
                 
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder

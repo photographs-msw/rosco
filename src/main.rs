@@ -78,18 +78,18 @@ fn main() {
         .tracks(midi_grid_tracks)
         .build().unwrap();
 
-    println!("Playing MIDI file from TrackGrid GridNoteSequence");
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        for playback_notes in track_grid {
-            tx.send(playback_notes).unwrap();
-        }
-    });
-    for playback_notes in rx {
-        let window_duration_ms = playback_notes[0].playback_duration_ms();
-        audio_gen::audio_gen::gen_notes_stream(playback_notes, window_duration_ms);
-    }
-    println!("Played MIDI file from TrackGrid GridNoteSequence");
+    // println!("Playing MIDI file from TrackGrid GridNoteSequence");
+    // let (tx, rx) = std::sync::mpsc::channel();
+    // std::thread::spawn(move || {
+    //     for playback_notes in track_grid {
+    //         tx.send(playback_notes).unwrap();
+    //     }
+    // });
+    // for playback_notes in rx {
+    //     let window_duration_ms = playback_notes[0].playback_duration_ms();
+    //     audio_gen::audio_gen::gen_notes_stream(playback_notes, window_duration_ms);
+    // }
+    // println!("Played MIDI file from TrackGrid GridNoteSequence");
 
     // ####################################
 
@@ -116,8 +116,8 @@ fn main() {
 
     let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
-        .lfos(vec![lfo])
-        .flangers(vec![flange])
+        // .lfos(vec![lfo])
+        // .flangers(vec![flange])
         .build().unwrap();
     for track in midi_time_tracks.iter_mut() {
         track.effects = track_effects.clone();
