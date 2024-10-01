@@ -109,7 +109,8 @@ impl PlaybackNote {
         }
     }
 
-    pub(crate) fn apply_effects(&mut self, sample: f32, sample_position: f32) -> f32 {
+    pub(crate) fn apply_effects(&mut self, sample: f32, sample_position: f32,
+                                sample_count: u64) -> f32 {
         let mut output_sample = sample;
 
         match self.note_type {
@@ -117,8 +118,11 @@ impl PlaybackNote {
                 for envelope in self.envelopes.iter() {
                     output_sample = envelope.apply_effect(
                         output_sample,
-                        ((self.playback_start_time_ms - self.note.start_time_ms) /
-                            (self.note.end_time_ms - self.note.start_time_ms)) + sample_position
+                        sample_count as f32 /
+                            (self.playback_sample_end_time as f32 -
+                                self.playback_sample_start_time as f32)
+                        // ((self.playback_start_time_ms - self.note.start_time_ms) /
+                        //     (self.note.end_time_ms - self.note.start_time_ms)) + sample_position
                     );
                 }
             }

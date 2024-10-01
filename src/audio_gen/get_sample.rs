@@ -30,13 +30,13 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
                 }
             }
             playback_note.apply_effects(playback_note.note.volume * sample,
-                                        sample_clock / SAMPLE_RATE)
+                                        sample_clock / SAMPLE_RATE, sample_count)
         }
         NoteType::Sample => {
             let volume = playback_note.sampled_note.volume;
             let sample = playback_note.sampled_note.next_sample();
             playback_note.apply_effects(volume * sample,
-                                        sample_clock / SAMPLE_RATE)
+                                        sample_clock / SAMPLE_RATE, sample_count)
         }
     }
 }
