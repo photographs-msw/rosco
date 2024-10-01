@@ -4,7 +4,16 @@ use crate::audio_gen::oscillator::Waveform;
 use crate::common::constants::{NYQUIST_FREQUENCY, SAMPLE_RATE};  // khz samples per second
 use crate::note::playback_note::{NoteType, PlaybackNote};
 
-pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f32) -> f32 {
+pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f32,
+                              sample_count: u64) -> f32 {
+    
+    // TEMP DEBUG
+    // println!("sample_count: {}, playback_note.playback_sample_start_time {}, playback_note.playback_sample_end_time {}", 
+    //          sample_count, playback_note.playback_sample_start_time, playback_note.playback_sample_end_time);
+    // if sample_count < playback_note.playback_sample_start_time ||
+    //     sample_count > playback_note.playback_sample_end_time {
+    //     return 0.0;
+    // }
     
     match playback_note.note_type {
         NoteType::Oscillator => {
@@ -32,10 +41,11 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
     }
 }
 
-pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_clock: f32) -> f32 {
+pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_clock: f32,
+                               sample_count: u64) -> f32 {
     let mut out_sample = 0.0;
     for playback_note in playback_notes.iter_mut() {
-        out_sample += get_note_sample(playback_note, sample_clock);
+        out_sample += get_note_sample(playback_note, sample_clock, sample_count);
     }
 
     if out_sample > NYQUIST_FREQUENCY {

@@ -37,6 +37,11 @@ pub(crate) struct PlaybackNote {
     #[builder(default = "constants::INIT_END_TIME")]
     pub(crate) playback_end_time_ms: f32,
 
+    #[builder(default = "0")]
+    pub(crate) playback_sample_start_time: u64,
+    #[builder(default = "0")]
+    pub(crate) playback_sample_end_time: u64,
+
     // TODO move to Note
     // Effects loaded from track.effects
     #[builder(default = "Vec::new()")]
