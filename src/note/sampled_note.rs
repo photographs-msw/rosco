@@ -35,8 +35,13 @@ impl SampledNote {
 
     pub(crate) fn next_sample(&mut self) -> f32 {
         let sample = self.sample_buf[self.sample_index];
-        self.sample_index = (self.sample_index + 1) % self.buf_size;
+        self.sample_index += 1;
+        // self.sample_index = (self.sample_index + 1) % self.buf_size;
         sample
+    }
+    
+    pub(crate) fn get_sample_at(&self, index: usize) -> f32 {
+        self.sample_buf[index]
     }
 
     pub(crate) fn set_sample_buf(&mut self, samples: &[f32], buf_size: usize) {

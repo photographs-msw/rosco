@@ -34,7 +34,11 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
         }
         NoteType::Sample => {
             let volume = playback_note.sampled_note.volume;
-            let sample = playback_note.sampled_note.next_sample();
+            let sample = playback_note.sampled_note.get_sample_at(sample_count as usize);
+            
+            // TEMP DEBUG
+            // println!("sample: {}", sample);
+            
             playback_note.apply_effects(volume * sample,
                                         sample_clock / SAMPLE_RATE, sample_count)
         }
@@ -48,10 +52,10 @@ pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sample_cl
         out_sample += get_note_sample(playback_note, sample_clock, sample_count);
     }
 
-    if out_sample > NYQUIST_FREQUENCY {
-        out_sample = NYQUIST_FREQUENCY;
-    } else if out_sample < -NYQUIST_FREQUENCY {
-        out_sample = -NYQUIST_FREQUENCY;
+    if out_sample >= NYQUIST_FREQUENCY {
+        out_sample = NYQUIST_FREQUENCY - 1.0;
+    } else if out_sample <= -NYQUIST_FREQUENCY {
+        out_sample = -NYQUIST_FREQUENCY + 1.0;
     } 
     out_sample
 }

@@ -23,7 +23,7 @@ pub(crate) fn gen_note_stream(playback_note: PlaybackNote) {
     gen_note_stream_impl::<f32>(&device, &config.into(), playback_note);
 }
 
-pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>, window_duration_ms: f32)
+pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>)
 {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
@@ -45,16 +45,17 @@ pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>, window_dur
         playback_note.playback_sample_end_time = (
             (playback_note.playback_end_time_ms - window_start_time_ms) * (SAMPLE_RATE / 1000.0)
         ).floor() as u64;
-
+        
         // TEMP DEBUG
-    //     println!("IN FOR LOOP\nplayback_note.playback_end_time_ms: {}",
+        // println!("playback_note.sampled_note.sample_buf[10]: {}",
+        //          playback_note.sampled_note.sample_buf[10]);
     //              playback_note.playback_end_time_ms);
     //     println!("playback_note.playback_sample_start_time: {}",
     //              playback_note.playback_sample_start_time);
     //     println!("playback_note.playback_sample_end_time: {}",
     //              playback_note.playback_sample_end_time);
     }
-
+    
     // TEMP DEBUG
     // println!("OUT OF LOOP\nplayback_note.playback_end_time_ms: {}",
     //          playback_notes.clone()[0].playback_end_time_ms);
@@ -134,10 +135,12 @@ where
 }
 
 fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                            playback_notes: Vec<PlaybackNote>, max_note_duration_ms: u64)
+                            mut playback_notes: Vec<PlaybackNote>, note_duration_ms: u64)
 {
-    // BUG LOSING VALUE OF sample start and end when passing through as argument ot here
     // TEMP DEBUG
+    // println!("\n\nIN GET_NOTES_STREAM\nnote_duration_ms: {}", note_duration_ms);
+    // println!("IN GET_NOTES_STREAM\nnote_duration_ms samples: {}", note_duration_ms as f32 * (SAMPLE_RATE / 1000.0));
+    // println!("playback_notes.len(): {}\n", playback_notes.len());
     // for playback_note in playback_notes.iter() {
     //     println!("IN GET_NOTES_STREAM\nplayback_note.playback_end_time_ms: {}",
     //              playback_note.playback_end_time_ms);
@@ -145,7 +148,7 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
     //              playback_note.playback_sample_start_time);
     //     println!("playback_note.playback_sample_end_time: {}",
     //              playback_note.playback_sample_end_time);
-    //     return;
+        // return;
     // }
 
     let mut sample_count = 0;
@@ -153,7 +156,7 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
         sample_count += 1;
-        get_sample::get_notes_sample(&mut playback_notes.clone(), sample_clock, sample_count)
+        get_sample::get_notes_sample(&mut playback_notes, sample_clock, sample_count)
     };
 
     let channels = config.channels as usize;
@@ -169,7 +172,7 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
     ).unwrap();
     stream.play().unwrap();
     
-    std::thread::sleep(time::Duration::from_millis(max_note_duration_ms));
+    std::thread::sleep(time::Duration::from_millis(note_duration_ms));
 }
 
 fn write_stream<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)

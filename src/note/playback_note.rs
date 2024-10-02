@@ -126,18 +126,18 @@ impl PlaybackNote {
                     );
                 }
             }
-            NoteType::Sample => {
-                for envelope in self.envelopes.iter() {
-                    output_sample = envelope.apply_effect(
-                        output_sample,
-                        ((self.playback_start_time_ms - self.sampled_note.start_time_ms) /
-                            (self.sampled_note.duration_ms() - self.sampled_note.start_time_ms)) +
-                            sample_position
-                    );
-                }
-            }
+            NoteType::Sample => {} 
+            //     for envelope in self.envelopes.iter() {
+            //         output_sample = envelope.apply_effect(
+            //             output_sample,
+            //             ((self.playback_start_time_ms - self.sampled_note.start_time_ms) /
+            //                 (self.sampled_note.duration_ms() - self.sampled_note.start_time_ms)) +
+            //                 sample_position
+            //         );
+            //     }
+            // }
         }
-
+        
         for lfo in self.lfos.iter() {
             output_sample = lfo.apply_effect(output_sample, sample_position);
         }

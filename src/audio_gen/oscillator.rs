@@ -4,6 +4,7 @@ use rand_distr::{Distribution, Normal};
 use crate::common::constants::SAMPLE_RATE;
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
+static TWO_PI_OVER_SAMPLE_RATE: f32 = TWO_PI / SAMPLE_RATE;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Hash, PartialEq)]
@@ -33,7 +34,7 @@ pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
 }
 
 pub(crate) fn get_sin_sample(frequency: f32, sample_clock: f32) -> f32 {
-    (sample_clock * frequency * TWO_PI / SAMPLE_RATE).sin()
+    (frequency * sample_clock * TWO_PI_OVER_SAMPLE_RATE).sin()
 }
 
 pub(crate) fn get_triangle_sample(frequency: f32, sample_clock: f32) -> f32 {

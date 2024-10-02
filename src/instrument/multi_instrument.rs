@@ -47,7 +47,7 @@ impl MultiInstrument {
     pub(crate) fn play_track_notes(&self) {
         let (playback_note_kinds, max_note_duration_ms) =
             self.get_next_playback_notes();
-        audio_gen::gen_notes_stream(playback_note_kinds, max_note_duration_ms);
+        audio_gen::gen_notes_stream(playback_note_kinds);
     }
 
     pub(crate) fn play_track_notes_and_advance(&mut self) {
@@ -56,7 +56,7 @@ impl MultiInstrument {
         for channel in self.tracks.iter_mut() {
             channel.sequence.increment();
         }
-        audio_gen::gen_notes_stream(playback_note_kinds, max_note_duration_ms);
+        audio_gen::gen_notes_stream(playback_note_kinds);
     }
 
     pub(crate) fn reset_all_tracks(&mut self) {
@@ -128,10 +128,10 @@ impl MultiInstrument {
     }
 
     pub(crate) fn play_notes_direct(&self, playback_notes: Vec<PlaybackNote>) {
-        let (playback_note_kinds, max_note_duration_ms) =
+        let playback_note =
             self.get_playback_notes_direct(playback_notes);
 
-        audio_gen::gen_notes_stream(playback_note_kinds, max_note_duration_ms);
+        audio_gen::gen_notes_stream(playback_note);
     }
 
     fn get_next_notes(&self) -> Vec<PlaybackNote> {
@@ -165,26 +165,29 @@ impl MultiInstrument {
         (playback_notes, max_note_duration_ms)
     }
     
-    fn get_playback_notes_direct(&self, playback_notes: Vec<PlaybackNote>) -> (Vec<PlaybackNote>, f32) {
+    fn get_playback_notes_direct(&self, playback_notes: Vec<PlaybackNote>) -> Vec<PlaybackNote> {
         if playback_notes.len() != self.track_waveforms.len() {
             panic!("Number of notes must match number of waveforms");
         }
-        let mut max_note_duration_ms = 0.0;
         let ret_playback_notes = playback_notes.iter()
             .map(|playback_note| {
-                if playback_note.note_duration_ms() > max_note_duration_ms {
-                    max_note_duration_ms = playback_note.note_duration_ms();
-                }
                 let ret_playback_note= playback_note.clone();
                 PlaybackNoteBuilder::default()
                     .note_type(ret_playback_note.note_type)
                     .note(ret_playback_note.note)
                     .sampled_note(ret_playback_note.sampled_note)
+                    .playback_start_time_ms(ret_playback_note.playback_start_time_ms)
+                    .playback_end_time_ms(ret_playback_note.playback_end_time_ms)
+                    .playback_sample_start_time(ret_playback_note.playback_sample_start_time)
+                    .playback_sample_end_time(ret_playback_note.playback_sample_end_time)
+                    .envelopes(ret_playback_note.envelopes)
+                    .lfos(ret_playback_note.lfos)
+                    .flangers(ret_playback_note.flangers)
                     .build().unwrap()
             })
             .collect();
 
-        (ret_playback_notes, max_note_duration_ms)
+        ret_playback_notes
     }
 
     fn validate_track_num(&self, track_num: usize) {
