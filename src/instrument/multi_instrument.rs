@@ -44,20 +44,20 @@ impl MultiInstrumentBuilder {
 #[allow(dead_code)]
 impl MultiInstrument {
 
-    pub(crate) fn play_track_notes(&self) {
-        let (playback_note_kinds, max_note_duration_ms) =
-            self.get_next_playback_notes();
-        audio_gen::gen_notes_stream(playback_note_kinds);
-    }
-
-    pub(crate) fn play_track_notes_and_advance(&mut self) {
-        let (playback_note_kinds, max_note_duration_ms) =
-            self.get_next_playback_notes();
-        for channel in self.tracks.iter_mut() {
-            channel.sequence.increment();
-        }
-        audio_gen::gen_notes_stream(playback_note_kinds);
-    }
+    // pub(crate) fn play_track_notes(&self) {
+    //     let (playback_note_kinds, max_note_duration_ms) =
+    //         self.get_next_playback_notes();
+    //     audio_gen::gen_notes_stream(playback_note_kinds);
+    // }
+    // 
+    // pub(crate) fn play_track_notes_and_advance(&mut self) {
+    //     let (playback_note_kinds, max_note_duration_ms) =
+    //         self.get_next_playback_notes();
+    //     for channel in self.tracks.iter_mut() {
+    //         channel.sequence.increment();
+    //     }
+    //     audio_gen::gen_notes_stream(playback_note_kinds);
+    // }
 
     pub(crate) fn reset_all_tracks(&mut self) {
         self.tracks.iter_mut().for_each(
@@ -65,19 +65,19 @@ impl MultiInstrument {
         );
     }
 
-    pub(crate) fn loop_once(&mut self) {
-        self.reset_all_tracks();
-        while !self.tracks.iter().all(|channel| channel.sequence.at_end()) {
-            self.play_track_notes_and_advance();
-        }
-    }
+    // pub(crate) fn loop_once(&mut self) {
+    //     self.reset_all_tracks();
+    //     while !self.tracks.iter().all(|channel| channel.sequence.at_end()) {
+    //         self.play_track_notes_and_advance();
+    //     }
+    // }
 
-    pub(crate) fn loop_n(&mut self, n: u8) {
-        self.reset_all_tracks();
-        for _ in 0..n {
-            self.loop_once();
-        }
-    }
+    // pub(crate) fn loop_n(&mut self, n: u8) {
+    //     self.reset_all_tracks();
+    //     for _ in 0..n {
+    //         self.loop_once();
+    //     }
+    // }
 
     pub(crate) fn add_note_to_track(&mut self, track_num: usize, playback_note: PlaybackNote) {
         self.validate_track_num(track_num);

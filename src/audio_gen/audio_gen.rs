@@ -45,7 +45,7 @@ pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>)
         playback_note.playback_sample_end_time = (
             (playback_note.playback_end_time_ms - window_start_time_ms) * (SAMPLE_RATE / 1000.0)
         ).floor() as u64;
-        
+
         // TEMP DEBUG
         // println!("playback_note.sampled_note.sample_buf[10]: {}",
         //          playback_note.sampled_note.sample_buf[10]);
@@ -55,7 +55,7 @@ pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>)
     //     println!("playback_note.playback_sample_end_time: {}",
     //              playback_note.playback_sample_end_time);
     }
-    
+
     // TEMP DEBUG
     // println!("OUT OF LOOP\nplayback_note.playback_end_time_ms: {}",
     //          playback_notes.clone()[0].playback_end_time_ms);
@@ -63,7 +63,7 @@ pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>)
     //          playback_notes[0].playback_sample_start_time);
     // println!("playback_note.playback_sample_end_time: {}",
     //          playback_notes[0].playback_sample_end_time);
-    // 
+    //
     gen_notes_stream_impl::<f32>(&device, &config.into(), playback_notes,
                                  window_duration_ms as u64);
 }
@@ -171,7 +171,7 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
         None
     ).unwrap();
     stream.play().unwrap();
-    
+
     std::thread::sleep(time::Duration::from_millis(note_duration_ms));
 }
 

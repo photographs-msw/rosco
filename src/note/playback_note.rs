@@ -1,4 +1,5 @@
 use derive_builder::Builder;
+use crate::common::float_utils::{float_geq, float_leq};
 
 use crate::envelope::envelope::Envelope;
 use crate::flanger::Flanger;
@@ -116,14 +117,30 @@ impl PlaybackNote {
         match self.note_type {
             NoteType::Oscillator => {
                 for envelope in self.envelopes.iter() {
+                    
+                    // TEMP DEBUG
+                    // if float_leq(sample_position, 0.0001) || float_geq(sample_position, 0.9999) {
+                    //     println!("BEFORE ENVELOPE output_sample: {}, sample_count: {}, sample_position: {}",
+                    //              output_sample, sample_count, sample_position);
+                    // }
+                    // println!("BEFORE ENVELOPE output_sample: {}, sample_count: {}, sample_position: {}",
+                    //          output_sample, sample_count, sample_position);
+                    
                     output_sample = envelope.apply_effect(
-                        output_sample,
+                        output_sample, // sample_position);
                         sample_count as f32 /
                             (self.playback_sample_end_time as f32 -
-                                self.playback_sample_start_time as f32)
+                                self.playback_sample_start_time as f32));
                         // ((self.playback_start_time_ms - self.note.start_time_ms) /
                         //     (self.note.end_time_ms - self.note.start_time_ms)) + sample_position
-                    );
+
+                    // );
+                    
+                    // TEMP DEBUG
+                    // if float_leq(sample_position, 0.0001) || float_geq(sample_position, 0.9999) {
+                    //     println!("AFTER ENVELOPE output_sample: {}, sample_count: {}, sample_position: {}",
+                    //              output_sample, sample_count, sample_position);
+                    // } 
                 }
             }
             NoteType::Sample => {} 

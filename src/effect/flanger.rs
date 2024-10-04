@@ -8,7 +8,7 @@ static SAMPLE_BUFFER_SIZE: usize = 20;
 #[derive(Builder, Clone, Debug, PartialEq)]
 pub(crate) struct Flanger {
     #[builder(default = "SAMPLE_BUFFER_SIZE")]
-    window_size: usize,
+    pub(crate) window_size: usize,
     
     #[builder(setter(custom))]
     sample_buffer: VecDeque<f32>,
