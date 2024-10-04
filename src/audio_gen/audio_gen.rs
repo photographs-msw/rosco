@@ -152,11 +152,13 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
     // }
 
     let mut sample_count = 0;
-    let mut sample_clock = -1.0 / SAMPLE_RATE;
+    let mut sample_clock = -1.0;
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
+        let x = get_sample::get_notes_sample(&mut playback_notes, sample_clock / SAMPLE_RATE,
+                                     sample_count);
         sample_count += 1;
-        get_sample::get_notes_sample(&mut playback_notes, sample_clock, sample_count)
+        x 
     };
 
     let channels = config.channels as usize;

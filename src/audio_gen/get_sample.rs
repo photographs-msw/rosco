@@ -49,7 +49,7 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sample_clock: f3
             //
             // println!("NOTE VOLUME {}", playback_note.note.volume);
             // println!("NOTE FREQ {}", playback_note.note.frequency);
-            
+
             /*sample = */playback_note.apply_effects(playback_note.note.volume * sample,
                                         sample_clock / SAMPLE_RATE, sample_count)//;
 

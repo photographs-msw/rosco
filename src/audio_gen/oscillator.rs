@@ -33,8 +33,11 @@ pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
         .collect()
 }
 
-pub(crate) fn get_sin_sample(frequency: f32, sample_clock: f32) -> f32 {
-    (frequency * sample_clock * TWO_PI_OVER_SAMPLE_RATE).sin()
+pub(crate) fn get_sin_sample(frequency: f32, sample_position: f32) -> f32 {
+    /*let x = */(frequency * sample_position * TWO_PI).sin()//;
+    // println!("SIN SAMPLE: {}", x);
+    // x
+    // (frequency * sample_clock * TWO_PI_OVER_SAMPLE_RATE).sin()
 }
 
 pub(crate) fn get_triangle_sample(frequency: f32, sample_clock: f32) -> f32 {
