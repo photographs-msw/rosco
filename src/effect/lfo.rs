@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 
-use crate::audio_gen::oscillator::{generate_sine_table, get_gaussian_noise_sample, get_saw_sample, get_sin_sample,
+use crate::audio_gen::oscillator::{generate_sine_table, get_gaussian_noise_sample, get_saw_sample, get_sine_sample,
                                    get_triangle_sample};
 use crate::audio_gen::oscillator::Waveform;
 use crate::common::constants::{DEFAULT_LFO_AMPLITUDE, SAMPLE_RATE};
@@ -18,7 +18,7 @@ pub(crate) struct LFO {
     // because it is not a continuous waveform
     #[builder(default = "vec![Waveform::Sine]", setter(custom))]
     pub(crate) waveforms: Vec<Waveform>,
-    
+
     #[builder(default = "generate_sine_table()", setter(skip))]
     sine_table: Vec<f32>,
 }
@@ -51,7 +51,7 @@ impl LFO {
             sample += match waveform {
                 Waveform::GaussianNoise => get_gaussian_noise_sample(),
                 Waveform::Saw => get_saw_sample(self.frequency, sample_position),
-                Waveform::Sine => get_sin_sample(&self.sine_table, self.frequency, sample_count),
+                Waveform::Sine => get_sine_sample(&self.sine_table, self.frequency, sample_count),
                 Waveform::Triangle => get_triangle_sample(self.frequency, sample_position),
                 // LFO cannot contain square waveform
                 Waveform::Square => 0.0

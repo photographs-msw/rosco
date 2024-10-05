@@ -38,26 +38,26 @@ fn main() {
     //     midi::midi::midi_file_to_tracks::<GridNoteSequence, GridNoteSequenceBuilder>(
     //         "/Users/markweiss/Downloads/test.mid", NoteType::Oscillator);
     // println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
-   
+
     let sine_table = audio_gen::oscillator::generate_sine_table();
-    
+
     let envelope = EnvelopeBuilder::default()
-        .attack(EnvelopePair(0.25, 0.7))
-        .decay(EnvelopePair(0.45, 0.88))
-        .sustain(EnvelopePair(0.75, 0.7))
+        .attack(EnvelopePair(0.05, 0.5))
+        .decay(EnvelopePair(0.15, 0.5))
+        .sustain(EnvelopePair(0.85, 0.5))
         .build().unwrap();
-    // 
+    //
     // let lfo = lfo::LFOBuilder::default()
     //     .frequency(44.1)
     //     .amplitude(0.25)
     //     .waveforms(vec![audio_gen::oscillator::Waveform::Sine])
     //     .build().unwrap();
-    // 
+    //
     // let flange = flanger::FlangerBuilder::default()
     //     .window_size(20)
     //     .sample_buffer()
     //     .build().unwrap();
-    // 
+    //
     // let track_waveforms = audio_gen::oscillator::get_waveforms(&waveforms_arg);
     // for track in midi_grid_tracks.iter_mut() {
     //     for playback_notes in track.sequence.sequence_iter_mut() {
@@ -66,7 +66,7 @@ fn main() {
     //         }
     //     }
     // }
-    // 
+    //
     // let track_effects = track::track_effects::TrackEffectsBuilder::default()
     //     .envelopes(vec![envelope])
     //     .lfos(vec![lfo])
@@ -75,7 +75,7 @@ fn main() {
     // for track in midi_grid_tracks.iter_mut() {
     //     track.effects = track_effects.clone();
     // }
-    // 
+    //
     // let track_grid = TrackGridBuilder::default()
     //     .tracks(midi_grid_tracks)
     //     .build().unwrap();
@@ -97,7 +97,7 @@ fn main() {
     println!("Loading MIDI file");
     let mut midi_time_tracks =
         midi::midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-            "/Users/markweiss/Downloads/test1.mid", NoteType::Oscillator);
+            "/Users/markweiss/Downloads/test4.mid", NoteType::Oscillator);
     println!("Loaded MIDI file into Vec<Track<TimeNoteSequence>");
     
     let num_tracks = midi_time_tracks.len();
@@ -105,20 +105,20 @@ fn main() {
         vec![audio_gen::oscillator::get_waveforms(&waveforms_arg); num_tracks];
     
     let lfo = lfo::LFOBuilder::default()
-        .frequency(44.1)
-        .amplitude(0.25)
+        .frequency(441.0)
+        .amplitude(0.05)
         .waveforms(vec![audio_gen::oscillator::Waveform::Sine])
         .build().unwrap();
     
     let flange = flanger::FlangerBuilder::default()
-        .window_size(20)
+        .window_size(30)
         .sample_buffer()
         .build().unwrap();
     
     let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
         // .lfos(vec![lfo])
-        // .flangers(vec![flange])
+        .flangers(vec![flange])
         .build().unwrap();
     for track in midi_time_tracks.iter_mut() {
         track.effects = track_effects.clone();
@@ -128,6 +128,7 @@ fn main() {
         for playback_notes in track.sequence.notes_iter_mut() {
             for playback_note in playback_notes {
                 playback_note.note.waveforms = track_waveforms[i].clone();
+                playback_note.note.volume = 0.0075;
             }
         }
     }

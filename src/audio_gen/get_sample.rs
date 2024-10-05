@@ -14,9 +14,9 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sine_table: &Vec
                 sample += match waveform {
                     Waveform::GaussianNoise => get_gaussian_noise_sample(),
                     Waveform::Saw => get_saw_sample(playback_note.note.frequency, sample_position),
-                    Waveform::Sine => oscillator::get_sin_sample(sine_table,
-                                                                 playback_note.note.frequency,
-                                                                 sample_count),
+                    Waveform::Sine => oscillator::get_sine_sample(sine_table,
+                                                                  playback_note.note.frequency,
+                                                                  sample_count),
                     Waveform::Square => get_square_sample(playback_note.note.frequency,
                                                           sample_position),
                     Waveform::Triangle => get_triangle_sample(playback_note.note.frequency,

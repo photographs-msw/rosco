@@ -2,7 +2,7 @@ use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
-static NUM_SINE_TABLE_SAMPLES: usize = 4410;
+static NUM_SINE_TABLE_SAMPLES: usize = 256;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Hash, PartialEq)]
@@ -40,10 +40,11 @@ pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
         .collect()
 }
 
-pub(crate) fn get_sin_sample(sine_table: &Vec<f32>, frequency: f32, sample_count: u64) -> f32 {
+pub(crate) fn get_sine_sample(sine_table: &Vec<f32>, frequency: f32, sample_count: u64) -> f32 {
     // TEMP DEBUG
-    // println!("frequency: {}, sample_position: {}", frequency, sample_position);
-    // (frequency * sample_position * TWO_PI).sin()
+    // println!("sample_count: {} sample {}", sample_count as usize % NUM_SINE_TABLE_SAMPLES,
+    //          sine_table[sample_count as usize % NUM_SINE_TABLE_SAMPLES]);
+    
     frequency *
         sine_table[sample_count as usize % NUM_SINE_TABLE_SAMPLES]
 }
