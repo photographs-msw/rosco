@@ -7,9 +7,10 @@ use crate::common::constants;
 use crate::common::constants::SAMPLE_RATE;
 use crate::note::playback_note::PlaybackNote;
 
+// TODO SUPPORT LOFI AND 32-BIT
 static WAV_SPEC: hound::WavSpec  = hound::WavSpec {
     channels: 1,
-    sample_rate: constants::SAMPLE_RATE as u32,
+    sample_rate: SAMPLE_RATE as u32,
     bits_per_sample: 16,
     sample_format: hound::SampleFormat::Int,
 };
@@ -45,25 +46,8 @@ pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>)
         playback_note.playback_sample_end_time = (
             (playback_note.playback_end_time_ms - window_start_time_ms) * (SAMPLE_RATE / 1000.0)
         ).floor() as u64;
-
-        // TEMP DEBUG
-        // println!("playback_note.sampled_note.sample_buf[10]: {}",
-        //          playback_note.sampled_note.sample_buf[10]);
-    //              playback_note.playback_end_time_ms);
-    //     println!("playback_note.playback_sample_start_time: {}",
-    //              playback_note.playback_sample_start_time);
-    //     println!("playback_note.playback_sample_end_time: {}",
-    //              playback_note.playback_sample_end_time);
     }
 
-    // TEMP DEBUG
-    // println!("OUT OF LOOP\nplayback_note.playback_end_time_ms: {}",
-    //          playback_notes.clone()[0].playback_end_time_ms);
-    // println!("playback_note.playback_sample_start_time: {}",
-    //          playback_notes[0].playback_sample_start_time);
-    // println!("playback_note.playback_sample_end_time: {}",
-    //          playback_notes[0].playback_sample_end_time);
-    //
     gen_notes_stream_impl::<f32>(&device, &config.into(), playback_notes,
                                  window_duration_ms as u64);
 }
@@ -74,14 +58,15 @@ pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>)
 // TODO gen_notes_version
 #[allow(dead_code)]
 pub(crate) fn gen_note_buffer(playback_note: &mut PlaybackNote) {
+    let mut sample_count = 0;
     let num_samples = (
         playback_note.playback_duration_ms().ceil() * 1000.0 * SAMPLE_RATE) as usize;
     let mut sample_clock = 0f32;
     for _ in 0..num_samples {
-        // TODO FIX SAMPLE_COUNT
-        let sample = get_sample::get_note_sample(playback_note, sample_clock, 0);
+        let sample = get_sample::get_note_sample(playback_note, sample_clock, sample_count);
         playback_note.sampled_note.append_sample(sample);
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
+        sample_count += 1;
     }
 }
 
@@ -109,13 +94,14 @@ fn gen_note_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
+    let mut sample_count = 0;
     let mut sample_clock = -1.0 / SAMPLE_RATE;
     let duration_ms = playback_note.playback_duration_ms();
-
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
-        // TODO FIX SAMPLE_COUNT
-        get_sample::get_note_sample(&mut playback_note, sample_clock, 0)
+        sample_count += 1;
+        get_sample::get_note_sample(&mut playback_note, sample_clock / SAMPLE_RATE,
+                                    sample_count - 1)
     };
 
     let channels = config.channels as usize;
@@ -137,28 +123,14 @@ where
 fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
                             mut playback_notes: Vec<PlaybackNote>, note_duration_ms: u64)
 {
-    // TEMP DEBUG
-    // println!("\n\nIN GET_NOTES_STREAM\nnote_duration_ms: {}", note_duration_ms);
-    // println!("IN GET_NOTES_STREAM\nnote_duration_ms samples: {}", note_duration_ms as f32 * (SAMPLE_RATE / 1000.0));
-    // println!("playback_notes.len(): {}\n", playback_notes.len());
-    // for playback_note in playback_notes.iter() {
-    //     println!("IN GET_NOTES_STREAM\nplayback_note.playback_end_time_ms: {}",
-    //              playback_note.playback_end_time_ms);
-    //     println!("playback_note.playback_sample_start_time: {}",
-    //              playback_note.playback_sample_start_time);
-    //     println!("playback_note.playback_sample_end_time: {}",
-    //              playback_note.playback_sample_end_time);
-        // return;
-    // }
-
     let mut sample_count = 0;
     let mut sample_clock = -1.0;
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
-        let x = get_sample::get_notes_sample(&mut playback_notes, sample_clock / SAMPLE_RATE,
-                                     sample_count);
         sample_count += 1;
-        x 
+        get_sample::get_notes_sample(&mut playback_notes,
+                                     sample_clock / SAMPLE_RATE,
+                                     sample_count - 1)
     };
 
     let channels = config.channels as usize;

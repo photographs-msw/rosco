@@ -67,8 +67,8 @@ fn main() {
     
     let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
-        // .lfos(vec![lfo])
-        // .flangers(vec![flange])
+        .lfos(vec![lfo])
+        .flangers(vec![flange])
         .build().unwrap();
     for track in midi_grid_tracks.iter_mut() {
         track.effects = track_effects.clone();
@@ -79,23 +79,23 @@ fn main() {
         .build().unwrap();
     
     println!("Playing MIDI file from TrackGrid GridNoteSequence");
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        for playback_notes in track_grid {
-            tx.send(playback_notes).unwrap();
-        }
-    });
-    for playback_notes in rx {
-        audio_gen::audio_gen::gen_notes_stream(playback_notes);
-    }
+    // let (tx, rx) = std::sync::mpsc::channel();
+    // std::thread::spawn(move || {
+    //     for playback_notes in track_grid {
+    //         tx.send(playback_notes).unwrap();
+    //     }
+    // });
+    // for playback_notes in rx {
+    //     audio_gen::audio_gen::gen_notes_stream(playback_notes);
+    // }
     println!("Played MIDI file from TrackGrid GridNoteSequence");
-    // 
+    
     // ####################################
     
     println!("Loading MIDI file");
     let mut midi_time_tracks =
         midi::midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-            "/Users/markweiss/Downloads/test.mid", NoteType::Oscillator);
+            "/Users/markweiss/Downloads/test1.mid", NoteType::Oscillator);
     println!("Loaded MIDI file into Vec<Track<TimeNoteSequence>");
     
     let num_tracks = midi_time_tracks.len();
@@ -115,8 +115,8 @@ fn main() {
     
     let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
-        // .lfos(vec![lfo])
-        // .flangers(vec![flange])
+        .lfos(vec![lfo])
+        .flangers(vec![flange])
         .build().unwrap();
     for track in midi_time_tracks.iter_mut() {
         track.effects = track_effects.clone();
