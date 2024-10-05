@@ -39,7 +39,7 @@ fn main() {
     //         "/Users/markweiss/Downloads/test.mid", NoteType::Oscillator);
     // println!("Loaded MIDI file into Vec<Track<GridNoteSequence>");
 
-    let sine_table = audio_gen::oscillator::generate_sine_table();
+    let oscillators_tables = audio_gen::oscillator::OscillatorTables::new();//generate_sine_table();
 
     let envelope = EnvelopeBuilder::default()
         .attack(EnvelopePair(0.05, 0.5))
@@ -118,7 +118,7 @@ fn main() {
     let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
         // .lfos(vec![lfo])
-        .flangers(vec![flange])
+        // .flangers(vec![flange])
         .build().unwrap();
     for track in midi_time_tracks.iter_mut() {
         track.effects = track_effects.clone();
@@ -150,7 +150,7 @@ fn main() {
     });
     for playback_notes in rx {
         // TODO GET RID OF CLONE
-        audio_gen::audio_gen::gen_notes_stream(playback_notes, sine_table.clone());
+        audio_gen::audio_gen::gen_notes_stream(playback_notes, oscillators_tables.clone());
     }
     println!("Played MIDI file from TrackGrid TimeNoteSequence");
 

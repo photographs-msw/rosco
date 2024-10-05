@@ -1,11 +1,10 @@
 use crate::audio_gen::oscillator;
-use crate::audio_gen::oscillator::{get_gaussian_noise_sample, get_saw_sample,
-                                   get_square_sample, get_triangle_sample};
+use crate::audio_gen::oscillator::{get_gaussian_noise_sample, OscillatorTables};
 use crate::audio_gen::oscillator::Waveform;
-use crate::common::constants::{NYQUIST_FREQUENCY, SAMPLE_RATE};  // khz samples per second
+use crate::common::constants::NYQUIST_FREQUENCY;  // khz samples per second
 use crate::note::playback_note::{NoteType, PlaybackNote};
 
-pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sine_table: &Vec<f32>,
+pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, osc_tables: &OscillatorTables,
                               sample_position: f32, sample_count: u64) -> f32 {
     match playback_note.note_type {
         NoteType::Oscillator => {
@@ -13,14 +12,14 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sine_table: &Vec
             for waveform in playback_note.note.waveforms.clone() {
                 sample += match waveform {
                     Waveform::GaussianNoise => get_gaussian_noise_sample(),
-                    Waveform::Saw => get_saw_sample(playback_note.note.frequency, sample_position),
-                    Waveform::Sine => oscillator::get_sine_sample(sine_table,
-                                                                  playback_note.note.frequency,
-                                                                  sample_count),
-                    Waveform::Square => get_square_sample(playback_note.note.frequency,
-                                                          sample_position),
-                    Waveform::Triangle => get_triangle_sample(playback_note.note.frequency,
-                                                              sample_position),
+                    Waveform::Saw => oscillator::get_sample(
+                        &osc_tables.saw_table, playback_note.note.frequency, sample_count),
+                    Waveform::Sine => oscillator::get_sample(
+                        &osc_tables.sine_table, playback_note.note.frequency, sample_count),
+                    Waveform::Square => oscillator::get_sample(
+                        &osc_tables.square_table, playback_note.note.frequency, sample_count),
+                    Waveform::Triangle => oscillator::get_sample(
+                        &osc_tables.triangle_table, playback_note.note.frequency, sample_count),
                 }
             }
 
@@ -36,11 +35,13 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, sine_table: &Vec
     }
 }
 
-pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>, sine_table: &Vec<f32>,
+pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>,
+                               oscillator_tables: &OscillatorTables,
                                sample_position: f32, sample_count: u64) -> f32 {
     let mut out_sample = 0.0;
     for playback_note in playback_notes.iter_mut() {
-        out_sample += get_note_sample(playback_note, sine_table, sample_position, sample_count);
+        out_sample += get_note_sample(playback_note, oscillator_tables, sample_position,
+                                      sample_count);
     }
 
     if out_sample >= NYQUIST_FREQUENCY {
