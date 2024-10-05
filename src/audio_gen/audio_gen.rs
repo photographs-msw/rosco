@@ -1,9 +1,8 @@
-use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
-
 use std::time;
 
+use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
+
 use crate::audio_gen::get_sample;
-use crate::common::constants;
 use crate::common::constants::SAMPLE_RATE;
 use crate::note::playback_note::PlaybackNote;
 
@@ -15,16 +14,17 @@ static WAV_SPEC: hound::WavSpec  = hound::WavSpec {
     sample_format: hound::SampleFormat::Int,
 };
 
+
 #[allow(dead_code)]
-pub(crate) fn gen_note_stream(playback_note: PlaybackNote) {
+pub(crate) fn gen_note_stream(playback_note: PlaybackNote, sine_table: Vec<f32>) {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
     let config = device.default_output_config().unwrap();
 
-    gen_note_stream_impl::<f32>(&device, &config.into(), playback_note);
+    gen_note_stream_impl::<f32>(&device, &config.into(), sine_table, playback_note);
 }
 
-pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>)
+pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>, sine_table: Vec<f32>)
 {
     let host = cpal::default_host();
     let device = host.default_output_device().expect("No output device available");
@@ -48,8 +48,11 @@ pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>)
         ).floor() as u64;
     }
 
-    gen_notes_stream_impl::<f32>(&device, &config.into(), playback_notes,
-                                 window_duration_ms as u64);
+    // TEMP DEBUG
+    // println!("playback_notes: {:#?}", playback_notes);
+
+    gen_notes_stream_impl::<f32>(&device, &config.into(), sine_table, playback_notes,
+                                 window_duration_ms);
 }
 
 // This works to generate a note buffer from playback_note.note and load
@@ -57,13 +60,14 @@ pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>)
 // Can extend to future NoteTypes that are generators
 // TODO gen_notes_version
 #[allow(dead_code)]
-pub(crate) fn gen_note_buffer(playback_note: &mut PlaybackNote) {
+pub(crate) fn gen_note_buffer(playback_note: &mut PlaybackNote, sine_table: Vec<f32>) {
     let mut sample_count = 0;
     let num_samples = (
         playback_note.playback_duration_ms().ceil() * 1000.0 * SAMPLE_RATE) as usize;
     let mut sample_clock = 0f32;
     for _ in 0..num_samples {
-        let sample = get_sample::get_note_sample(playback_note, sample_clock, sample_count);
+        let sample = get_sample::get_note_sample(
+            playback_note, &sine_table, sample_clock / SAMPLE_RATE, sample_count);
         playback_note.sampled_note.append_sample(sample);
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
         sample_count += 1;
@@ -90,7 +94,7 @@ pub(crate) fn write_audio_file(file_path: &str, samples: Vec<f32>) {
 
 #[allow(dead_code)]
 fn gen_note_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                           mut playback_note: PlaybackNote)
+                           sine_table: Vec<f32>, mut playback_note: PlaybackNote)
 where
     T: cpal::Sample + cpal::SizedSample + cpal::FromSample<f32>,
 {
@@ -100,8 +104,9 @@ where
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
         sample_count += 1;
-        get_sample::get_note_sample(&mut playback_note, sample_clock / SAMPLE_RATE,
-                                    sample_count - 1)
+        get_sample::get_note_sample(&mut playback_note, &sine_table,
+                                        sample_clock / SAMPLE_RATE,
+                                        sample_count - 1)
     };
 
     let channels = config.channels as usize;
@@ -121,14 +126,15 @@ where
 }
 
 fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
-                            mut playback_notes: Vec<PlaybackNote>, note_duration_ms: u64)
+                            sine_table: Vec<f32>, mut playback_notes: Vec<PlaybackNote>,
+                            note_duration_ms: u64)
 {
     let mut sample_count = 0;
     let mut sample_clock = -1.0;
     let mut next_sample = move || {
         sample_clock = (sample_clock + 1.0) % SAMPLE_RATE;
         sample_count += 1;
-        get_sample::get_notes_sample(&mut playback_notes,
+        get_sample::get_notes_sample(&mut playback_notes, &sine_table,
                                      sample_clock / SAMPLE_RATE,
                                      sample_count - 1)
     };

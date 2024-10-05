@@ -80,6 +80,10 @@ pub(crate) fn midi_file_to_tracks<
                                                 ticks_since_start.as_int() as f32 / ticks_per_ms;
                                             match note_type {
                                                 NoteType::Oscillator => { 
+                                                    
+                                                    // TEMP DEBUG
+                                                    // println!("DEBUG MIDI_NOTE_ON NOTE_KEY {:?} KEY {:?} for track {}", note_key, key, note_key.channel.as_int());
+                                                    
                                                     let note =
                                                         NoteBuilder::default().
                                                             frequency(
@@ -88,7 +92,12 @@ pub(crate) fn midi_file_to_tracks<
                                                             .start_time_ms(note_start_time_ms)
                                                             .end_time_ms(note_start_time_ms)
                                                             .build().unwrap();
-                                                   track_notes_map.insert(
+
+
+                                                    // TEMP DEBUG
+                                                    // println!("DEBUG NOTE {:#?}", note);
+
+                                                    track_notes_map.insert(
                                                        note_key,
                                                        PlaybackNoteBuilder::default()
                                                            .note_type(note_type)

@@ -2,6 +2,7 @@ use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
+static NUM_SINE_TABLE_SAMPLES: usize = 4410;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Hash, PartialEq)]
@@ -11,6 +12,15 @@ pub(crate) enum Waveform {
     Sine,
     Square,
     Triangle,
+}
+
+pub(crate) fn generate_sine_table() -> Vec<f32> {
+    let mut table = Vec::with_capacity(NUM_SINE_TABLE_SAMPLES);
+    for i in 0..NUM_SINE_TABLE_SAMPLES {
+        let sample = (TWO_PI * i as f32 / NUM_SINE_TABLE_SAMPLES as f32).sin();
+        table.push(sample);
+    }
+    table
 }
 
 #[allow(dead_code)]
@@ -30,8 +40,12 @@ pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
         .collect()
 }
 
-pub(crate) fn get_sin_sample(frequency: f32, sample_position: f32) -> f32 {
-    (frequency * sample_position * TWO_PI).sin()
+pub(crate) fn get_sin_sample(sine_table: &Vec<f32>, frequency: f32, sample_count: u64) -> f32 {
+    // TEMP DEBUG
+    // println!("frequency: {}, sample_position: {}", frequency, sample_position);
+    // (frequency * sample_position * TWO_PI).sin()
+    frequency *
+        sine_table[sample_count as usize % NUM_SINE_TABLE_SAMPLES]
 }
 
 pub(crate) fn get_triangle_sample(frequency: f32, sample_position: f32) -> f32 {
