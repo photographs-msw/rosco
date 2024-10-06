@@ -2,7 +2,7 @@ use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
-static NUM_TABLE_SAMPLES: usize = 256;
+static NUM_TABLE_SAMPLES: usize = 512;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Hash, PartialEq)]
@@ -95,7 +95,7 @@ pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
 }
 
 pub(crate) fn get_sample(table: &Vec<f32>, frequency: f32, sample_count: u64) -> f32 {
-    table[(frequency / 200.0).round() as usize * sample_count as usize % NUM_TABLE_SAMPLES]
+    table[(frequency / 88.2).round() as usize * sample_count as usize % NUM_TABLE_SAMPLES]
 }
 
 pub(crate) fn get_gaussian_noise_sample() -> f32 {
