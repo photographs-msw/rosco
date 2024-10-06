@@ -103,7 +103,7 @@ fn main() {
             * 1000.0)
         .playback_sample_start_time(0)
         .playback_sample_end_time(sample_buf_2.len() as u64)
-        .envelopes(vec![envelope])
+        // .envelopes(vec![envelope])
         // .flangers(vec![flanger::default_flanger()])
         .build().unwrap();
 
