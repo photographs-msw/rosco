@@ -64,12 +64,6 @@ fn main() {
         sample_buf_2.push(*sample as f32);
     }
 
-    // let envelope = EnvelopeBuilder::default()
-    //     .attack(EnvelopePair(0.25, 0.9))
-    //     .decay(EnvelopePair(0.35, 0.88))
-    //     .sustain(EnvelopePair(0.75, 0.9))
-    //     .build().unwrap();
-
     let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
         .volume(0.00009)
         .start_time_ms(0.0)
@@ -205,7 +199,7 @@ fn main() {
         .effects(track_effects)
         .build().unwrap();
     
-    // midi_time_tracks.push(track);
+    midi_time_tracks.push(track);
     
     // Test building TrackGrid without envelopes and getting the default
     let track_grid = TrackGridBuilder::default()
@@ -224,7 +218,7 @@ fn main() {
     }
     println!("Played MIDI file from TrackGrid TimeNoteSequence");
 
-    audio_gen::audio_gen::gen_notes_stream(vec![sampled_playback_note_2.clone()], oscillators_tables.clone());
+    // audio_gen::audio_gen::gen_notes_stream(vec![sampled_playback_note_2.clone()], oscillators_tables.clone());
 }
 
 fn collect_args () -> (String, f32, f32, f32) {
