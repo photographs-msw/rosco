@@ -16,6 +16,10 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
         let mut playback_notes = Vec::new();
 
         for track in self.tracks.iter_mut() {
+            
+            // TEMP DEBUG
+            print!("track: {}", track.num);
+            
             for playback_note in track.sequence.next_notes() {
                 
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
