@@ -1,4 +1,3 @@
-use derive_builder::Builder;
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
 
@@ -96,8 +95,7 @@ pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
 }
 
 pub(crate) fn get_sample(table: &Vec<f32>, frequency: f32, sample_count: u64) -> f32 {
-    frequency *
-        table[sample_count as usize % NUM_TABLE_SAMPLES]
+        table[((frequency * sample_count as f32) / 100.0) as usize % NUM_TABLE_SAMPLES]
 }
 
 pub(crate) fn get_gaussian_noise_sample() -> f32 {
