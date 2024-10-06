@@ -1,10 +1,9 @@
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
-use rand_distr::num_traits::abs;
 use crate::common::constants::SAMPLE_RATE;
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
-static NUM_TABLE_SAMPLES: usize = 441;
+static NUM_TABLE_SAMPLES: usize = 1024;
 static SAMPLE_COUNT_FACTOR: f32 = SAMPLE_RATE / NUM_TABLE_SAMPLES as f32;
 
 #[allow(dead_code)]
