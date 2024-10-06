@@ -40,8 +40,7 @@ pub(crate) fn get_notes_sample(playback_notes: &mut Vec<PlaybackNote>,
                                sample_position: f32, sample_count: u64) -> f32 {
     let mut out_sample = 0.0;
     for playback_note in playback_notes.iter_mut() {
-        if sample_count < playback_note.playback_sample_start_time ||
-            sample_count > playback_note.playback_sample_end_time {
+        if sample_count > playback_note.playback_sample_end_time {
             continue;
         }
         out_sample += get_note_sample(playback_note, oscillator_tables, sample_position,
