@@ -58,7 +58,7 @@ pub(crate) fn generate_square_table() -> Vec<f32> {
     let mut table = Vec::with_capacity(NUM_TABLE_SAMPLES);
     let mut lookup_table = generate_sine_table();
     for i in 0..NUM_TABLE_SAMPLES {
-        let sample = if abs(lookup_table[i]) < 0.5 {
+        let sample = if i < NUM_TABLE_SAMPLES / 2 {
             1.0
         } else {
             -1.0

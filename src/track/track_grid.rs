@@ -1,4 +1,5 @@
 use derive_builder::Builder;
+use crate::common::constants::SAMPLE_RATE;
 
 use crate::note::playback_note;
 use crate::note::playback_note::{PlaybackNoteBuilder, PlaybackNote, NoteType};
@@ -23,7 +24,12 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                         .lfos(track.effects.lfos.clone())
                         .flangers(track.effects.flangers.clone())
                         .playback_start_time_ms(playback_note.playback_start_time_ms)
-                        .playback_end_time_ms(playback_note.playback_end_time_ms);
+                        .playback_end_time_ms(playback_note.playback_end_time_ms)
+                        .playback_sample_start_time((playback_note.playback_start_time_ms *
+                            (SAMPLE_RATE / 1000.0)).floor() as u64)
+                        .playback_end_time_ms(playback_note.playback_end_time_ms)
+                        .playback_sample_end_time((playback_note.playback_end_time_ms *
+                            (SAMPLE_RATE / 1000.0)).floor() as u64);
                 
                 match playback_note.note_type {
                     NoteType::Oscillator => {

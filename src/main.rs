@@ -113,9 +113,7 @@ fn main() {
     // }
     // audio_gen::audio_gen::gen_notes_stream(vec![ sampled_playback_note_2.clone()], oscillators_tables.clone());
     println!("Played SampledNote");
-    
-    
-    
+
     //
     // let lfo = lfo::LFOBuilder::default()
     //     .frequency(44.1)
