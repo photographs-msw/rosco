@@ -1,8 +1,11 @@
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
+use rand_distr::num_traits::abs;
+use crate::common::constants::SAMPLE_RATE;
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
-static NUM_TABLE_SAMPLES: usize = 512;
+static NUM_TABLE_SAMPLES: usize = 441;
+static SAMPLE_COUNT_FACTOR: f32 = SAMPLE_RATE / NUM_TABLE_SAMPLES as f32;
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Hash, PartialEq)]
@@ -55,7 +58,7 @@ pub(crate) fn generate_square_table() -> Vec<f32> {
     let mut table = Vec::with_capacity(NUM_TABLE_SAMPLES);
     let mut lookup_table = generate_sine_table();
     for i in 0..NUM_TABLE_SAMPLES {
-        let sample = if lookup_table[i] < 0.5 {
+        let sample = if abs(lookup_table[i]) < 0.5 {
             1.0
         } else {
             -1.0
@@ -95,7 +98,7 @@ pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
 }
 
 pub(crate) fn get_sample(table: &Vec<f32>, frequency: f32, sample_count: u64) -> f32 {
-    table[(frequency / 88.2).round() as usize * sample_count as usize % NUM_TABLE_SAMPLES]
+    table[((frequency * sample_count as f32) / SAMPLE_COUNT_FACTOR) as usize % NUM_TABLE_SAMPLES]
 }
 
 pub(crate) fn get_gaussian_noise_sample() -> f32 {

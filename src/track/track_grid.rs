@@ -1,7 +1,7 @@
 use derive_builder::Builder;
 
 use crate::note::playback_note;
-use crate::note::playback_note::{PlaybackNoteBuilder, PlaybackNote};
+use crate::note::playback_note::{PlaybackNoteBuilder, PlaybackNote, NoteType};
 use crate::sequence::note_sequence_trait::NextNotes;
 use crate::track::track::Track;
 
@@ -16,12 +16,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
         let mut playback_notes = Vec::new();
 
         for track in self.tracks.iter_mut() {
-            
-            // TEMP DEBUG
-            print!("track: {}", track.num);
-            
             for playback_note in track.sequence.next_notes() {
-                
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder
                         .envelopes(track.effects.envelopes.clone())
@@ -31,16 +26,18 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                         .playback_end_time_ms(playback_note.playback_end_time_ms);
                 
                 match playback_note.note_type {
-                    playback_note::NoteType::Oscillator => {
+                    NoteType::Oscillator => {
                         playback_notes.push(
                             playback_note_builder
+                                .note_type(NoteType::Oscillator)
                                 .note(playback_note.note)
                                 .build().unwrap()
                         );
                     }
-                    playback_note::NoteType::Sample => {
+                    NoteType::Sample => {
                         playback_notes.push(
                             playback_note_builder
+                                .note_type(NoteType::Sample)
                                 .sampled_note(playback_note.sampled_note)
                                 .build().unwrap()
                         );
