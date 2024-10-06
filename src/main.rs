@@ -78,7 +78,7 @@ fn main() {
     sampled_note.set_sample_buf(&sample_buf, sample_data.len());
 
     let mut sampled_note_2 = note::sampled_note::SampledNoteBuilder::default()
-        .volume(0.00008)
+        .volume(0.0005)
         .start_time_ms(0.0)
         .end_time_ms((sample_data_2.len() as f32 / common::constants::SAMPLE_RATE) * 1000.0)
         .build().unwrap();
