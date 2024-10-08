@@ -1,4 +1,3 @@
-use std::collections::VecDeque;
 use derive_builder::Builder;
 
 use crate::common::constants::{FLOAT_EPSILON, SAMPLE_RATE};
@@ -14,11 +13,6 @@ pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator + SetCurPosition>
 
     #[builder(default = "0.0")]
     cur_position_ms: f32,
-
-    // All notes in all tracks before this have end times earlier than next_notes_time_ms
-    // Allows O(1) access to scan for next notes window vs. always scanning from the beginning
-    #[builder(default = "VecDeque::new()")]
-    frontier_indexes: VecDeque<usize>,
 }
 
 impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType> {
