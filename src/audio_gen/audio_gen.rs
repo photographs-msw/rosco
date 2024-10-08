@@ -25,7 +25,7 @@ pub(crate) fn gen_note_stream(playback_note: PlaybackNote, oscillator_tables: Os
     gen_note_stream_impl::<f32>(&device, &config.into(), oscillator_tables, playback_note);
 }
 
-pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>,
+pub(crate) fn gen_notes_stream(playback_notes: Vec<PlaybackNote>,
                                oscillator_tables: OscillatorTables)
 {
     let host = cpal::default_host();

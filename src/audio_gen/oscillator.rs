@@ -106,6 +106,7 @@ pub(crate) fn get_gaussian_noise_sample() -> f32 {
 }
 
 // TODO DEPRECATE THESE?
+#[allow(dead_code)]
 pub(crate) fn get_triangle_sample(frequency: f32, sample_position: f32) -> f32 {
     4.0 * ((frequency * sample_position)
         - ((frequency * sample_position) + 0.5)
@@ -113,6 +114,7 @@ pub(crate) fn get_triangle_sample(frequency: f32, sample_position: f32) -> f32 {
         - 1.0
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_square_sample(frequency: f32, sample_position: f32) -> f32 {
     if (sample_position * frequency) % 1.0 < 0.5 {
         1.0
@@ -121,6 +123,7 @@ pub(crate) fn get_square_sample(frequency: f32, sample_position: f32) -> f32 {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_saw_sample(frequency: f32, sample_position: f32) -> f32 {
     2.0 * ((frequency * sample_position)
         - ((frequency * sample_position) + 0.5)

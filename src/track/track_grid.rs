@@ -1,7 +1,6 @@
 use derive_builder::Builder;
 use crate::common::constants::SAMPLE_RATE;
 
-use crate::note::playback_note;
 use crate::note::playback_note::{PlaybackNoteBuilder, PlaybackNote, NoteType};
 use crate::sequence::note_sequence_trait::NextNotes;
 use crate::track::track::Track;

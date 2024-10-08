@@ -1,5 +1,4 @@
 use derive_builder::Builder;
-use crate::common::float_utils::{float_geq, float_leq};
 
 use crate::envelope::envelope::Envelope;
 use crate::flanger::Flanger;
@@ -138,7 +137,7 @@ impl PlaybackNote {
         }
         
         for lfo in self.lfos.iter() {
-            output_sample = lfo.apply_effect(output_sample, sample_position, sample_count);
+            output_sample = lfo.apply_effect(output_sample, sample_count);
         }
 
         for flanger in self.flangers.iter_mut() {

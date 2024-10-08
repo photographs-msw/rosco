@@ -45,7 +45,7 @@ impl LFOBuilder {
 }
 
 impl LFO {
-    pub(crate) fn apply_effect(&self, mut sample: f32, sample_position: f32, sample_count: u64) -> f32 {
+    pub(crate) fn apply_effect(&self, mut sample: f32, sample_count: u64) -> f32 {
         for waveform in self.waveforms.clone() {
             sample += match waveform {
                 Waveform::GaussianNoise => get_gaussian_noise_sample(),
