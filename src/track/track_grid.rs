@@ -5,11 +5,11 @@ use crate::common::constants::{FLOAT_EPSILON, SAMPLE_RATE};
 use crate::common::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::playback_note;
 use crate::note::playback_note::{PlaybackNoteBuilder, PlaybackNote, NoteType};
-use crate::sequence::note_sequence_trait::NextNotes;
+use crate::sequence::note_sequence_trait::{NextNotes, SetCurPosition};
 use crate::track::track::Track;
 
 #[derive(Builder, Clone, Debug)]
-pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
+pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator + SetCurPosition> {
     pub(crate) tracks: Vec<Track<SequenceType>>,
 
     #[builder(default = "0.0")]
@@ -21,10 +21,10 @@ pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator> {
     frontier_indexes: VecDeque<usize>,
 }
 
-impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
+impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType> {
 
     pub(crate) fn next_notes(&mut self) -> Vec<PlaybackNote> {
-        
+
         fn note_ref_into_note(playback_note: &PlaybackNote, cur_notes_time_ms: f32,
                               window_end_time_ms: f32) -> PlaybackNote {
             let mut new_playback_note: PlaybackNote = playback_note.clone();
@@ -32,10 +32,13 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
             new_playback_note.playback_end_time_ms = window_end_time_ms;
             new_playback_note
         }
-        
+
         let mut track_playback_notes = Vec::new();
-        
+
         for track in self.tracks.iter_mut() {
+            
+            track.sequence.set_cur_position(self.cur_position_ms);
+            
             for playback_note in track.sequence.next_notes() {
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder
@@ -74,7 +77,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
         let window_start_time_ms = get_frontier_min_start_time(&track_playback_notes);
         let window_end_time_ms = get_frontier_min_end_time(
             &track_playback_notes, self.cur_position_ms);
-        
+
         // If the current note time is earlier than that, emit a rest note and increment
         // the current notes time to the frontier min start time + epsilon
         if self.cur_position_ms < window_start_time_ms {
@@ -84,7 +87,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
         }
 
         let mut out_playback_notes = Vec::new();
-        
+
         // If the current note time is the same as the frontier min start time, emit all notes
         // in the frontier with the same start time and increment the current notes time to the
         // earliest end time in the frontier. This is the next window emit, note to end time.
@@ -98,7 +101,7 @@ impl<SequenceType: NextNotes + Iterator> TrackGrid<SequenceType> {
                 .collect();
 
             out_playback_notes.extend_from_slice(&playback_notes);
-            
+
         } else if self.cur_position_ms > window_start_time_ms {
             let playback_notes: Vec<PlaybackNote> = track_playback_notes
                 .iter()
@@ -155,7 +158,7 @@ fn get_frontier_min_end_time(playback_notes: &Vec<PlaybackNote>, note_time_ms: f
     end_time_ms
 }
 
-impl<SequenceType: NextNotes + Iterator> Iterator for TrackGrid<SequenceType> {
+impl<SequenceType: NextNotes + Iterator + SetCurPosition> Iterator for TrackGrid<SequenceType> {
     type Item = Vec<PlaybackNote>;
 
     fn next(&mut self) -> Option<Self::Item> {

@@ -5,7 +5,7 @@ use crate::common::constants;
 use crate::common::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::playback_note;
 use crate::note::playback_note::PlaybackNote;
-use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes};
+use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes, SetCurPosition};
 
 #[allow(dead_code)]
 static INIT_START_TIME: f32 = 0.0;
@@ -39,6 +39,12 @@ impl NextNotes for TimeNoteSequence {
 impl BuilderWrapper<TimeNoteSequence> for TimeNoteSequenceBuilder {
     fn new () -> TimeNoteSequence {
         TimeNoteSequenceBuilder::default().build().unwrap()
+    }
+}
+
+impl SetCurPosition for TimeNoteSequence {
+    fn set_cur_position(&mut self, position: f32) {
+        self.cur_position_ms = position;
     }
 }
 

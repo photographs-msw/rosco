@@ -11,3 +11,7 @@ pub(crate) trait BuilderWrapper<SequenceType> {
 pub(crate) trait NextNotes {
     fn next_notes(&mut self) -> Vec<PlaybackNote>;
 }
+
+pub(crate) trait SetCurPosition {
+    fn set_cur_position(&mut self, position: f32);
+}
