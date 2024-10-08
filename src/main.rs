@@ -39,7 +39,7 @@ fn main() {
     }
 
     let mut sampled_note_2 = note::sampled_note::SampledNoteBuilder::default()
-        .volume(0.0005)
+        .volume(0.0008)
         .start_time_ms(0.0)
         .end_time_ms((sample_data_2.len() as f32 / common::constants::SAMPLE_RATE) * 1000.0)
         .build().unwrap();
@@ -56,15 +56,15 @@ fn main() {
         // .envelopes(vec![envelope])
         // .flangers(vec![flanger::default_flanger()])
         .build().unwrap();
-    
+
     let mut midi_time_tracks =
         midi::midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
             "/Users/markweiss/Downloads/punk_computer_002.mid", NoteType::Oscillator);
-    
+
     let num_tracks = midi_time_tracks.len();
     let track_waveforms =
         vec![audio_gen::oscillator::get_waveforms(&waveforms_arg); num_tracks];
-    
+
     let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
         // .flangers(vec![flanger])
