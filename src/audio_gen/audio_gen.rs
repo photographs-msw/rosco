@@ -41,17 +41,6 @@ pub(crate) fn gen_notes_stream(mut playback_notes: Vec<PlaybackNote>,
         .reduce(|a, b| a.max(b))
         .unwrap();
     let window_duration_ms = (window_end_time_ms - window_start_time_ms).floor() as u64;
-    // for playback_note in playback_notes.as_mut_slice() {
-    //     playback_note.playback_sample_start_time = (
-    //         (playback_note.playback_start_time_ms - window_start_time_ms) * (SAMPLE_RATE / 1000.0)
-    //     ).floor() as u64;
-    //     playback_note.playback_sample_end_time = (
-    //         (playback_note.playback_end_time_ms - window_start_time_ms) * (SAMPLE_RATE / 1000.0)
-    //     ).floor() as u64;
-    // }
-
-    // TEMP DEBUG
-    // println!("playback_notes: {:#?}", playback_notes);
 
     gen_notes_stream_impl::<f32>(&device, &config.into(), oscillator_tables, playback_notes,
                                  window_duration_ms);

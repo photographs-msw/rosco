@@ -55,7 +55,6 @@ pub(crate) fn generate_saw_table() -> Vec<f32> {
 
 pub(crate) fn generate_square_table() -> Vec<f32> {
     let mut table = Vec::with_capacity(NUM_TABLE_SAMPLES);
-    let mut lookup_table = generate_sine_table();
     for i in 0..NUM_TABLE_SAMPLES {
         let sample = if i < NUM_TABLE_SAMPLES / 2 {
             1.0
