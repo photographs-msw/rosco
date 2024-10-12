@@ -26,12 +26,13 @@ fn main() {
     let oscillators_tables = audio_gen::oscillator::OscillatorTables::new();//generate_sine_table();
 
     let envelope = EnvelopeBuilder::default()
-        .attack(EnvelopePair(0.05, 0.5))
-        .decay(EnvelopePair(0.15, 0.5))
-        .sustain(EnvelopePair(0.85, 0.5))
+        .attack(EnvelopePair(0.25, 0.5))
+        .decay(EnvelopePair(0.35, 0.7))
+        .sustain(EnvelopePair(0.75, 0.5))
         .build().unwrap();
 
-    let sample_data_2 = audio_gen::audio_gen::read_audio_file("/Users/markweiss/Downloads/punk_computer_002_16bit.wav")
+    let sample_data_2 = audio_gen::audio_gen::read_audio_file(
+        "/Users/markweiss/Downloads/punk_computer/001/punk_computer_002_16bit.wav")
         .into_boxed_slice();
     let mut sample_buf_2: Vec<f32> = Vec::with_capacity(note::sampled_note::BUF_STORAGE_SIZE);
     for sample in  sample_data_2[..].iter() {
@@ -39,7 +40,7 @@ fn main() {
     }
 
     let mut sampled_note_2 = note::sampled_note::SampledNoteBuilder::default()
-        .volume(0.0008)
+        .volume(0.0020)
         .start_time_ms(0.0)
         .end_time_ms((sample_data_2.len() as f32 / common::constants::SAMPLE_RATE) * 1000.0)
         .build().unwrap();
@@ -56,10 +57,12 @@ fn main() {
         // .envelopes(vec![envelope])
         // .flangers(vec![flanger::default_flanger()])
         .build().unwrap();
+    let mut sampled_playback_note_reverse = sampled_playback_note_2.clone();
+    sampled_playback_note_reverse.sampled_note.reverse();
 
     let mut midi_time_tracks =
         midi::midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-            "/Users/markweiss/Downloads/punk_computer_002.mid", NoteType::Oscillator);
+            "/Users/markweiss/Downloads/punk_computer/001/punk_computer_001.mid", NoteType::Oscillator);
 
     let num_tracks = midi_time_tracks.len();
     let track_waveforms =
@@ -77,7 +80,7 @@ fn main() {
         for playback_notes in track.sequence.notes_iter_mut() {
             for playback_note in playback_notes {
                 playback_note.note.waveforms = track_waveforms[i].clone();
-                playback_note.note.volume = 0.7;
+                playback_note.note.volume = 0.25;
             }
         }
     }
@@ -85,16 +88,21 @@ fn main() {
         track.effects = track_effects.clone();
     }
     
-    let mut sequence = TimeNoteSequenceBuilder::default()
-        .build().unwrap();
+    let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
     sequence.append_notes(&vec![sampled_playback_note_2.clone()]);
     let track = track::track::TrackBuilder::default()
         .sequence(sequence)
         .effects(track_effects)
         .build().unwrap();
-    
+    let mut sequence_rev = TimeNoteSequenceBuilder::default().build().unwrap();
+    sequence_rev.append_notes(&vec![sampled_playback_note_reverse]);
+    let track_rev = track::track::TrackBuilder::default()
+        .sequence(sequence_rev)
+        .build().unwrap();
+
     midi_time_tracks.push(track);
-    
+    midi_time_tracks.push(track_rev);
+
     // Test building TrackGrid without envelopes and getting the default
     let track_grid = TrackGridBuilder::default()
         .tracks(midi_time_tracks)
