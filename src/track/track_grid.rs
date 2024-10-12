@@ -36,9 +36,9 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
             for playback_note in track.sequence.next_notes() {
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder
-                        .envelopes(track.effects.envelopes.clone())
-                        .lfos(track.effects.lfos.clone())
-                        .flangers(track.effects.flangers.clone())
+                        .envelopes(playback_note.envelopes.clone())
+                        .lfos(playback_note.lfos.clone())
+                        .flangers(playback_note.flangers.clone())
                         .playback_start_time_ms(playback_note.playback_start_time_ms)
                         .playback_end_time_ms(playback_note.playback_end_time_ms)
                         .playback_sample_start_time((playback_note.playback_start_time_ms *
