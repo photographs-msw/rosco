@@ -12,6 +12,9 @@ pub(crate) struct Flanger {
     
     #[builder(setter(custom))]
     sample_buffer: VecDeque<f32>,
+
+    #[builder(default = "1.0")]
+    mix: f32, 
     
     #[builder(default = "0", setter(skip))]
     insert_index: usize,
@@ -40,7 +43,7 @@ impl Flanger {
         self.sample_buffer.insert(self.insert_index % self.window_size, sample);
         self.insert_index += 1;
         
-        sample + self.sample_buffer[self.window_size - 1]
+        sample + (self.mix * self.sample_buffer[self.window_size - 1])
     }
 }
 

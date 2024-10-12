@@ -11,85 +11,72 @@ mod sequence;
 mod track;
 
 use crate::effect::{flanger, lfo};
-use crate::envelope::envelope::EnvelopeBuilder;
+use crate::effect::flanger::{Flanger, FlangerBuilder};
+use crate::envelope::envelope::{Envelope, EnvelopeBuilder};
 use crate::envelope::envelope_pair::EnvelopePair;
-use crate::note::playback_note::NoteType;
+use crate::note::playback_note::{NoteType, PlaybackNote};
 use crate::sequence::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
+use crate::track::track::Track;
 use crate::track::track_grid::TrackGridBuilder;
 
 fn main() {
+    // Init
+    let computer_punk_version = "001";
+    println!("playing 'computer punk {}'", computer_punk_version);
+    
     println!("Loading args");
-    let (waveforms_arg, frequency, volume, duration_ms) = collect_args();
-    println!("Args collected\nwaveforms: {}, frequency: {}, volume: {}, duration_ms: {}",
-             waveforms_arg, frequency, volume, duration_ms);
-
+    let waveforms_arg = collect_args();
+    println!("Args collected\nwaveforms: {}", waveforms_arg);
     let oscillators_tables = audio_gen::oscillator::OscillatorTables::new();//generate_sine_table();
 
+    let midi_note_volume = 0.25;
+    let sampled_note_volume = 0.005;
+    
+    // Track Effects
+    // Envelopes
     let envelope = EnvelopeBuilder::default()
         .attack(EnvelopePair(0.25, 0.5))
         .decay(EnvelopePair(0.35, 0.7))
         .sustain(EnvelopePair(0.75, 0.5))
         .build().unwrap();
-
-    let sample_data_2 = audio_gen::audio_gen::read_audio_file(
-        "/Users/markweiss/Downloads/punk_computer/001/punk_computer_002_16bit.wav")
-        .into_boxed_slice();
-    let mut sample_buf_2: Vec<f32> = Vec::with_capacity(note::sampled_note::BUF_STORAGE_SIZE);
-    for sample in  sample_data_2[..].iter() {
-        sample_buf_2.push(*sample as f32);
-    }
-
-    let mut sampled_note_2 = note::sampled_note::SampledNoteBuilder::default()
-        .volume(0.0020)
-        .start_time_ms(0.0)
-        .end_time_ms((sample_data_2.len() as f32 / common::constants::SAMPLE_RATE) * 1000.0)
+    let short_envelope = EnvelopeBuilder::default()
+        .attack(EnvelopePair(0.1, 0.9))
+        .decay(EnvelopePair(0.2, 0.85))
+        .sustain(EnvelopePair(0.95, 0.85))
         .build().unwrap();
-    sampled_note_2.set_sample_buf(&sample_buf_2, sample_data_2.len());
-
-    let sampled_playback_note_2 = note::playback_note::PlaybackNoteBuilder::default()
-        .note_type(NoteType::Sample)
-        .sampled_note(sampled_note_2)
-        .playback_start_time_ms(0.0)
-        .playback_end_time_ms((sample_data_2.len() as f32 / common::constants::SAMPLE_RATE)
-            * 1000.0)
-        .playback_sample_start_time(0)
-        .playback_sample_end_time(sample_buf_2.len() as u64)
-        // .envelopes(vec![envelope])
-        // .flangers(vec![flanger::default_flanger()])
+    // Flangers
+    let flanger = FlangerBuilder::default()
+        .window_size(7)
+        .sample_buffer()
         .build().unwrap();
-    let mut sampled_playback_note_reverse = sampled_playback_note_2.clone();
-    sampled_playback_note_reverse.sampled_note.reverse();
-
-    let mut midi_time_tracks =
-        midi::midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-            "/Users/markweiss/Downloads/punk_computer/001/punk_computer_001.mid", NoteType::Oscillator);
-
-    let num_tracks = midi_time_tracks.len();
-    let track_waveforms =
-        vec![audio_gen::oscillator::get_waveforms(&waveforms_arg); num_tracks];
-
+    
     let track_effects = track::track_effects::TrackEffectsBuilder::default()
         .envelopes(vec![envelope])
         // .flangers(vec![flanger])
         .build().unwrap();
-    for track in midi_time_tracks.iter_mut() {
-        track.effects = track_effects.clone();
-    }
-    
-    for (i, track) in midi_time_tracks.iter_mut().enumerate() {
-        for playback_notes in track.sequence.notes_iter_mut() {
-            for playback_note in playback_notes {
-                playback_note.note.waveforms = track_waveforms[i].clone();
-                playback_note.note.volume = 0.25;
-            }
-        }
-    }
-    for track in midi_time_tracks.iter_mut() {
-        track.effects = track_effects.clone();
-    }
+
+    // Load Sample Notes
+    let start_time = 0.0;
+    let sampled_playback_note = build_sampled_playback_note(
+        "/Users/markweiss/Downloads/punk_computer/001/punk_computer_001_16bit.wav",
+        sampled_note_volume,
+        start_time,
+    vec![short_envelope],
+    vec![flanger.clone()]);
+
+    let mut sampled_playback_note_reverse = sampled_playback_note.clone();
+    sampled_playback_note_reverse.sampled_note.reverse();
+
+    // Load MIDI Tracks
+    let mut midi_time_tracks= load_midi_tracks(
+        "/Users/markweiss/Downloads/punk_computer/001/punk_computer_001.mid",
+        &waveforms_arg,
+        vec![envelope],
+        vec![flanger.clone()],
+        midi_note_volume);
     
     let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
-    sequence.append_notes(&vec![sampled_playback_note_2.clone()]);
+    sequence.append_notes(&vec![sampled_playback_note.clone()]);
     let track = track::track::TrackBuilder::default()
         .sequence(sequence)
         .effects(track_effects)
@@ -119,22 +106,76 @@ fn main() {
     }
 }
 
-fn collect_args () -> (String, f32, f32, f32) {
+fn build_sampled_playback_note(file_path: &str, volume: f32, start_time: f32,
+        envelopes: Vec<Envelope>, flangers: Vec<Flanger>) -> PlaybackNote {
+    let sample_data=
+        audio_gen::audio_gen::read_audio_file(file_path).into_boxed_slice();
+    let mut sample_buf: Vec<f32> = Vec::with_capacity(note::sampled_note::BUF_STORAGE_SIZE);
+    for sample in  sample_data[..].iter() {
+        sample_buf.push(*sample as f32);
+    }
+    let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
+        .volume(volume)
+        .start_time_ms(start_time)
+        .end_time_ms((sample_data.len() as f32 / common::constants::SAMPLE_RATE) * 1000.0)
+        .build().unwrap();
+    sampled_note.set_sample_buf(&sample_buf, sample_data.len());
+
+    note::playback_note::PlaybackNoteBuilder::default()
+        .note_type(NoteType::Sample)
+        .sampled_note(sampled_note)
+        .playback_start_time_ms(start_time)
+        .playback_end_time_ms(
+            start_time +
+                ((sample_data.len() as f32 / common::constants::SAMPLE_RATE) * 1000.0))
+        .playback_sample_start_time(start_time as u64)
+        .playback_sample_end_time(sample_buf.len() as u64)
+        .envelopes(envelopes)
+        .flangers(flangers)
+        .build().unwrap()
+}
+
+fn load_midi_tracks(file_path: &str, waveforms_arg: &str, envelopes: Vec<Envelope>,
+        flangers: Vec<Flanger>, volume: f32) -> Vec<Track<TimeNoteSequence>> {
+    let mut midi_time_tracks =
+        midi::midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
+           file_path, NoteType::Oscillator);
+
+    let num_tracks = midi_time_tracks.len();
+    let track_waveforms =
+        vec![audio_gen::oscillator::get_waveforms(waveforms_arg); num_tracks];
+    // for track in midi_time_tracks.iter_mut() {
+    //     track.effects = track_effects.clone();
+    // }
+
+    for (i, track) in midi_time_tracks.iter_mut().enumerate() {
+        for playback_notes in track.sequence.notes_iter_mut() {
+            for playback_note in playback_notes {
+                playback_note.note.waveforms = track_waveforms[i].clone();
+                playback_note.note.volume = volume;
+                playback_note.envelopes = envelopes.clone();
+                playback_note.flangers = flangers.clone();
+            }
+        }
+    }
+   
+    midi_time_tracks
+}
+
+// fn build_sample_track() -> Track<TimeNoteSequence> {
+//     
+// }
+
+fn collect_args () -> String {
     let mut waveforms_arg = String::from("sine");
-    let mut frequency: f32 = 0.0;
-    let mut volume: f32 = 0.0;
-    let mut duration_ms: f32 = 0.0;
     for (i, arg) in std::env::args().enumerate() {
         match i {
             // skip program name in 0th args position
             0 => continue,
             1 => waveforms_arg = arg,
-            2 => frequency = arg.parse().unwrap(),
-            3 => volume = arg.parse().unwrap(),
-            4 => duration_ms = arg.parse().unwrap(),
             _ => break,
         }
     }
 
-    (waveforms_arg, frequency, volume, duration_ms)
+    waveforms_arg
 }
