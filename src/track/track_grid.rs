@@ -21,10 +21,22 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
 
         fn note_ref_into_note(playback_note: &PlaybackNote, cur_notes_time_ms: f32,
                               window_end_time_ms: f32) -> PlaybackNote {
-            let mut new_playback_note: PlaybackNote = playback_note.clone();
-            new_playback_note.playback_start_time_ms = cur_notes_time_ms;
-            new_playback_note.playback_end_time_ms = window_end_time_ms;
-            new_playback_note
+            let mut new_pb_note: PlaybackNote = playback_note.clone();
+            new_pb_note.playback_start_time_ms = cur_notes_time_ms;
+            new_pb_note.playback_end_time_ms = window_end_time_ms;
+            
+            // TODO BUG
+            //  adjust playback_sample_start_time_ms and end_time_ms and sample_index if SampleNote
+            if playback_note.note_type == NoteType::Sample {
+                new_pb_note.playback_sample_start_time =
+                    (new_pb_note.playback_start_time_ms * (SAMPLE_RATE / 1000.0)).floor() as u64;
+                new_pb_note.playback_sample_end_time =
+                    (new_pb_note.playback_end_time_ms * (SAMPLE_RATE / 1000.0)).floor() as u64;
+                new_pb_note.sampled_note.sample_index = ((new_pb_note.playback_start_time_ms -
+                    new_pb_note.sampled_note.start_time_ms) * (SAMPLE_RATE / 1000.0)) as usize;
+            }
+
+            new_pb_note
         }
 
         let mut track_playback_notes = Vec::new();

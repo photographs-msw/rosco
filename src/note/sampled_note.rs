@@ -15,7 +15,7 @@ pub(crate) struct SampledNote {
     pub(crate) buf_size: usize,
     
     #[builder(default = "0", setter(skip))]
-    sample_index: usize,
+    pub(crate) sample_index: usize,
 
     #[builder(default = "DEFAULT_VOLUME")]
     pub(crate) volume: f32,
@@ -36,7 +36,6 @@ impl SampledNote {
     pub(crate) fn next_sample(&mut self) -> f32 {
         let sample = self.sample_buf[self.sample_index];
         self.sample_index += 1;
-        // self.sample_index = (self.sample_index + 1) % self.buf_size;
         sample
     }
     

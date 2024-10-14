@@ -28,8 +28,14 @@ pub(crate) fn get_note_sample(playback_note: &mut PlaybackNote, osc_tables: &Osc
         }
         NoteType::Sample => {
             let volume = playback_note.sampled_note.volume;
-            let sample = playback_note.sampled_note.get_sample_at(sample_count as usize);
+            // let sample = playback_note.sampled_note.get_sample_at(sample_count as usize);
+            let sample = playback_note.sampled_note.next_sample();
 
+            // TEMP DEBUG
+            // println!("start_time_ms {} end_time_ms {}, index {} sample_count {}, sample {}",
+            //          playback_note.playback_start_time_ms, playback_note.playback_end_time_ms,
+            //          playback_note.sampled_note.sample_index, sample_count, sample);
+            
             playback_note.apply_effects(volume * sample, sample_position, sample_count)
         }
     }

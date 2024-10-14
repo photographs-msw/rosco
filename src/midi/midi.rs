@@ -43,6 +43,10 @@ pub(crate) fn midi_file_to_tracks<
     let bpm = get_beats_per_minute(&midi);
     let ticks_per_beat = get_ticks_per_beat(&midi);
     let ticks_per_ms: f32 = get_ticks_per_ms(ticks_per_beat, bpm);
+    
+    // TEMP DEBUG
+    // println!("DEBUG MIDI BPM: {} TICKS PER BEAT {} TICKS PER MS {}", bpm, ticks_per_beat, ticks_per_ms);
+    // panic!("DEBUG STOP");
 
     let mut ticks_since_start: u28 = u28::from(0);
     for track in midi.tracks.iter() {
