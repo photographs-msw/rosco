@@ -93,8 +93,19 @@ impl Envelope {
         }
     }
 
+    pub(crate) fn exponential_volume_factor(&self, position: f32) -> f32 {
+        // (position / self.volume_factor(position)).exp()
+        position.exp()
+    }
+
     pub(crate) fn apply_effect(&self, sample: f32, position: f32) -> f32 {
         sample * self.volume_factor(position)
+        
+        // TEMP DEBUG
+        // println!("VOLUME FACTOR: {}", sample * self.volume_factor(position));
+        // println!("EXP_VOLUME FACTOR: {}", sample * self.exponential_volume_factor(position));
+        
+        // sample * self.exponential_volume_factor(position)
     }
 
     fn volume_for_segment_position(&self, start: EnvelopePair, end: EnvelopePair,
