@@ -13,6 +13,7 @@ mod track;
 use crate::audio_gen::oscillator::{get_waveforms, Waveform};
 use crate::effect::{flanger, lfo};
 use crate::effect::flanger::{Flanger, FlangerBuilder};
+use crate::effect::lfo::{LFO, LFOBuilder};
 use crate::envelope::envelope::{Envelope, EnvelopeBuilder};
 use crate::envelope::envelope_pair::EnvelopePair;
 use crate::note::playback_note::{NoteType, PlaybackNote};
@@ -30,8 +31,8 @@ fn main() {
     // println!("Args collected\nwaveforms: {}", waveforms_arg);
     let oscillators_tables = audio_gen::oscillator::OscillatorTables::new();//generate_sine_table();
 
-    let midi_note_volume = 0.035;
-    let sampled_note_volume = 0.000036;
+    let midi_note_volume = 0.025;
+    let sampled_note_volume = 0.000012;
     let sampled_note_rev_volume = 0.000042 * 0.3;
     
     // Track Effects
@@ -58,6 +59,13 @@ fn main() {
         .sample_buffer()
         .mix(0.15)
         .build().unwrap();
+    
+    // LFOs
+    let lfo = LFOBuilder::default()
+        .waveforms(vec![Waveform::Sine])
+        .frequency(440.0)
+        .amplitude(0.009)
+        .build().unwrap();
 
     // /Track Effects
 
@@ -83,7 +91,15 @@ fn main() {
     sampled_playback_note_offset.flangers = vec![flanger.clone(), flanger_2.clone()];
     let sampled_playback_note_offset_clone = sampled_playback_note_offset.clone();
     set_notes_offset(&mut vec![sampled_playback_note_offset], offset);
-    
+
+    let sampled_playback_note_clav = build_sampled_playback_note(
+        // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
+        "/Users/markweiss/Downloads/punk_computer/001/punk_computer_011.wav",
+        sampled_note_volume,
+        start_time + 0.075,
+        vec![short_envelope],
+        vec![flanger_2.clone()]
+    );
     // let num_chopped_notes = 4;
     // let mut sampled_note_chopped = sampled_playback_note.clone();
     // let chopped_notes = sampled_playback_note.sampled_note
@@ -102,10 +118,14 @@ fn main() {
     //         playback_note
     //     }).collect();
 
-    let sample_track = load_sample_tracks(sampled_playback_note);
-    let sample_track_rev = load_sample_tracks(sampled_playback_note_reverse);
+    let vol_factor = 2.0;
+    let sample_track = load_sample_tracks(sampled_playback_note, 0.000008 * vol_factor);
+    let sample_track_rev = load_sample_tracks(sampled_playback_note_reverse,
+        0.0000015 * vol_factor);
     let sample_track_offset = load_sample_tracks(
-        sampled_playback_note_offset_clone);
+        sampled_playback_note_offset_clone, 0.000006 * vol_factor);
+    let sample_track_clav = load_sample_tracks(
+        sampled_playback_note_clav.clone(), 0.0000035 * vol_factor);
     // let sample_track_chopped = TrackBuilder::default()
     //     .sequence(TimeNoteSequenceBuilder::default()
     //         .sequence(vec![chopped_playback_notes])
@@ -121,10 +141,11 @@ fn main() {
     //     vec![Waveform::Sine, Waveform::GaussianNoise, Waveform::Sine, Waveform::Sine];
     let mut tracks = Vec::new();
     let mut midi_time_tracks_1 = load_midi_tracks(
-        "/Users/markweiss/Downloads/punk_computer/001/punk_computer_001_4.mid",
+        "/Users/markweiss/Downloads/punk_computer/001/punk_computer_001_5.mid",
         waveforms.clone(),
         vec![envelope],
         vec![flanger.clone()],
+        lfo.clone(),
         midi_note_volume);
     for track in midi_time_tracks_1.iter_mut() {
         for playback_notes in track.sequence.notes_iter_mut() {
@@ -174,9 +195,12 @@ fn main() {
     // tracks.append(&mut midi_time_tracks_3);
     // tracks.append(&mut midi_time_tracks_4);
     tracks.push(sample_track);
-    tracks.push(sample_track_rev);
     tracks.push(sample_track_offset);
+    tracks.push(sample_track_clav);
+    tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
+    let mut tracks2 = tracks.clone();
+    
 
     // TEMP DEBUG
     // println!("{:#?}", midi_time_tracks_3);
@@ -217,6 +241,7 @@ fn main() {
     }
    
     println!("First replay loop");
+    
     for _ in 0 .. 1 {
        for (i, playback_notes) in loop_playback_notes.iter_mut().enumerate() {
            if i % 2 == 0 {
@@ -265,7 +290,7 @@ fn build_sampled_playback_note(file_path: &str, volume: f32, start_time: f32,
 }
 
 fn load_midi_tracks(file_path: &str, waveforms: Vec<Waveform>, envelopes: Vec<Envelope>,
-        flangers: Vec<Flanger>, volume: f32) -> Vec<Track<TimeNoteSequence>> {
+        flangers: Vec<Flanger>, lfo: LFO, volume: f32) -> Vec<Track<TimeNoteSequence>> {
     let mut midi_time_tracks =
         midi::midi::midi_file_to_tracks::<TimeNoteSequence, TimeNoteSequenceBuilder>(
            file_path, NoteType::Oscillator);
@@ -277,6 +302,7 @@ fn load_midi_tracks(file_path: &str, waveforms: Vec<Waveform>, envelopes: Vec<En
                 playback_note.note.volume = volume;
                 playback_note.envelopes = envelopes.clone();
                 playback_note.flangers = flangers.clone();
+                playback_note.lfos = vec![lfo.clone()]
             }
         }
     }
@@ -284,10 +310,11 @@ fn load_midi_tracks(file_path: &str, waveforms: Vec<Waveform>, envelopes: Vec<En
     midi_time_tracks
 }
 
-fn load_sample_tracks(sampled_playback_note: PlaybackNote) -> Track<TimeNoteSequence> {
+fn load_sample_tracks(mut sampled_playback_note: PlaybackNote, volume: f32) -> Track<TimeNoteSequence> {
     let mut sequence = TimeNoteSequenceBuilder::default().build().unwrap();
+    sampled_playback_note.sampled_note.volume = volume;
     sequence.append_notes(&vec![sampled_playback_note.clone()]);
-    track::track::TrackBuilder::default()
+    TrackBuilder::default()
         .sequence(sequence)
         .build().unwrap()
 }
