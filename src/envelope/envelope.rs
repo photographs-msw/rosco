@@ -99,7 +99,7 @@ impl Envelope {
     }
 
     pub(crate) fn apply_effect(&self, sample: f32, position: f32) -> f32 {
-        sample * self.volume_factor(position)
+       sample * self.volume_factor(position)
         
         // TEMP DEBUG
         // println!("VOLUME FACTOR: {}", sample * self.volume_factor(position));
