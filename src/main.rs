@@ -201,15 +201,15 @@ fn main() {
     // }
 
     // Add Sample Tracks
-    tracks.append(&mut midi_time_tracks_1);
+    // tracks.append(&mut midi_time_tracks_1);
     // tracks.append(&mut midi_time_tracks_2);
     // tracks.append(&mut midi_time_tracks_3);
     // tracks.append(&mut midi_time_tracks_4);
     tracks.push(sample_track);
-    tracks.push(sample_track_offset);
-    tracks.push(sample_track_clav);
+    // tracks.push(sample_track_offset);
+    // tracks.push(sample_track_clav);
     tracks.push(sample_track_guitar);
-    tracks.push(sample_track_rev);
+    // tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
     let mut tracks2 = tracks.clone();
     

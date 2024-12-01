@@ -34,13 +34,13 @@ impl SampledNote {
     }
 
     pub(crate) fn next_sample(&mut self) -> f32 {
-        let sample = self.sample_buf[self.sample_index];
-        if self.sample_index == self.buf_size - 1 {
-            self.sample_index = 0;
-        } else {
+        if self.sample_index < self.buf_size {
+            let sample = self.sample_buf[self.sample_index];
             self.sample_index += 1;
+            sample
+        } else {
+            0.0
         }
-        sample
     }
     
     // TODO Can now add range and "scrach" kinds of access to the buffer
