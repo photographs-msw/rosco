@@ -4,6 +4,10 @@ pub(crate) trait AppendNote {
     fn append_note(&mut self, note: PlaybackNote);
 }
 
+pub(crate) trait AppendNotes {
+    fn append_notes(&mut self, notes: &Vec<PlaybackNote>);
+}
+
 pub(crate) trait BuilderWrapper<SequenceType> {
     fn new() -> SequenceType;
 }
@@ -14,4 +18,8 @@ pub(crate) trait NextNotes {
 
 pub(crate) trait SetCurPosition {
     fn set_cur_position(&mut self, position: f32);
+}
+
+pub(crate) trait IterMutWrapper {
+    fn iter_mut(&mut self) -> std::slice::IterMut<Vec<PlaybackNote>>;
 }

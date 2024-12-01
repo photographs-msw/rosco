@@ -1,0 +1,134 @@
+use crate::{audio_gen, common, midi, note};
+use crate::audio_gen::oscillator::Waveform;
+use crate::effect::flanger::Flanger;
+use crate::effect::lfo::LFO;
+use crate::envelope::envelope::Envelope;
+use crate::note::playback_note::{NoteType, PlaybackNote};
+use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper};
+use crate::track::track::{Track, TrackBuilder};
+
+pub(crate) struct SampleBuf {
+    buf: Vec<f32>,
+    len: usize,
+}
+
+pub(crate) fn build_sampled_playback_note(file_path: &str, volume: f32, start_time: f32,
+                                          envelopes: Vec<Envelope>, flangers: Vec<Flanger>) 
+        -> PlaybackNote {
+    let sample_buf: SampleBuf = load_sample_data(file_path);
+    let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
+        .volume(volume)
+        .start_time_ms(start_time)
+        .end_time_ms((sample_buf.len as f32 / common::constants::SAMPLE_RATE) * 1000.0)
+        .build().unwrap();
+    sampled_note.set_sample_buf(&sample_buf.buf, sample_buf.len);
+
+    note::playback_note::PlaybackNoteBuilder::default()
+        .note_type(NoteType::Sample)
+        .sampled_note(sampled_note)
+        .playback_start_time_ms(start_time)
+        .playback_end_time_ms(
+            start_time +
+                ((sample_buf.len as f32 / common::constants::SAMPLE_RATE) * 1000.0))
+        .playback_sample_start_time(start_time as u64)
+        .playback_sample_end_time(sample_buf.len as u64)
+        .envelopes(envelopes)
+        .flangers(flangers)
+        .build().unwrap()
+}
+
+pub(crate) fn load_sample_data(file_path: &str) -> SampleBuf {
+    let sample_data= audio_gen::audio_gen::read_audio_file(file_path).into_boxed_slice();
+    let mut sample_buf: Vec<f32> = Vec::with_capacity(note::sampled_note::BUF_STORAGE_SIZE);
+    for sample in  sample_data[..].iter() {
+        sample_buf.push(*sample as f32);
+    }
+    SampleBuf {
+        buf: sample_buf,
+        len: sample_data.len(),
+    }
+}
+
+pub(crate) fn load_midi_file_to_tracks<
+    SequenceType: AppendNote + Clone + IterMutWrapper,
+    SequenceBuilderType: BuilderWrapper<SequenceType>
+>
+(file_path: &str, waveforms: Vec<Waveform>, envelopes: Vec<Envelope>, flangers: Vec<Flanger>,
+ lfo: LFO, volume: f32) -> Vec<Track<SequenceType>> {
+    let mut midi_time_tracks =
+        midi::midi::midi_file_to_tracks::<SequenceType, SequenceBuilderType>(
+            file_path, NoteType::Oscillator);
+
+    for (i, track) in midi_time_tracks.iter_mut().enumerate() {
+        for playback_notes in track.sequence.iter_mut() {
+            for playback_note in playback_notes {
+                playback_note.note.waveforms = waveforms.clone();
+                playback_note.note.volume = volume;
+                playback_note.envelopes = envelopes.clone();
+                playback_note.flangers = flangers.clone();
+                playback_note.lfos = vec![lfo.clone()]
+            }
+        }
+    }
+
+    midi_time_tracks
+}
+
+pub(crate) fn load_note_to_new_track<
+    SequenceType: AppendNote + Clone + IterMutWrapper,
+    SequenceBuilderType: BuilderWrapper<SequenceType>
+>
+(mut playback_note: PlaybackNote, volume: f32) -> Track<SequenceType> {
+    let mut sequence = SequenceBuilderType::new();
+    // NOTE: generically modifies volume of BOTH underlying notes
+    playback_note.sampled_note.volume = volume;
+    playback_note.note.volume = volume;
+    sequence.append_note(playback_note.clone());
+    TrackBuilder::default()
+        .sequence(sequence)
+        .build().unwrap()
+}
+
+#[allow(dead_code)]
+pub(crate) fn load_notes_to_new_track<
+    SequenceType: AppendNotes + Clone + IterMutWrapper,
+    SequenceBuilderType: BuilderWrapper<SequenceType>
+>
+(playback_notes: &mut Vec<PlaybackNote>, volume: f32) -> Track<SequenceType> {
+    let mut sequence = SequenceBuilderType::new();
+    for playback_note in playback_notes.iter_mut() {
+        playback_note.sampled_note.volume = volume;
+    }
+    sequence.append_notes(&playback_notes.clone());
+    TrackBuilder::default()
+        .sequence(sequence)
+        .build().unwrap()
+}
+
+pub(crate) fn set_notes_offset(playback_notes: &mut Vec<PlaybackNote>, offset: f32) {
+    for playback_note in playback_notes.iter_mut() {
+        playback_note.playback_start_time_ms += offset;
+        playback_note.playback_end_time_ms += offset;
+        playback_note.sampled_note.start_time_ms += offset;
+        playback_note.sampled_note.end_time_ms += offset;
+
+        if playback_note.note_type == NoteType::Oscillator{
+            playback_note.note.start_time_ms += offset;
+            playback_note.note.end_time_ms += offset;
+        }
+    }
+}
+
+pub(crate) fn collect_args () -> String {
+    let mut waveforms_arg = String::from("sine");
+    for (i, arg) in std::env::args().enumerate() {
+        match i {
+            // skip program name in 0th args position
+            0 => continue,
+            1 => waveforms_arg = arg,
+            _ => break,
+        }
+    }
+
+    waveforms_arg
+}

@@ -1,8 +1,8 @@
 use derive_builder::Builder;
 
 use crate::envelope::envelope::Envelope;
-use crate::flanger::Flanger;
-use crate::lfo::LFO;
+use crate::effect::flanger::Flanger;
+use crate::effect::lfo::LFO;
 use crate::note::constants;
 use crate::note::note;
 use crate::note::note::Note;
@@ -174,8 +174,8 @@ pub(crate) fn from_note(note_type: NoteType, note: Note) -> PlaybackNote {
 #[cfg(test)]
 mod test_playback_note {
     use crate::envelope::envelope;
-    use crate::flanger;
-    use crate::lfo;
+    use crate::effect::flanger;
+    use crate::effect::lfo;
     use crate::note::constants;
     use crate::note::note;
     use crate::note::playback_note::PlaybackNoteBuilder;

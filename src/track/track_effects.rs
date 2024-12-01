@@ -1,8 +1,8 @@
 use derive_builder::Builder;
 
 use crate::envelope::envelope::Envelope;
-use crate::flanger::Flanger;
-use crate::lfo::LFO;
+use crate::effect::flanger::Flanger;
+use crate::effect::lfo::LFO;
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct TrackEffects {

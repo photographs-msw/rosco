@@ -5,7 +5,8 @@ use crate::common::constants;
 use crate::common::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::playback_note;
 use crate::note::playback_note::PlaybackNote;
-use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes, SetCurPosition};
+use crate::sequence::grid_note_sequence::GridNoteSequence;
+use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper, NextNotes, SetCurPosition};
 
 #[allow(dead_code)]
 static INIT_START_TIME: f32 = 0.0;
@@ -30,6 +31,12 @@ impl AppendNote for TimeNoteSequence {
     }
 }
 
+impl AppendNotes for TimeNoteSequence {
+    fn append_notes(&mut self, notes: &Vec<PlaybackNote>) {
+        self.append_notes(notes);
+    }
+}
+
 impl NextNotes for TimeNoteSequence {
     fn next_notes(&mut self) -> Vec<PlaybackNote> {
         self.get_next_notes_window()
@@ -45,6 +52,12 @@ impl BuilderWrapper<TimeNoteSequence> for TimeNoteSequenceBuilder {
 impl SetCurPosition for TimeNoteSequence {
     fn set_cur_position(&mut self, position: f32) {
         self.cur_position_ms = position;
+    }
+}
+
+impl IterMutWrapper for TimeNoteSequence {
+    fn iter_mut(&mut self) -> std::slice::IterMut<Vec<PlaybackNote>> {
+        self.sequence.iter_mut()
     }
 }
 

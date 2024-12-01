@@ -1,7 +1,8 @@
 use derive_builder::Builder;
 
 use crate::note::playback_note::{default_playback_note, PlaybackNote};
-use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes, SetCurPosition};
+use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper, NextNotes, SetCurPosition};
+use crate::sequence::time_note_sequence::TimeNoteSequence;
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct GridNoteSequence {
@@ -16,6 +17,12 @@ pub(crate) struct GridNoteSequence {
 impl AppendNote for GridNoteSequence {
     fn append_note(&mut self, playback_note: PlaybackNote) {
         self.sequence.push(vec![playback_note]);
+    }
+}
+
+impl AppendNotes for GridNoteSequence {
+    fn append_notes(&mut self, notes: &Vec<PlaybackNote>) {
+        self.append_notes(notes);
     }
 }
 
@@ -36,6 +43,12 @@ impl BuilderWrapper<GridNoteSequence> for GridNoteSequenceBuilder {
 impl SetCurPosition for GridNoteSequence {
     fn set_cur_position(&mut self, position: f32) {
         self.index = position as usize;
+    }
+}
+
+impl IterMutWrapper for GridNoteSequence {
+    fn iter_mut(&mut self) -> std::slice::IterMut<Vec<PlaybackNote>> {
+        self.sequence.iter_mut()
     }
 }
 
