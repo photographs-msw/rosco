@@ -7,6 +7,8 @@ use crate::note::playback_note::{NoteType, PlaybackNote};
 use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper};
 use crate::track::track::{Track, TrackBuilder};
 
+const ARGS_DELIMITER: &str = ",";
+
 pub(crate) struct SampleBuf {
     buf: Vec<f32>,
     len: usize,
@@ -131,4 +133,21 @@ pub(crate) fn collect_args () -> String {
     }
 
     waveforms_arg
+}
+
+#[allow(dead_code)]
+pub(crate) fn get_waveforms_from_arg() -> Vec<Waveform> {
+    collect_args().split(ARGS_DELIMITER)
+        .map( |waveform| {
+            let matched = match waveform {
+                "gaussian_noise" => Waveform::GaussianNoise,
+                "saw" => Waveform::Saw,
+                "sine" => Waveform::Sine,
+                "square" => Waveform::Square,
+                "triangle" => Waveform::Triangle,
+                _ => Waveform::Sine,
+            };
+            matched
+        })
+        .collect()
 }

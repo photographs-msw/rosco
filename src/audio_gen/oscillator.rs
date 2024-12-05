@@ -78,23 +78,6 @@ pub(crate) fn generate_triangle_table() -> Vec<f32> {
     table
 }
 
-#[allow(dead_code)]
-pub(crate) fn get_waveforms(waveform_arg: &str) -> Vec<Waveform> {
-    waveform_arg.split(",")
-        .map( |waveform| {
-            let matched = match waveform {
-                "gaussian_noise" => Waveform::GaussianNoise,
-                "saw" => Waveform::Saw,
-                "sine" => Waveform::Sine,
-                "square" => Waveform::Square,
-                "triangle" => Waveform::Triangle,
-                _ => Waveform::Sine,
-            };
-            matched
-        })
-        .collect()
-}
-
 pub(crate) fn get_sample(table: &Vec<f32>, frequency: f32, sample_count: u64) -> f32 {
     table[((frequency * sample_count as f32) / SAMPLE_COUNT_FACTOR) as usize % NUM_TABLE_SAMPLES]
 }
