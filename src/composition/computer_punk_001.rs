@@ -72,7 +72,7 @@ pub(crate) fn play() {
     sampled_playback_note_reverse.sampled_note.volume = sampled_note_rev_volume;
     sampled_playback_note_reverse.flangers = vec![flanger.clone(), flanger_2.clone()];
 
-    let offset = 0.5;
+    let offset = 0.25;
     let mut sampled_playback_note_offset = sampled_playback_note.clone();
     sampled_playback_note_offset.sampled_note.volume = sampled_note_rev_volume;
     sampled_playback_note_offset.flangers = vec![flanger.clone(), flanger_2.clone()];
@@ -91,7 +91,7 @@ pub(crate) fn play() {
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
         "/Users/markweiss/Downloads/punk_computer/001/punk_computer_guitar_011.wav",
         sampled_note_volume,
-        start_time + 0.0,
+        start_time + 0.375,
         vec![short_envelope],
         vec![flanger_2.clone()]
     );
@@ -154,12 +154,12 @@ pub(crate) fn play() {
             vec![envelope],
             vec![flanger.clone()],
             lfo.clone(),
-            midi_note_volume
+            midi_note_volume * 1.3
         );
 
     for track in midi_time_tracks_1.iter_mut() {
-        for playback_notes in track.sequence.notes_iter_mut() {
-            comp_utils::set_notes_offset(playback_notes, 0.0);
+        for (i, playback_notes) in track.sequence.notes_iter_mut().enumerate() {
+            comp_utils::set_notes_offset(playback_notes, 0.0 + i as f32 * 0.25);
         }
     }
 
@@ -168,9 +168,9 @@ pub(crate) fn play() {
             "/Users/markweiss/Downloads/punk_computer/001/punk_computer_001_reaper_2.mid",
             waveforms.clone(),
             vec![envelope],
-            vec![],
+            vec![flanger.clone(), flanger_2.clone()],
             lfo.clone(),
-            midi_note_volume
+            midi_note_volume * 1.4
         );
     for track in midi_time_tracks_2.iter_mut() {
         for playback_notes in track.sequence.notes_iter_mut() {
