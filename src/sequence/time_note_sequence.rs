@@ -5,7 +5,6 @@ use crate::common::constants;
 use crate::common::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::playback_note;
 use crate::note::playback_note::PlaybackNote;
-use crate::sequence::grid_note_sequence::GridNoteSequence;
 use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper, NextNotes, SetCurPosition};
 
 #[allow(dead_code)]

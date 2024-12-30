@@ -61,7 +61,7 @@ pub(crate) fn load_midi_file_to_tracks<
         midi::midi::midi_file_to_tracks::<SequenceType, SequenceBuilderType>(
             file_path, NoteType::Oscillator);
 
-    for (i, track) in midi_time_tracks.iter_mut().enumerate() {
+    for track in midi_time_tracks.iter_mut() {
         for playback_notes in track.sequence.iter_mut() {
             for playback_note in playback_notes {
                 playback_note.note.waveforms = waveforms.clone();

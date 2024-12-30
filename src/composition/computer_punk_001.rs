@@ -1,6 +1,7 @@
 use crate::audio_gen;
 use crate::audio_gen::oscillator::Waveform;
 use crate::composition::comp_utils;
+use crate::effect::delay::DelayBuilder;
 use crate::effect::flanger::FlangerBuilder;
 use crate::effect::lfo::LFOBuilder;
 use crate::envelope::envelope::EnvelopeBuilder;
@@ -23,6 +24,15 @@ pub(crate) fn play() {
     let sampled_note_rev_volume = 0.000042 * 0.3;
 
     // Track Effects
+    
+    #[allow(unused_variables)]
+    let delay = DelayBuilder::default()
+        .mix(0.5)
+        .decay(0.5)
+        .interval_ms(50.0)
+        .duration_ms(100.0)
+        .build().unwrap();
+    
     // Envelopes
     let envelope = EnvelopeBuilder::default()
         .attack(EnvelopePair(0.25, 0.7))
@@ -79,6 +89,7 @@ pub(crate) fn play() {
     let sampled_playback_note_offset_clone = sampled_playback_note_offset.clone();
     comp_utils::set_notes_offset(&mut vec![sampled_playback_note_offset], offset);
 
+    #[allow(unused_variables)]
     let sampled_playback_note_clav = comp_utils::build_sampled_playback_note(
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
         "/Users/markweiss/Downloads/punk_computer/001/punk_computer_011.wav",
@@ -133,9 +144,9 @@ pub(crate) fn play() {
     let sample_track_offset: Track<TimeNoteSequence> =
         comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
             sampled_playback_note_offset_clone, 0.000007 * vol_factor);
-    let sample_track_clav: Track<TimeNoteSequence> =
-        comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-            sampled_playback_note_clav.clone(), 0.0000021 * vol_factor);
+    // let sample_track_clav: Track<TimeNoteSequence> =
+    //     comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
+    //         sampled_playback_note_clav.clone(), 0.0000021 * vol_factor);
     let sample_track_guitar =
         comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
             sampled_playback_note_guitar.clone(), 0.0000080 * vol_factor);
@@ -188,7 +199,8 @@ pub(crate) fn play() {
     tracks.push(sample_track_guitar);
     tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
-    let mut tracks2 = tracks.clone();
+    #[allow(unused_variables)]
+    let tracks2 = tracks.clone();
 
 
     // TEMP DEBUG
@@ -214,7 +226,7 @@ pub(crate) fn play() {
         // TEMP DEBUG
         // println!("start_time: {:#?}", playback_notes);
 
-        if (i % 2 == 0) {
+        if i % 2 == 0 {
             let flanger_3 = FlangerBuilder::default()
                 .window_size(i + 2)
                 .sample_buffer()

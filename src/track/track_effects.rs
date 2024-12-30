@@ -6,12 +6,15 @@ use crate::effect::lfo::LFO;
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct TrackEffects {
+    #[allow(dead_code)]
     #[builder(default = "Vec::new()")]
     pub(crate) envelopes: Vec<Envelope>,
 
+    #[allow(dead_code)]
     #[builder(default = "Vec::new()")]
     pub(crate) lfos: Vec<LFO>,
 
+    #[allow(dead_code)]
     #[builder(default = "Vec::new()")]
     pub(crate) flangers: Vec<Flanger>,
 }

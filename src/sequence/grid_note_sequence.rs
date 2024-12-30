@@ -2,7 +2,6 @@ use derive_builder::Builder;
 
 use crate::note::playback_note::{default_playback_note, PlaybackNote};
 use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper, NextNotes, SetCurPosition};
-use crate::sequence::time_note_sequence::TimeNoteSequence;
 
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct GridNoteSequence {
