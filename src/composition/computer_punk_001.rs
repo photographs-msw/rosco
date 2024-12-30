@@ -27,10 +27,11 @@ pub(crate) fn play() {
     
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
-        .mix(0.5)
-        .decay(0.5)
-        .interval_ms(50.0)
-        .duration_ms(100.0)
+        .mix(0.9)
+        .decay(0.9)
+        .interval_ms(20.0)
+        .duration_ms(300.0)
+        .num_repeats(10)
         .build().unwrap();
     
     // Envelopes
@@ -74,7 +75,8 @@ pub(crate) fn play() {
         sampled_note_volume,
         start_time,
         vec![short_envelope],
-        vec![flanger_2.clone()]
+        vec![flanger_2.clone()],
+        vec![delay.clone()],
     );
 
     let mut sampled_playback_note_reverse = sampled_playback_note.clone();
@@ -96,7 +98,8 @@ pub(crate) fn play() {
         sampled_note_volume,
         start_time + 0.125,
         vec![short_envelope],
-        vec![flanger_2.clone()]
+        vec![flanger_2.clone()],
+        vec![delay.clone()],
     );
     let sampled_playback_note_guitar = comp_utils::build_sampled_playback_note(
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
@@ -104,7 +107,8 @@ pub(crate) fn play() {
         sampled_note_volume,
         start_time + 0.375,
         vec![short_envelope],
-        vec![flanger_2.clone()]
+        vec![flanger_2.clone()],
+        vec![delay.clone()],
     );
     
     let mut sampled_playback_note_reverse_guitar = sampled_playback_note_guitar.clone();

@@ -1,5 +1,5 @@
 use derive_builder::Builder;
-
+use crate::effect::delay::Delay;
 use crate::envelope::envelope::Envelope;
 use crate::effect::flanger::Flanger;
 use crate::effect::lfo::LFO;
@@ -52,6 +52,9 @@ pub(crate) struct PlaybackNote {
 
     #[builder(default = "Vec::new()")]
     pub(crate) flangers: Vec<Flanger>,
+
+    #[builder(default = "Vec::new()")]
+    pub(crate) delays: Vec<Delay>,
 }
 
 #[allow(dead_code)]
@@ -142,6 +145,10 @@ impl PlaybackNote {
 
         for flanger in self.flangers.iter_mut() {
             output_sample = flanger.apply_effect(output_sample, sample_position);
+        }
+        
+        for delay in self.delays.iter_mut() {
+            output_sample = delay.apply_effect(output_sample, sample_position);
         }
 
         output_sample

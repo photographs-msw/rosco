@@ -1,5 +1,6 @@
 use crate::{audio_gen, common, midi, note};
 use crate::audio_gen::oscillator::Waveform;
+use crate::effect::delay::Delay;
 use crate::effect::flanger::Flanger;
 use crate::effect::lfo::LFO;
 use crate::envelope::envelope::Envelope;
@@ -15,7 +16,8 @@ pub(crate) struct SampleBuf {
 }
 
 pub(crate) fn build_sampled_playback_note(file_path: &str, volume: f32, start_time: f32,
-                                          envelopes: Vec<Envelope>, flangers: Vec<Flanger>) 
+                                          envelopes: Vec<Envelope>, flangers: Vec<Flanger>,
+                                          delays: Vec<Delay>) 
         -> PlaybackNote {
     let sample_buf: SampleBuf = load_sample_data(file_path);
     let mut sampled_note = note::sampled_note::SampledNoteBuilder::default()
@@ -36,6 +38,7 @@ pub(crate) fn build_sampled_playback_note(file_path: &str, volume: f32, start_ti
         .playback_sample_end_time(sample_buf.len as u64)
         .envelopes(envelopes)
         .flangers(flangers)
+        .delays(delays)
         .build().unwrap()
 }
 

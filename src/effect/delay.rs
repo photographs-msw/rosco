@@ -74,20 +74,23 @@ impl DelayBuilder {
     
     pub(crate) fn build(&mut self) -> Result<Delay, String> {
         // TODO FIX
-        let mix= self.mix.unwrap_or(DEFAULT_DELAY_MIX);
+        let mix = self.mix.unwrap_or(DEFAULT_DELAY_MIX);
         let decay = self.decay.unwrap_or(DEFAULT_DELAY_DECAY);
         let interval_ms = self.interval_ms.unwrap_or(DEFAULT_INTERVAL_DURATION_MS);
         let duration_ms = self.duration_ms.unwrap_or(DEFAULT_DELAY_DURATION_MS);
         let num_repeats = self.num_repeats.unwrap_or(DEFAULT_NUM_REPEATS);
-        
+
         let interval_num_samples =
             interval_ms as usize * SAMPLES_PER_MS as usize;
-        let duration_num_samples = 
+        let duration_num_samples =
             duration_ms as usize * SAMPLES_PER_MS as usize;
-        let delay_buf_size = (
-            (num_repeats as f32 * duration_ms + ((num_repeats - 1) as f32 * interval_ms)) *
-                SAMPLES_PER_MS) as usize;
-        
+        let mut delay_buf_size = 0;
+        if num_repeats > 0 {
+            delay_buf_size = (
+                (num_repeats as f32 * duration_ms + ((num_repeats - 1) as f32 * interval_ms)) *
+                    SAMPLES_PER_MS) as usize;
+        }
+
         let mut buffer = VecDeque::with_capacity(delay_buf_size);
         for _ in 0..delay_buf_size {
             buffer.push_back(0.0);
