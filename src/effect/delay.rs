@@ -73,7 +73,6 @@ pub(crate) struct Delay {
 impl DelayBuilder {
     
     pub(crate) fn build(&mut self) -> Result<Delay, String> {
-        // TODO FIX
         let mix = self.mix.unwrap_or(DEFAULT_DELAY_MIX);
         let decay = self.decay.unwrap_or(DEFAULT_DELAY_DECAY);
         let interval_ms = self.interval_ms.unwrap_or(DEFAULT_INTERVAL_DURATION_MS);
@@ -84,6 +83,7 @@ impl DelayBuilder {
             interval_ms as usize * SAMPLES_PER_MS as usize;
         let duration_num_samples =
             duration_ms as usize * SAMPLES_PER_MS as usize;
+        
         let mut delay_buf_size = 0;
         if num_repeats > 0 {
             delay_buf_size = (
@@ -95,6 +95,7 @@ impl DelayBuilder {
         for _ in 0..delay_buf_size {
             buffer.push_back(0.0);
         }
+        
         let delay_buf = buffer.clone();
         let insert_index = 0;
         let delay_buf_index = 0;
@@ -123,6 +124,10 @@ impl DelayBuilder {
 impl Delay {
     
     pub(crate) fn apply_effect(&mut self, sample: f32, _sample_clock: f32) -> f32 {
+        
+        // TEMP DEBUG
+        println!("sample: {}, insert_index: {}, delay_buf_index: {}, is_active: {}", sample, self.insert_index, self.delay_buf_index, self.is_active);
+        
         // rolling update of the samples in the delay buffer
         self.delay_buf.insert(self.insert_index % self.delay_buf_size, sample);
         self.insert_index += 1;
@@ -144,6 +149,10 @@ impl Delay {
             // of the result is the current sample.
             // Handle the case if initialized buffer or 0 delay sample
             if delay_sample > 0.0 {
+                
+                // TEMP DEBUG
+                println!("sample: {}, delay_sample: {}, decay_factor: {}", sample, delay_sample, decay_factor);
+                
                 ((1.0 - decay_factor) * sample) + (decay_factor * self.mix * delay_sample)
             } else {
                sample 

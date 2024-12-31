@@ -59,7 +59,7 @@ pub(crate) fn load_midi_file_to_tracks<
     SequenceBuilderType: BuilderWrapper<SequenceType>
 >
 (file_path: &str, waveforms: Vec<Waveform>, envelopes: Vec<Envelope>, flangers: Vec<Flanger>,
- lfo: LFO, volume: f32) -> Vec<Track<SequenceType>> {
+ delays: Vec<Delay>, lfo: LFO, volume: f32) -> Vec<Track<SequenceType>> {
     let mut midi_time_tracks =
         midi::midi::midi_file_to_tracks::<SequenceType, SequenceBuilderType>(
             file_path, NoteType::Oscillator);
@@ -71,6 +71,7 @@ pub(crate) fn load_midi_file_to_tracks<
                 playback_note.note.volume = volume;
                 playback_note.envelopes = envelopes.clone();
                 playback_note.flangers = flangers.clone();
+                playback_note.delays = delays.clone();
                 playback_note.lfos = vec![lfo.clone()]
             }
         }

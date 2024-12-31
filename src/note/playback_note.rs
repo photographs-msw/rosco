@@ -16,9 +16,6 @@ pub (crate) enum NoteType {
     Sample,
 }
 
-// TODO is clipping on some notes due to rounding from float duration to uint and not using
-//  ceiling to round?
-
 #[derive(Builder, Clone, Debug, PartialEq)]
 pub(crate) struct PlaybackNote {
 
@@ -181,7 +178,7 @@ pub(crate) fn from_note(note_type: NoteType, note: Note) -> PlaybackNote {
 #[cfg(test)]
 mod test_playback_note {
     use crate::envelope::envelope;
-    use crate::effect::flanger;
+    use crate::effect::{delay, flanger};
     use crate::effect::lfo;
     use crate::note::constants;
     use crate::note::note;
@@ -197,6 +194,7 @@ mod test_playback_note {
         assert_eq!(playback_note.envelopes.is_empty(), true);
         assert_eq!(playback_note.lfos.is_empty(), true);
         assert_eq!(playback_note.flangers.is_empty(), true);
+        assert_eq!(playback_note.delays.is_empty(), true);
     }
 
     #[test]
@@ -221,5 +219,13 @@ mod test_playback_note {
             .flangers(vec![flanger::default_flanger()])
             .build().unwrap();
         assert_eq!(playback_note.flangers, vec![flanger::default_flanger()]);
+    }
+    
+    #[test]
+    fn test_playback_note_with_delays() {
+        let playback_note = PlaybackNoteBuilder::default()
+            .delays(vec![delay::default_delay()])
+            .build().unwrap();
+        assert_eq!(playback_note.delays, vec![delay::default_delay()]);
     }
 }

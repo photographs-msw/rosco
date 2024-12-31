@@ -168,6 +168,7 @@ pub(crate) fn play() {
             waveforms.clone(),
             vec![envelope],
             vec![flanger.clone()],
+            vec![delay.clone()],
             lfo.clone(),
             midi_note_volume * 1.3
         );
@@ -184,6 +185,7 @@ pub(crate) fn play() {
             waveforms.clone(),
             vec![envelope],
             vec![flanger.clone(), flanger_2.clone()],
+            vec![delay.clone()],
             lfo.clone(),
             midi_note_volume * 1.4
         );
@@ -204,7 +206,6 @@ pub(crate) fn play() {
     tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
     #[allow(unused_variables)]
-    let tracks2 = tracks.clone();
 
 
     // TEMP DEBUG
@@ -240,7 +241,7 @@ pub(crate) fn play() {
                 playback_note.flangers.push(flanger_3.clone());
             }
         }
-
+        
         audio_gen::audio_gen::gen_notes_stream(out_notes, oscillators_tables.clone());
         loop_playback_notes.push(playback_notes);
     }
