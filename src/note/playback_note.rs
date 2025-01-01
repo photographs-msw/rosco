@@ -136,13 +136,13 @@ impl PlaybackNote {
             }
         }
         
-        for lfo in self.lfos.iter() {
-            output_sample = lfo.apply_effect(output_sample, sample_count);
-        }
-
-        for flanger in self.flangers.iter_mut() {
-            output_sample = flanger.apply_effect(output_sample, sample_position);
-        }
+        // for lfo in self.lfos.iter() {
+        //     output_sample = lfo.apply_effect(output_sample, sample_count);
+        // }
+        // 
+        // for flanger in self.flangers.iter_mut() {
+        //     output_sample = flanger.apply_effect(output_sample, sample_position);
+        // }
         
         for delay in self.delays.iter_mut() {
             output_sample = delay.apply_effect(output_sample, sample_position);
@@ -220,7 +220,7 @@ mod test_playback_note {
             .build().unwrap();
         assert_eq!(playback_note.flangers, vec![flanger::default_flanger()]);
     }
-    
+
     #[test]
     fn test_playback_note_with_delays() {
         let playback_note = PlaybackNoteBuilder::default()

@@ -26,12 +26,12 @@ pub(crate) fn play() {
     // Track Effects
     
     #[allow(unused_variables)]
-    let delay = DelayBuilder::default()
-        .mix(0.9)
-        .decay(0.9)
-        .interval_ms(20.0)
-        .duration_ms(300.0)
+    let mut delay = DelayBuilder::default()
+        .decay(0.05)
+        .interval_ms(1000.0)
+        .duration_ms(200.0)
         .num_repeats(10)
+        .auto_reset(true)
         .build().unwrap();
     
     // Envelopes
@@ -78,6 +78,8 @@ pub(crate) fn play() {
         vec![flanger_2.clone()],
         vec![delay.clone()],
     );
+
+    delay.init_delay_buf(sampled_playback_note.clone().sampled_note.sample_buf);
 
     let mut sampled_playback_note_reverse = sampled_playback_note.clone();
     sampled_playback_note_reverse.sampled_note.reverse();
@@ -208,9 +210,6 @@ pub(crate) fn play() {
     #[allow(unused_variables)]
 
 
-    // TEMP DEBUG
-    // println!("{:#?}", midi_time_tracks_3);
-
     // Load and play Track Grid
     let track_grid = TrackGridBuilder::default()
         .tracks(tracks)
@@ -227,10 +226,6 @@ pub(crate) fn play() {
     let mut loop_playback_notes = Vec::new();
     for (i, playback_notes) in rx.iter().enumerate() {
         let mut out_notes = playback_notes.clone();
-
-        // TEMP DEBUG
-        // println!("start_time: {:#?}", playback_notes);
-
         if i % 2 == 0 {
             let flanger_3 = FlangerBuilder::default()
                 .window_size(i + 2)
@@ -241,6 +236,9 @@ pub(crate) fn play() {
                 playback_note.flangers.push(flanger_3.clone());
             }
         }
+        
+        // TEMP DEBUG
+        // let note = out_notes[0].clone();
         
         audio_gen::audio_gen::gen_notes_stream(out_notes, oscillators_tables.clone());
         loop_playback_notes.push(playback_notes);

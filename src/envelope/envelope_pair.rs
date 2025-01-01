@@ -4,7 +4,7 @@ use crate::common::float_utils::float_eq;
 
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct EnvelopePair (
-    pub(crate) f32,  // position in the note duration as "percentage", again in range 0.0 to 1.0
+    pub(crate) f32,  // position in the note duration as "percentage" in range 0.0 to 1.0
     pub(crate) f32,  // volume level 0.0 to 1.0
 );
 
