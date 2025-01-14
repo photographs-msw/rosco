@@ -5,7 +5,8 @@ use crate::effect::flanger::Flanger;
 use crate::effect::lfo::LFO;
 use crate::note::constants;
 use crate::note::note;
-use crate::note::note::Note;
+use crate::note::note::{Note, NoteBuilder};
+use crate::note::note_trait::BuilderWrapper;
 use crate::note::sampled_note;
 use crate::note::sampled_note::SampledNote;
 
@@ -173,6 +174,12 @@ pub(crate) fn from_note(note_type: NoteType, note: Note) -> PlaybackNote {
         .note_type(note_type)
         .note(note)
         .build().unwrap()
+}
+
+impl BuilderWrapper<PlaybackNote> for PlaybackNoteBuilder {
+    fn new() -> PlaybackNote {
+        PlaybackNoteBuilder::default().build().unwrap()
+    }
 }
 
 #[cfg(test)]

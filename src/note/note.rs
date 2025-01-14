@@ -1,10 +1,13 @@
 use std::hash::{Hash, Hasher};
 
 use derive_builder::Builder;
-use crate::audio_gen::oscillator::Waveform;
 
+use crate::audio_gen::oscillator::Waveform;
 use crate::common::float_utils::float_eq;
 use crate::note::constants::{DEFAULT_FREQUENCY, DEFAULT_VOLUME, INIT_START_TIME};
+use crate::note::note_trait::BuilderWrapper;
+
+const NOTE_POOL_CAPACITY: usize = 1000;
 
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug)]
@@ -76,6 +79,12 @@ impl Note {
 
     pub(crate) fn duration_position(&self, cur_time_ms: f32) -> f32 {
         (cur_time_ms - self.start_time_ms) / self.duration_ms()
+    }
+}
+
+impl BuilderWrapper<Note> for NoteBuilder {
+    fn new() -> Note {
+        NoteBuilder::default().build().unwrap()
     }
 }
 

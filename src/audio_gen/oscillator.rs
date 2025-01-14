@@ -1,5 +1,7 @@
 use rand::thread_rng;
 use rand_distr::{Distribution, Normal};
+use std::sync::Arc;
+
 use crate::common::constants::SAMPLE_RATE;
 
 static TWO_PI: f32 = 2.0 * std::f32::consts::PI;
@@ -18,19 +20,19 @@ pub(crate) enum Waveform {
 
 #[derive(Clone, Debug, PartialEq)]
 pub(crate)  struct OscillatorTables {
-    pub(crate) sine_table: Vec<f32>,
-    pub(crate) saw_table: Vec<f32>,
-    pub(crate) square_table: Vec<f32>,
-    pub(crate) triangle_table: Vec<f32>,
+    pub(crate) sine_table: Arc<Vec<f32>>,
+    pub(crate) saw_table: Arc<Vec<f32>>,
+    pub(crate) square_table: Arc<Vec<f32>>,
+    pub(crate) triangle_table: Arc<Vec<f32>>,
 }
 
 impl OscillatorTables {
     pub(crate) fn new() -> OscillatorTables {
         OscillatorTables {
-            sine_table: generate_sine_table(),
-            saw_table: generate_saw_table(),
-            square_table: generate_square_table(),
-            triangle_table: generate_triangle_table(),
+            sine_table: Arc::new(generate_sine_table()),
+            saw_table: Arc::new(generate_saw_table()),
+            square_table: Arc::new(generate_square_table()),
+            triangle_table: Arc::new(generate_triangle_table()),
         }
     }
 }

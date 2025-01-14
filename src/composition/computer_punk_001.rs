@@ -6,6 +6,10 @@ use crate::effect::flanger::FlangerBuilder;
 use crate::effect::lfo::LFOBuilder;
 use crate::envelope::envelope::EnvelopeBuilder;
 use crate::envelope::envelope_pair::EnvelopePair;
+use crate::note::note::{Note, NoteBuilder};
+use crate::note::note_pool::NotePool;
+use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
+use crate::note::sampled_note::{SampledNote, SampledNoteBuilder};
 use crate::sequence::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
 use crate::track::track::Track;
 use crate::track::track_grid::TrackGridBuilder;
@@ -66,6 +70,11 @@ pub(crate) fn play() {
         .build().unwrap();
 
     // /Track Effects
+    
+    let note_pool_capacity = 20;
+    let note_pool: NotePool<Note> = NotePool::new::<NoteBuilder>(note_pool_capacity);
+    let sampled_note_pool: NotePool<SampledNote> = NotePool::new::<SampledNoteBuilder>(note_pool_capacity);
+    let playback_note_pool: NotePool<PlaybackNote> = NotePool::new::<PlaybackNoteBuilder>(note_pool_capacity);
 
     // Load Sample Notes and Tracks
     let start_time = 0.0;

@@ -1,6 +1,8 @@
 pub mod constants;
 pub mod note;
+pub mod note_pool;
 pub mod playback_note;
 pub mod sampled_note;
-mod scales;
+pub mod scales;
+mod note_trait;
 
