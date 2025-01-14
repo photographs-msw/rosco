@@ -140,9 +140,9 @@ impl PlaybackNote {
         //     output_sample = lfo.apply_effect(output_sample, sample_count);
         // }
         // 
-        // for flanger in self.flangers.iter_mut() {
-        //     output_sample = flanger.apply_effect(output_sample, sample_position);
-        // }
+        for flanger in self.flangers.iter_mut() {
+            output_sample = flanger.apply_effect(output_sample, sample_position);
+        }
         
         for delay in self.delays.iter_mut() {
             output_sample = delay.apply_effect(output_sample, sample_position);

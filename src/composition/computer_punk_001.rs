@@ -27,10 +27,10 @@ pub(crate) fn play() {
     
     #[allow(unused_variables)]
     let mut delay = DelayBuilder::default()
-        .decay(0.05)
-        .interval_ms(1000.0)
-        .duration_ms(200.0)
-        .num_repeats(10)
+        .decay(0.5)
+        .interval_ms(500.0)
+        .duration_ms(100.0)
+        .num_repeats(5)
         .auto_reset(true)
         .build().unwrap();
     
@@ -78,22 +78,28 @@ pub(crate) fn play() {
         vec![flanger_2.clone()],
         vec![delay.clone()],
     );
-
     delay.init_delay_buf(sampled_playback_note.clone().sampled_note.sample_buf);
 
     let mut sampled_playback_note_reverse = sampled_playback_note.clone();
     sampled_playback_note_reverse.sampled_note.reverse();
     sampled_playback_note_reverse.sampled_note.volume = sampled_note_rev_volume;
     sampled_playback_note_reverse.flangers = vec![flanger.clone(), flanger_2.clone()];
+    let mut reverse_delay = delay.clone();
+    reverse_delay.init_delay_buf(sampled_playback_note_reverse.clone().sampled_note.sample_buf);
+    sampled_playback_note_reverse.delays = vec![reverse_delay];
 
     let offset = 0.25;
     let mut sampled_playback_note_offset = sampled_playback_note.clone();
     sampled_playback_note_offset.sampled_note.volume = sampled_note_rev_volume;
     sampled_playback_note_offset.flangers = vec![flanger.clone(), flanger_2.clone()];
+    let mut offset_delay = delay.clone();
+    offset_delay.init_delay_buf(sampled_playback_note_offset.clone().sampled_note.sample_buf);
+    sampled_playback_note_offset.delays = vec![offset_delay];
     let sampled_playback_note_offset_clone = sampled_playback_note_offset.clone();
     comp_utils::set_notes_offset(&mut vec![sampled_playback_note_offset], offset);
 
     #[allow(unused_variables)]
+    let mut clav_delay = delay.clone();
     let sampled_playback_note_clav = comp_utils::build_sampled_playback_note(
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
         "/Users/markweiss/Downloads/punk_computer/001/punk_computer_011.wav",
@@ -101,8 +107,11 @@ pub(crate) fn play() {
         start_time + 0.125,
         vec![short_envelope],
         vec![flanger_2.clone()],
-        vec![delay.clone()],
+        vec![clav_delay.clone()],
     );
+    clav_delay.init_delay_buf(sampled_playback_note_clav.clone().sampled_note.sample_buf);
+
+    let mut guitar_delay = delay.clone();
     let sampled_playback_note_guitar = comp_utils::build_sampled_playback_note(
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
         "/Users/markweiss/Downloads/punk_computer/001/punk_computer_guitar_011.wav",
@@ -112,14 +121,18 @@ pub(crate) fn play() {
         vec![flanger_2.clone()],
         vec![delay.clone()],
     );
-    
+    guitar_delay.init_delay_buf(sampled_playback_note_guitar.clone().sampled_note.sample_buf);
+
+    let mut reverse_guitar_delay = delay.clone();
     let mut sampled_playback_note_reverse_guitar = sampled_playback_note_guitar.clone();
     sampled_playback_note_reverse_guitar.sampled_note.reverse();
     sampled_playback_note_reverse_guitar.sampled_note.volume = sampled_note_rev_volume;
     sampled_playback_note_reverse_guitar.flangers = vec![flanger.clone(),
                                                          flanger_2.clone(),
                                                          flanger.clone()];
-
+    reverse_guitar_delay.init_delay_buf(sampled_playback_note_reverse_guitar.clone().sampled_note.sample_buf);
+    sampled_playback_note_reverse_guitar.delays = vec![reverse_guitar_delay.clone()];
+    
 
     // let num_chopped_notes = 4;
     // let mut sampled_note_chopped = sampled_playback_note.clone();
@@ -200,15 +213,13 @@ pub(crate) fn play() {
     // Add Sample Tracks
     tracks.append(&mut midi_time_tracks_1);
     tracks.append(&mut midi_time_tracks_2);
-    tracks.append(&mut midi_time_tracks_2);
-    tracks.push(sample_track);
-    tracks.push(sample_track_offset);
+    // tracks.append(&mut midi_time_tracks_2);
+    // tracks.push(sample_track);
+    // tracks.push(sample_track_offset);
     // tracks.push(sample_track_clav);
-    tracks.push(sample_track_guitar);
-    tracks.push(sample_track_rev);
+    // tracks.push(sample_track_guitar);
+    // tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
-    #[allow(unused_variables)]
-
 
     // Load and play Track Grid
     let track_grid = TrackGridBuilder::default()

@@ -44,6 +44,10 @@ pub(crate) struct Delay {
     // the number of sample events
     pub(crate) auto_reset: bool,
 
+    // complement of mix, private compute at build time because it's constant
+    #[builder(field(private))]
+    mix_complement: f32,
+    
     // duration in number of samples of the silence between sample events 
     #[builder(field(private))]
     interval_num_samples: usize,
@@ -71,7 +75,7 @@ pub(crate) struct Delay {
     // is the delay active or has it reached its last event
     #[builder(field(private))]
     is_active: bool,
-    
+
     // boundaries of sample indexes in delay windows or in intervals between delay windows
     delay_windows: Vec<Pair<usize>>,
 }
@@ -97,7 +101,7 @@ fn in_delay_window(index: usize, delay_windows: &Vec<Pair<usize>>) -> usize {
         }
     }
 
-    0 
+    0
 }
 
 #[allow(dead_code)]
@@ -111,6 +115,7 @@ impl DelayBuilder {
         let num_repeats = self.num_repeats.unwrap_or(DEFAULT_NUM_REPEATS);
         let auto_reset = self.auto_reset.unwrap_or(false);
 
+        let mix_complement = 1.0 - mix;
         let interval_num_samples =
             interval_ms as usize * SAMPLES_PER_MS as usize;
         let duration_num_samples =
@@ -125,7 +130,7 @@ impl DelayBuilder {
 
         // Not initialized because expect user to initialize with init_delay_buf()
         let sample_buffer = VecDeque::with_capacity(window_size);
-        
+
         let insert_index = 0;
         let delay_sample_index = 0;
         let is_active = true;
@@ -139,7 +144,8 @@ impl DelayBuilder {
                 duration_ms,
                 num_repeats,
                 auto_reset,
-                // private 
+                // private
+                mix_complement,
                 interval_num_samples,
                 duration_num_samples,
                 window_size,
@@ -148,7 +154,7 @@ impl DelayBuilder {
                 delay_sample_index,
                 is_active,
                 delay_windows: build_delay_windows(duration_num_samples, interval_num_samples,
-                                                   num_repeats) 
+                                                   num_repeats)
             }
         )
     }
@@ -161,45 +167,47 @@ impl Delay {
         
         // rolling update of the samples in the delay buffer
         self.sample_buffer.insert(self.insert_index % self.window_size, sample);
-        self.insert_index += 1;
         
-        // let delay_window_index = self.in_delay_window(self.delay_buf_index);
-
         // TEMP DEBUG
         // println!("BEFORE CHECK is_active {} delay_window_index {}", self.is_active, delay_window_index);
 
-
-        // TEMP DEBUG
-        // println!("AFTER CHECK is_active {} delay_window_index {}", self.is_active, delay_window_index);
-
         // Is the delay index into the buffer in a window that should be delayed?
-        let delay_window_index = in_delay_window(self.insert_index, &self.delay_windows);
+        let mut delay_window_index = 0;
+        for (i, window) in self.delay_windows.iter().enumerate() {
+            if window.0 <= self.insert_index && self.insert_index < window.1 {
+                delay_window_index = i;
+                break;
+            }
+        }
+        self.insert_index += 1;
+        
         if delay_window_index == self.num_repeats {
             if !self.auto_reset {
                 self.is_active = false;
             } else {
-                self.reset();
+                self.insert_index = 0;
+                self.delay_sample_index = 0;
             }
         }
-        
+
         if self.is_active && delay_window_index > 0 {
 
             // TEMP DEBUG
             // println!("IN LOOP is_active {} delay_window_index {}", self.is_active, delay_window_index);
 
-            let delay_sample = self.sample_buffer[self.delay_sample_index];
-            self.delay_sample_index += 1;
             // The decay is the initial constant factor over which window we are in, i.e. gets
             // smaller for each delay step we are on. Linear decay here because we are dividing.
-            let decay_factor = self.decay / delay_window_index as f32;
+            let decay_factor = self.decay + (self.decay / (delay_window_index as f32));
+            
+            let delay_sample = self.sample_buffer[self.delay_sample_index];
+            self.delay_sample_index += 1;
             // Normalize the return. One part is the current sample weighted with the
             // inverse of the decay factor applied to the sample buffer sample. The other is the
             // weighted sample buffer sample. Adding them means that as the sample decays more
             // of the result is the current sample.
-            // Handle the case if initialized buffer or 0 delay sample
-            ((1.0 - decay_factor) * (1.0 - self.mix) * sample) +
+            ((1.0 - decay_factor) * self.mix_complement * sample) +
                 (decay_factor * self.mix * delay_sample)
-            
+
             // TEMP DEBUG
             // sample
         } else {
@@ -211,9 +219,6 @@ impl Delay {
         self.insert_index = 0;
         self.delay_sample_index = 0;
         self.is_active = true;
-        for _ in 0..self.window_size {
-            self.sample_buffer.push_back(0.0);
-        }
     }
 
     pub(crate) fn init_delay_buf(&mut self, samples: Vec<f32>) {
