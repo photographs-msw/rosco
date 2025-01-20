@@ -1,5 +1,3 @@
-use std::collections::VecDeque;
-
 use derive_builder::Builder;
 
 static SAMPLE_BUFFER_SIZE: usize = 20;
@@ -11,7 +9,7 @@ pub(crate) struct Flanger {
     pub(crate) window_size: usize,
     
     #[builder(setter(custom))]
-    sample_buffer: VecDeque<f32>,
+    sample_buffer: Vec<f32>,
 
     #[builder(default = "1.0")]
     mix: f32, 
@@ -27,11 +25,14 @@ impl FlangerBuilder {
     // avoid having to check if the buffer is full in the apply_effect method, at the cst of
     // a slight delay in the effect being applied.
     pub(crate) fn sample_buffer(&mut self) -> &mut Self {
-        let mut buffer: VecDeque<f32> = VecDeque::with_capacity(self.window_size.unwrap());
-        for _ in 0..self.window_size.unwrap() {
-            buffer.push_back(0.0);
+        let window_size = self.window_size.unwrap();
+        let mut buffer: Vec<f32> = Vec::with_capacity(window_size);
+        // init to silence
+        buffer.resize(window_size, 0.0);
+        for i in 0..window_size {
+            buffer[i] = (0.0);
         }
-        self.sample_buffer = Some(buffer.clone());
+        self.sample_buffer = Some(buffer);
         self 
     }
 }
@@ -40,7 +41,7 @@ impl FlangerBuilder {
 impl Flanger {
     pub(crate) fn apply_effect(&mut self, sample: f32, _sample_clock: f32) -> f32 {
         // circular buffer of most recent samples in window, effect uses the oldest sample
-        self.sample_buffer.insert(self.insert_index % self.window_size, sample);
+        self.sample_buffer[self.insert_index % self.window_size] = sample;
         self.insert_index += 1;
         
         sample + (self.mix * self.sample_buffer[self.window_size - 1])

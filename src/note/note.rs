@@ -7,8 +7,6 @@ use crate::common::float_utils::float_eq;
 use crate::note::constants::{DEFAULT_FREQUENCY, DEFAULT_VOLUME, INIT_START_TIME};
 use crate::note::note_trait::BuilderWrapper;
 
-const NOTE_POOL_CAPACITY: usize = 1000;
-
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct Note {

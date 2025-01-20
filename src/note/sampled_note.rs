@@ -1,9 +1,9 @@
+
 use derive_builder::Builder;
 use crate::common::constants::SAMPLE_RATE;
 
 use crate::note::constants::{DEFAULT_VOLUME, INIT_START_TIME};
 use crate::note::note_trait::BuilderWrapper;
-use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
 
 pub(crate) const BUF_STORAGE_SIZE: usize = (SAMPLE_RATE as usize * 2) as usize;
 

@@ -6,7 +6,6 @@ use crate::effect::flanger::FlangerBuilder;
 use crate::effect::lfo::LFOBuilder;
 use crate::envelope::envelope::EnvelopeBuilder;
 use crate::envelope::envelope_pair::EnvelopePair;
-use crate::note::note::{Note, NoteBuilder};
 use crate::note::note_pool::NotePool;
 use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
 use crate::note::sampled_note::{SampledNote, SampledNoteBuilder};
@@ -71,14 +70,16 @@ pub(crate) fn play() {
 
     // /Track Effects
     
-    let note_pool_capacity = 20;
-    let note_pool: NotePool<Note> = NotePool::new::<NoteBuilder>(note_pool_capacity);
-    let sampled_note_pool: NotePool<SampledNote> = NotePool::new::<SampledNoteBuilder>(note_pool_capacity);
-    let playback_note_pool: NotePool<PlaybackNote> = NotePool::new::<PlaybackNoteBuilder>(note_pool_capacity);
+    let note_pool_capacity = 100;
+    // let note_pool: NotePool<Note> = NotePool::new::<NoteBuilder>(note_pool_capacity);
+    let mut sampled_note_pool: NotePool<SampledNote> = NotePool::new::<SampledNoteBuilder>(note_pool_capacity);
+    let mut playback_note_pool: NotePool<PlaybackNote> = NotePool::new::<PlaybackNoteBuilder>(note_pool_capacity);
 
     // Load Sample Notes and Tracks
     let start_time = 0.0;
     let sampled_playback_note = comp_utils::build_sampled_playback_note(
+        &mut sampled_note_pool,
+        &mut playback_note_pool,
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
         "/Users/markweiss/Downloads/punk_computer/001/punk_computer_008.wav",
         sampled_note_volume,
@@ -110,6 +111,8 @@ pub(crate) fn play() {
     #[allow(unused_variables)]
     let mut clav_delay = delay.clone();
     let sampled_playback_note_clav = comp_utils::build_sampled_playback_note(
+        &mut sampled_note_pool,
+        &mut playback_note_pool,
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
         "/Users/markweiss/Downloads/punk_computer/001/punk_computer_011.wav",
         sampled_note_volume,
@@ -122,6 +125,8 @@ pub(crate) fn play() {
 
     let mut guitar_delay = delay.clone();
     let sampled_playback_note_guitar = comp_utils::build_sampled_playback_note(
+        &mut sampled_note_pool,
+        &mut playback_note_pool,
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
         "/Users/markweiss/Downloads/punk_computer/001/punk_computer_guitar_011.wav",
         sampled_note_volume,
