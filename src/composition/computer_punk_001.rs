@@ -31,6 +31,7 @@ pub(crate) fn play() {
     #[allow(unused_variables)]
     let mut delay = DelayBuilder::default()
         .decay(0.5)
+        .mix(0.5)
         .interval_ms(500.0)
         .duration_ms(100.0)
         .num_repeats(5)
@@ -88,14 +89,12 @@ pub(crate) fn play() {
         vec![flanger_2.clone()],
         vec![delay.clone()],
     );
-    delay.init_delay_buf(sampled_playback_note.clone().sampled_note.sample_buf);
 
     let mut sampled_playback_note_reverse = sampled_playback_note.clone();
     sampled_playback_note_reverse.sampled_note.reverse();
     sampled_playback_note_reverse.sampled_note.volume = sampled_note_rev_volume;
     sampled_playback_note_reverse.flangers = vec![flanger.clone(), flanger_2.clone()];
     let mut reverse_delay = delay.clone();
-    reverse_delay.init_delay_buf(sampled_playback_note_reverse.clone().sampled_note.sample_buf);
     sampled_playback_note_reverse.delays = vec![reverse_delay];
 
     let offset = 0.25;
@@ -103,7 +102,6 @@ pub(crate) fn play() {
     sampled_playback_note_offset.sampled_note.volume = sampled_note_rev_volume;
     sampled_playback_note_offset.flangers = vec![flanger.clone(), flanger_2.clone()];
     let mut offset_delay = delay.clone();
-    offset_delay.init_delay_buf(sampled_playback_note_offset.clone().sampled_note.sample_buf);
     sampled_playback_note_offset.delays = vec![offset_delay];
     let sampled_playback_note_offset_clone = sampled_playback_note_offset.clone();
     comp_utils::set_notes_offset(&mut vec![sampled_playback_note_offset], offset);
@@ -121,7 +119,6 @@ pub(crate) fn play() {
         vec![flanger_2.clone()],
         vec![clav_delay.clone()],
     );
-    clav_delay.init_delay_buf(sampled_playback_note_clav.clone().sampled_note.sample_buf);
 
     let mut guitar_delay = delay.clone();
     let sampled_playback_note_guitar = comp_utils::build_sampled_playback_note(
@@ -135,7 +132,6 @@ pub(crate) fn play() {
         vec![flanger_2.clone()],
         vec![delay.clone()],
     );
-    guitar_delay.init_delay_buf(sampled_playback_note_guitar.clone().sampled_note.sample_buf);
 
     let mut reverse_guitar_delay = delay.clone();
     let mut sampled_playback_note_reverse_guitar = sampled_playback_note_guitar.clone();
@@ -144,7 +140,6 @@ pub(crate) fn play() {
     sampled_playback_note_reverse_guitar.flangers = vec![flanger.clone(),
                                                          flanger_2.clone(),
                                                          flanger.clone()];
-    reverse_guitar_delay.init_delay_buf(sampled_playback_note_reverse_guitar.clone().sampled_note.sample_buf);
     sampled_playback_note_reverse_guitar.delays = vec![reverse_guitar_delay.clone()];
     
 
