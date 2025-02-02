@@ -21,36 +21,9 @@ static MAX_NUM_SAMPLE_DELAY_WINDOWS: usize = 16;
 // as each sample comes in, insert_index updates the delay buffer rolling forward modulo
 // as each sample comes in, the current delay_index is checked to see if it is in a delay window
 // once the index gets to the end of the delay window, num_repeats increments. If the window
-//   has repeated num_repeats times, it's put back in the pool. If it has not, a new window is
-//   is pulled from the pool and it starts recording samples
+//  has repeated num_repeats times, it's put back in the pool. If it has not, a new window is
+//  is pulled from the pool and it starts recording samples
 
-/*
-let's write it down
-
-There is a buffer of samples, the delay buffer, that is the size of the delay window
-It is the length of the delay window in secs * the sample rate in secs
-
-There is a series of sample windows separated by interval windows
-each sample window is the same length as the delay window
-We know the sizes up front so if we make this a bitvector and trade storage we can set it up front
-and then just read it bool on each iteration
-
-We should write a small number of samples into the first buffer before we start reading from it
-
-On each iteration
-* if we are past the initialization count start counting the read index
-* if the read index is in a delay window we read the sample from the buffer ane increment the read position
-* if we are not past the length of the delay window push back the current sample into the buffer
-* if we reach the end of the buffer we stop writing and if we are not at the end fo the bit vector we
-  spawn a new window
-
-two indexes
-position in sample buffer
-position in in window byte buffer
-fill samples until first is hit
-iterate and emit samples until second is hit
-
-*/
 
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug, PartialEq)]
