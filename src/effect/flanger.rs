@@ -44,6 +44,9 @@ impl Flanger {
         self.sample_buffer[self.insert_index % self.window_size] = sample;
         self.insert_index += 1;
         
+        // TEMP DEBUG
+        // println!("flanger {}", sample + (self.mix * self.sample_buffer[self.window_size - 1]));
+        
         sample + (self.mix * self.sample_buffer[self.window_size - 1])
     }
 }

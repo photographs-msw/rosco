@@ -29,13 +29,12 @@ pub(crate) fn play() {
     // Track Effects
     
     #[allow(unused_variables)]
-    let mut delay = DelayBuilder::default()
-        .decay(0.5)
-        .mix(0.5)
-        .interval_ms(500.0)
-        .duration_ms(100.0)
-        .num_repeats(5)
-        .auto_reset(true)
+    let delay = DelayBuilder::default()
+        .decay(0.7)
+        .mix(1.0)
+        .interval_ms(150.0)
+        .duration_ms(250.0)
+        .num_repeats(4)
         .build().unwrap();
     
     // Envelopes
@@ -52,14 +51,14 @@ pub(crate) fn play() {
 
     // Flangers
     let flanger = FlangerBuilder::default()
-        .window_size(17)
+        .window_size(50)
         .sample_buffer()
-        .mix(0.18)
+        .mix(0.9)
         .build().unwrap();
     let flanger_2 = FlangerBuilder::default()
         .window_size(6)
         .sample_buffer()
-        .mix(0.15)
+        .mix(0.9)
         .build().unwrap();
 
     // LFOs
@@ -73,8 +72,10 @@ pub(crate) fn play() {
     
     let note_pool_capacity = 100;
     // let note_pool: NotePool<Note> = NotePool::new::<NoteBuilder>(note_pool_capacity);
-    let mut sampled_note_pool: NotePool<SampledNote> = NotePool::new::<SampledNoteBuilder>(note_pool_capacity);
-    let mut playback_note_pool: NotePool<PlaybackNote> = NotePool::new::<PlaybackNoteBuilder>(note_pool_capacity);
+    let mut sampled_note_pool: NotePool<SampledNote> =
+        NotePool::new::<SampledNoteBuilder>(note_pool_capacity);
+    let mut playback_note_pool: NotePool<PlaybackNote> =
+        NotePool::new::<PlaybackNoteBuilder>(note_pool_capacity);
 
     // Load Sample Notes and Tracks
     let start_time = 0.0;
@@ -94,14 +95,14 @@ pub(crate) fn play() {
     sampled_playback_note_reverse.sampled_note.reverse();
     sampled_playback_note_reverse.sampled_note.volume = sampled_note_rev_volume;
     sampled_playback_note_reverse.flangers = vec![flanger.clone(), flanger_2.clone()];
-    let mut reverse_delay = delay.clone();
+    let reverse_delay = delay.clone();
     sampled_playback_note_reverse.delays = vec![reverse_delay];
 
     let offset = 0.25;
     let mut sampled_playback_note_offset = sampled_playback_note.clone();
     sampled_playback_note_offset.sampled_note.volume = sampled_note_rev_volume;
     sampled_playback_note_offset.flangers = vec![flanger.clone(), flanger_2.clone()];
-    let mut offset_delay = delay.clone();
+    let offset_delay = delay.clone();
     sampled_playback_note_offset.delays = vec![offset_delay];
     let sampled_playback_note_offset_clone = sampled_playback_note_offset.clone();
     comp_utils::set_notes_offset(&mut vec![sampled_playback_note_offset], offset);
@@ -220,14 +221,13 @@ pub(crate) fn play() {
     }
 
     // Add Sample Tracks
-    tracks.append(&mut midi_time_tracks_1);
-    tracks.append(&mut midi_time_tracks_2);
+    // tracks.append(&mut midi_time_tracks_1);
     // tracks.append(&mut midi_time_tracks_2);
-    // tracks.push(sample_track);
-    // tracks.push(sample_track_offset);
+    tracks.push(sample_track);
+    tracks.push(sample_track_offset);
     // tracks.push(sample_track_clav);
     // tracks.push(sample_track_guitar);
-    // tracks.push(sample_track_rev);
+    tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
 
     // Load and play Track Grid
@@ -242,26 +242,26 @@ pub(crate) fn play() {
         }
     });
 
-    println!("First loop and capture loop");
-    let mut loop_playback_notes = Vec::new();
+    // println!("First loop and capture loop");
+    // let mut loop_playback_notes = Vec::new();
     for (i, playback_notes) in rx.iter().enumerate() {
         let mut out_notes = playback_notes.clone();
-        if i % 2 == 0 {
-            let flanger_3 = FlangerBuilder::default()
-                .window_size(i + 2)
-                .sample_buffer()
-                .mix(0.20)
-                .build().unwrap();
-            for playback_note in out_notes.iter_mut() {
-                playback_note.flangers.push(flanger_3.clone());
-            }
-        }
+        // if i % 2 == 0 {
+        //     let flanger_3 = FlangerBuilder::default()
+        //         .window_size(i + 2)
+        //         .sample_buffer()
+        //         .mix(0.20)
+        //         .build().unwrap();
+        //     for playback_note in out_notes.iter_mut() {
+        //         playback_note.flangers.push(flanger_3.clone());
+        //     }
+        // }
         
         // TEMP DEBUG
         // let note = out_notes[0].clone();
         
         audio_gen::audio_gen::gen_notes_stream(out_notes, oscillators_tables.clone());
-        loop_playback_notes.push(playback_notes);
+        // loop_playback_notes.push(playback_notes);
     }
 
     // println!("First replay loop");
