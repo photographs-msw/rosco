@@ -30,11 +30,11 @@ pub(crate) fn play() {
     
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
-        .decay(0.7)
-        .mix(1.0)
-        .interval_ms(150.0)
-        .duration_ms(250.0)
-        .num_repeats(4)
+        .decay(0.5)
+        .mix(0.8)
+        .interval_ms(10.0)
+        .duration_ms(500.0)
+        .num_repeats(1)
         .build().unwrap();
     
     // Envelopes
@@ -165,7 +165,7 @@ pub(crate) fn play() {
     let vol_factor = 2.0;
     let sample_track: Track<TimeNoteSequence> =
         comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-            sampled_playback_note, 0.000007 * vol_factor);
+            sampled_playback_note, 0.0007 * vol_factor);
     let mut sample_track_rev: Track<TimeNoteSequence> =
         comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
             sampled_playback_note_reverse, 0.0000018 * vol_factor);
@@ -224,10 +224,10 @@ pub(crate) fn play() {
     // tracks.append(&mut midi_time_tracks_1);
     // tracks.append(&mut midi_time_tracks_2);
     tracks.push(sample_track);
-    tracks.push(sample_track_offset);
+    // tracks.push(sample_track_offset);
     // tracks.push(sample_track_clav);
     // tracks.push(sample_track_guitar);
-    tracks.push(sample_track_rev);
+    // tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
 
     // Load and play Track Grid

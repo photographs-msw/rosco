@@ -1,4 +1,5 @@
 use std::collections::{LinkedList, VecDeque};
+use std::sync::Arc;
 
 use derive_builder::Builder;
 
@@ -38,7 +39,7 @@ pub(crate) struct SampleManager {
     sample_buffer_size: usize,
 
     #[builder(field(private))]
-    sample_buffer: VecDeque<f32>,
+    sample_buffer: Arc<VecDeque<f32>>,
 
     // boundaries of sample indexes in delay windows or in intervals between delay windows
     // true if in delay window, false if in interval
@@ -80,10 +81,10 @@ pub(crate) struct SampleManager {
     #[builder(default = "true")]
     is_initializing: bool,
 
-    #[builder(default = "true")]
+    #[builder(default = "false")]
     is_in_delay_window: bool,
 
-    #[builder(default = "false")]
+    #[builder(default = "true")]
     is_in_interval: bool,
 }
 
@@ -101,7 +102,8 @@ impl SampleManager {
         }
         
         if self.is_initializing {
-            self.sample_buffer.push_back(sample);
+            let mut buffer = Arc::make_mut(&mut self.sample_buffer);
+            buffer.push_back(sample);
             self.init_buffer_index += 1;
             if self.init_buffer_index == SAMPLE_BUFFER_INIT_SIZE {
                 self.is_initializing = false;
@@ -110,10 +112,11 @@ impl SampleManager {
         }
 
         if !self.is_full {
-            self.sample_buffer.push_back(sample);
+            let mut buffer = Arc::make_mut(&mut self.sample_buffer);
+            buffer.push_back(sample);
             self.sample_buffer_write_index += 1;
         }
-        if self.sample_buffer_write_index == self.sample_buffer_size {
+        if self.sample_buffer_write_index >= self.sample_buffer_size {
             self.is_full = true;
         }
         
@@ -121,7 +124,8 @@ impl SampleManager {
         if self.delay_windows[self.delay_windows_index] {
             delay_sample =
                 *self.sample_buffer
-                    .get(self.sample_buffer_read_index % self.sample_buffer_size).unwrap();
+                    .get(self.sample_buffer_read_index % self.sample_buffer_size)
+                    .unwrap_or(&0.0);
             // If this is the first sample in the delay window, increment the delay window index
             if self.sample_buffer_read_index == 0 {
                 self.cur_delay_window += 1;
@@ -129,7 +133,7 @@ impl SampleManager {
             self.sample_buffer_read_index += 1;
         }
         self.delay_windows_index += 1;
-        if self.delay_windows_index == self.sample_buffer_size {
+        if self.delay_windows_index >= self.sample_buffer_size {
             self.is_active = false;
         }
 
@@ -140,10 +144,31 @@ impl SampleManager {
         self.sample_buffer_read_index = 0;
         self.sample_buffer_write_index = 0;
         self.init_buffer_index = 0;
+        self.cur_delay_window = 0;
         self.delay_windows_index = 0;
         self.is_full = false;
         self.is_active = true;
-        self.cur_delay_window = 0;
+        self.is_initializing = true;
+        self.is_in_delay_window = false;
+        self.is_in_interval = true
+    }
+
+    pub(crate) fn dump_print(&self) {
+        if self.is_active {
+            println!("--------------------------------");
+            println!("sample_buffer_size: {}", self.sample_buffer_size);
+            println!("sample_buffer_read_index: {}", self.sample_buffer_read_index);
+            println!("sample_buffer_write_index: {}", self.sample_buffer_write_index);
+            println!("init_buffer_index: {}", self.init_buffer_index);
+            println!("cur_delay_window: {}", self.cur_delay_window);
+            println!("delay_windows_index: {}", self.delay_windows_index);
+            println!("is_full: {}", self.is_full);
+            println!("is_active: {}", self.is_active);
+            println!("is_initializing: {}", self.is_initializing);
+            println!("is_in_delay_window: {}", self.is_in_delay_window);
+            println!("is_in_interval: {}", self.is_in_interval);
+            println!("--------------------------------");
+        }
     }
 }
 
@@ -169,6 +194,8 @@ pub(crate) struct Delay {
 
     // the number of simultaneous delay windows that can be active 
     pub(crate) concurrency_factor: usize,
+
+    pub(crate) num_active_sample_managers: usize,
     
     // complement of mix, private compute at build time because it's constant
     #[builder(field(private))]
@@ -242,7 +269,7 @@ impl DelayBuilder {
             sample_managers_pool.push(
                 SampleManagerBuilder::default()
                     .sample_buffer_size(duration_num_samples)
-                    .sample_buffer(VecDeque::with_capacity(duration_num_samples))
+                    .sample_buffer(Arc::new(VecDeque::with_capacity(duration_num_samples)))
                     .delay_windows(build_delay_windows(
                         duration_num_samples,
                         interval_num_samples,
@@ -253,8 +280,10 @@ impl DelayBuilder {
         }
         // initialize the delay with one active SampleManager
         let mut active_sample_managers = Vec::with_capacity(concurrency_factor);
-        active_sample_managers.push(false);
-        active_sample_managers[0] = true;
+        active_sample_managers.push(true);
+        for _ in 0..concurrency_factor - 1 {
+            active_sample_managers.push(false);
+        }
         
         let mix_complement = 1.0 - mix;
         let window_size =
@@ -276,6 +305,7 @@ impl DelayBuilder {
                                                    num_repeats),
                 sample_managers_pool,
                 active_sample_managers,
+                num_active_sample_managers: 1,
             }
         )
     }
@@ -298,8 +328,17 @@ impl Delay {
                 continue;
             }
 
-            let sample_manager = self.sample_managers_pool.get_mut(i).unwrap();
+            let sample_manager =
+                self.sample_managers_pool.get_mut(i).unwrap();
+            
+            // TEMP DEBUG
+            // sample_manager.dump_print();
+
             let next_delay_sample = sample_manager.next_sample(sample);
+
+            // TEMP DEBUG
+            // sample_manager.dump_print();
+
             // add each sample returned factored by the decay for that sample manager, each
             // might be in a different delay window
             delay_sample +=
@@ -308,37 +347,53 @@ impl Delay {
 
             // spawn the next active sample manager if this one is still active and is full,
             // unless the pool is exhausted 
-            if sample_manager.is_active && sample_manager.is_full {
+            if sample_manager.is_full {
                 num_to_take_from_pool += 1;
-            } else if !sample_manager.is_active {
+            }
+            if !sample_manager.is_active {
                 // just became inactive on this iteration, record index to release to pool
                 indexes_to_release_to_pool.push(i);
-                sample_manager.reset();
             }
         }
         // do bookkeeping to release sample_managers to pool
         for idx in indexes_to_release_to_pool.iter() {
             self.active_sample_managers[*idx] = false;
+            self.sample_managers_pool[*idx].reset();
+            self.num_active_sample_managers -= 1;
         }
         // do bookkeeping to take available sample_managers from pool
         let mut taken_count = 0;
-        for manager_is_active in self.active_sample_managers.iter_mut() {
-            let is_active = *manager_is_active;
-            if !is_active {
-                *manager_is_active = true;
-                taken_count += 1;
-                if taken_count == num_to_take_from_pool {
-                    break;
+        if num_to_take_from_pool > 0 {
+            for (i, manager_is_active)
+                    in self.active_sample_managers.iter_mut().enumerate() {
+                let is_active = *manager_is_active;
+                if !is_active {
+                    *manager_is_active = true;
+                    self.sample_managers_pool[i].reset();
+                    taken_count += 1;
+                    self.num_active_sample_managers += 1;
+                    if taken_count == num_to_take_from_pool {
+                        break;
+                    }
                 }
             }
         }
+        
+        // if (float_leq(delay_sample, 0.0) && float_geq(sample, 0.0)) || 
+        //     (float_geq(delay_sample, 0.0) && float_leq(sample, 0.0)) {
+        //     delay_sample *= -1.0;
+        // }
+
+
+        // TEMP DEBUG
+        println!("sample {}, delay_sample: {}", sample, delay_sample);
 
         // normalize the sum of the delay samples by the number of delay samples
         delay_sample /= num_delay_samples as f32;
-        // if we don't match signs then the delay sample has the effect of cancelling out the sample
-        if float_leq(sample, 0.0) && float_geq(delay_sample, 0.0) {
-            delay_sample *= -1.0;
-        }
+
+        // TEMP DEBUG
+        println!("sample {}, delay_sample: {}", sample, delay_sample);
+
         sample + (self.mix * delay_sample)
     }
 

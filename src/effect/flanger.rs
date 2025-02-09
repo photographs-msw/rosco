@@ -30,7 +30,7 @@ impl FlangerBuilder {
         // init to silence
         buffer.resize(window_size, 0.0);
         for i in 0..window_size {
-            buffer[i] = (0.0);
+            buffer[i] = 0.0;
         }
         self.sample_buffer = Some(buffer);
         self 
