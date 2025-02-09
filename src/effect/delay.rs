@@ -386,13 +386,13 @@ impl Delay {
 
 
         // TEMP DEBUG
-        println!("sample {}, delay_sample: {}", sample, delay_sample);
+        // println!("sample {}, delay_sample: {}", sample, delay_sample);
 
         // normalize the sum of the delay samples by the number of delay samples
         delay_sample /= num_delay_samples as f32;
 
         // TEMP DEBUG
-        println!("sample {}, delay_sample: {}", sample, delay_sample);
+        // println!("sample {}, delay_sample: {}", sample, delay_sample);
 
         sample + (self.mix * delay_sample)
     }

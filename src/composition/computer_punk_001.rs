@@ -221,13 +221,13 @@ pub(crate) fn play() {
     }
 
     // Add Sample Tracks
-    // tracks.append(&mut midi_time_tracks_1);
+    tracks.append(&mut midi_time_tracks_1);
     // tracks.append(&mut midi_time_tracks_2);
     tracks.push(sample_track);
     // tracks.push(sample_track_offset);
     // tracks.push(sample_track_clav);
     // tracks.push(sample_track_guitar);
-    // tracks.push(sample_track_rev);
+    tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
 
     // Load and play Track Grid
