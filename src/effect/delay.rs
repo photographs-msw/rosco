@@ -1,20 +1,15 @@
-use std::collections::{LinkedList, VecDeque};
+use std::collections::VecDeque;
 use std::sync::Arc;
 
 use derive_builder::Builder;
 
 use crate::common::constants::SAMPLES_PER_MS;
-use crate::common::float_utils::float_eq;
-use crate::common::float_utils::float_geq;
-use crate::common::float_utils::float_leq;
-use crate::common::float_utils::float_neq;
 
 static DEFAULT_DELAY_MIX: f32 = 1.0;
 static DEFAULT_DELAY_DECAY: f32 = 0.5;
 static DEFAULT_INTERVAL_DURATION_MS: f32 = 100.0;
 static DEFAULT_DELAY_DURATION_MS: f32 = 20.0;
 static DEFAULT_NUM_REPEATS: usize = 4;
-// static SAMPLE_BUFFER_INIT_SIZE: usize = 10;
 static MAX_NUM_SAMPLE_DELAY_WINDOWS: usize = 128;
 
 
@@ -45,7 +40,7 @@ pub(crate) struct SampleManager {
     // true if in delay window, false if in interval
     delay_windows: Vec<bool>,
    
-    num_delay_windows: i8,
+    num_delay_windows: usize,
     
     // the current index for reading the next delay sample from the buffer
     #[builder(default = "0")]
@@ -76,11 +71,6 @@ pub(crate) struct SampleManager {
     #[builder(default = "true")]
     is_active: bool,
     
-    // true if the sample manager is adding initial samples before starting to process its
-    // delay windows by reading them back and advancing
-    #[builder(default = "false")]
-    is_initializing: bool,
-
     #[builder(default = "true")]
     is_in_delay_window: bool,
 
@@ -101,16 +91,6 @@ impl SampleManager {
             return 0f32;
         }
         
-        // if self.is_initializing {
-        //     let mut buffer = Arc::make_mut(&mut self.sample_buffer);
-        //     buffer.push_back(sample);
-        //     self.init_buffer_index += 1;
-        //     if self.init_buffer_index == SAMPLE_BUFFER_INIT_SIZE {
-        //         self.is_initializing = false;
-        //     }
-        //     return 0f32;
-        // }
-
         if !self.is_full {
             let mut buffer = Arc::make_mut(&mut self.sample_buffer);
             buffer.push_back(sample);
@@ -148,7 +128,6 @@ impl SampleManager {
         self.delay_windows_index = 0;
         self.is_full = false;
         self.is_active = true;
-        self.is_initializing = false;
         self.is_in_delay_window = true;
         self.is_in_interval = false;
     }
@@ -164,7 +143,6 @@ impl SampleManager {
             println!("delay_windows_index: {}", self.delay_windows_index);
             println!("is_full: {}", self.is_full);
             println!("is_active: {}", self.is_active);
-            println!("is_initializing: {}", self.is_initializing);
             println!("is_in_delay_window: {}", self.is_in_delay_window);
             println!("is_in_interval: {}", self.is_in_interval);
             println!("--------------------------------");
@@ -261,8 +239,10 @@ impl DelayBuilder {
         let concurrency_factor =
             self.concurrency_factor.unwrap_or(MAX_NUM_SAMPLE_DELAY_WINDOWS);
         
-        let duration_num_samples = duration_ms as usize * SAMPLES_PER_MS as usize;
-        let interval_num_samples = interval_ms as usize * SAMPLES_PER_MS as usize;
+        // let duration_num_samples = duration_ms as usize * SAMPLES_PER_MS as usize;
+        let duration_num_samples = 70 * SAMPLES_PER_MS as usize;
+        // let interval_num_samples = interval_ms as usize * SAMPLES_PER_MS as usize;
+        let interval_num_samples = 50 as usize * SAMPLES_PER_MS as usize;
         // create the pool of SampleManagers
         let mut sample_managers_pool: Vec<SampleManager> = Vec::with_capacity(concurrency_factor);
         for i in 0..concurrency_factor {
@@ -274,7 +254,7 @@ impl DelayBuilder {
                         duration_num_samples,
                         interval_num_samples,
                         num_repeats))
-                    .num_delay_windows(num_repeats as i8)
+                    .num_delay_windows(num_repeats)
                     .build().unwrap()
             );
         }

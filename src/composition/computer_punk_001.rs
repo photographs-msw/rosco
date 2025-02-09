@@ -30,11 +30,12 @@ pub(crate) fn play() {
     
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
-        .decay(0.7)
-        .mix(0.7)
-        .interval_ms(80.0)
-        .duration_ms(220.0)
-        .num_repeats(6)
+        .decay(0.9)
+        .mix(1.0)
+        .interval_ms(10.0)
+        .duration_ms(20.0)
+        .num_repeats(16)
+        .concurrency_factor(128)
         .build().unwrap();
     
     // Envelopes
@@ -121,7 +122,6 @@ pub(crate) fn play() {
         vec![clav_delay.clone()],
     );
 
-    let mut guitar_delay = delay.clone();
     let sampled_playback_note_guitar = comp_utils::build_sampled_playback_note(
         &mut sampled_note_pool,
         &mut playback_note_pool,
@@ -131,7 +131,7 @@ pub(crate) fn play() {
         start_time + 0.375,
         vec![short_envelope],
         vec![flanger_2.clone()],
-        vec![delay.clone()],
+        vec![delay.clone(), delay.clone()],
     );
 
     let mut reverse_guitar_delay = delay.clone();
@@ -168,17 +168,17 @@ pub(crate) fn play() {
             sampled_playback_note, 0.0007 * vol_factor);
     let mut sample_track_rev: Track<TimeNoteSequence> =
         comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-            sampled_playback_note_reverse, 0.0000018 * vol_factor);
+            sampled_playback_note_reverse, 0.00018 * vol_factor);
     sample_track_rev.sequence.append_note(sampled_playback_note_reverse_guitar);
     let sample_track_offset: Track<TimeNoteSequence> =
         comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-            sampled_playback_note_offset_clone, 0.000007 * vol_factor);
-    // let sample_track_clav: Track<TimeNoteSequence> =
+            sampled_playback_note_offset_clone, 0.0007 * vol_factor);
+    // let sample_track_clav: Track<TimeNoteSequence> 
     //     comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
     //         sampled_playback_note_clav.clone(), 0.0000021 * vol_factor);
     let sample_track_guitar =
         comp_utils::load_note_to_new_track::<TimeNoteSequence, TimeNoteSequenceBuilder>(
-            sampled_playback_note_guitar.clone(), 0.0000080 * vol_factor);
+            sampled_playback_note_guitar.clone(), 0.00080 * vol_factor);
     // let sample_track_chopped = TrackBuilder::default()
     //     .sequence(TimeNoteSequenceBuilder::default()
     //         .sequence(vec![chopped_playback_notes])
@@ -193,7 +193,7 @@ pub(crate) fn play() {
             waveforms.clone(),
             vec![envelope],
             vec![flanger.clone(), flanger.clone()],
-            vec![delay.clone(), delay.clone()],
+            vec![delay.clone()],
             lfo.clone(),
             midi_note_volume * 1.3
         );
@@ -221,12 +221,11 @@ pub(crate) fn play() {
     }
 
     // Add Sample Tracks
-    tracks.append(&mut midi_time_tracks_1);
+    // tracks.append(&mut midi_time_tracks_1);
     // tracks.append(&mut midi_time_tracks_2);
-    tracks.push(sample_track);
-    tracks.push(sample_track_offset);
-    // tracks.push(sample_track_clav);
-    // tracks.push(sample_track_guitar);
+    // tracks.push(sample_track);
+    // tracks.push(sample_track_offset);
+    tracks.push(sample_track_guitar);
     // tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
 
