@@ -14,8 +14,8 @@ static DEFAULT_DELAY_DECAY: f32 = 0.5;
 static DEFAULT_INTERVAL_DURATION_MS: f32 = 100.0;
 static DEFAULT_DELAY_DURATION_MS: f32 = 20.0;
 static DEFAULT_NUM_REPEATS: usize = 4;
-static SAMPLE_BUFFER_INIT_SIZE: usize = 10;
-static MAX_NUM_SAMPLE_DELAY_WINDOWS: usize = 16;
+// static SAMPLE_BUFFER_INIT_SIZE: usize = 10;
+static MAX_NUM_SAMPLE_DELAY_WINDOWS: usize = 128;
 
 
 // delay_buf: [************************************************************************* ...]
@@ -78,7 +78,7 @@ pub(crate) struct SampleManager {
     
     // true if the sample manager is adding initial samples before starting to process its
     // delay windows by reading them back and advancing
-    #[builder(default = "true")]
+    #[builder(default = "false")]
     is_initializing: bool,
 
     #[builder(default = "true")]
@@ -101,15 +101,15 @@ impl SampleManager {
             return 0f32;
         }
         
-        if self.is_initializing {
-            let mut buffer = Arc::make_mut(&mut self.sample_buffer);
-            buffer.push_back(sample);
-            self.init_buffer_index += 1;
-            if self.init_buffer_index == SAMPLE_BUFFER_INIT_SIZE {
-                self.is_initializing = false;
-            }
-            return 0f32;
-        }
+        // if self.is_initializing {
+        //     let mut buffer = Arc::make_mut(&mut self.sample_buffer);
+        //     buffer.push_back(sample);
+        //     self.init_buffer_index += 1;
+        //     if self.init_buffer_index == SAMPLE_BUFFER_INIT_SIZE {
+        //         self.is_initializing = false;
+        //     }
+        //     return 0f32;
+        // }
 
         if !self.is_full {
             let mut buffer = Arc::make_mut(&mut self.sample_buffer);
@@ -148,7 +148,7 @@ impl SampleManager {
         self.delay_windows_index = 0;
         self.is_full = false;
         self.is_active = true;
-        self.is_initializing = true;
+        self.is_initializing = false;
         self.is_in_delay_window = true;
         self.is_in_interval = false;
     }

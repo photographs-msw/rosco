@@ -30,11 +30,11 @@ pub(crate) fn play() {
     
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
-        .decay(0.5)
-        .mix(0.8)
-        .interval_ms(30.0)
-        .duration_ms(100.0)
-        .num_repeats(4)
+        .decay(0.7)
+        .mix(0.7)
+        .interval_ms(80.0)
+        .duration_ms(220.0)
+        .num_repeats(6)
         .build().unwrap();
     
     // Envelopes
@@ -192,8 +192,8 @@ pub(crate) fn play() {
             "/Users/markweiss/Downloads/punk_computer/001/punk_computer_001_5.mid",
             waveforms.clone(),
             vec![envelope],
-            vec![flanger.clone()],
-            vec![delay.clone()],
+            vec![flanger.clone(), flanger.clone()],
+            vec![delay.clone(), delay.clone()],
             lfo.clone(),
             midi_note_volume * 1.3
         );
