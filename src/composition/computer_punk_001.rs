@@ -32,9 +32,9 @@ pub(crate) fn play() {
     let delay = DelayBuilder::default()
         .decay(0.5)
         .mix(0.8)
-        .interval_ms(10.0)
-        .duration_ms(500.0)
-        .num_repeats(1)
+        .interval_ms(30.0)
+        .duration_ms(100.0)
+        .num_repeats(4)
         .build().unwrap();
     
     // Envelopes
@@ -224,10 +224,10 @@ pub(crate) fn play() {
     tracks.append(&mut midi_time_tracks_1);
     // tracks.append(&mut midi_time_tracks_2);
     tracks.push(sample_track);
-    // tracks.push(sample_track_offset);
+    tracks.push(sample_track_offset);
     // tracks.push(sample_track_clav);
     // tracks.push(sample_track_guitar);
-    tracks.push(sample_track_rev);
+    // tracks.push(sample_track_rev);
     // tracks.push(sample_track_chopped);
 
     // Load and play Track Grid

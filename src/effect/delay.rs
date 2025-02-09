@@ -81,10 +81,10 @@ pub(crate) struct SampleManager {
     #[builder(default = "true")]
     is_initializing: bool,
 
-    #[builder(default = "false")]
+    #[builder(default = "true")]
     is_in_delay_window: bool,
 
-    #[builder(default = "true")]
+    #[builder(default = "false")]
     is_in_interval: bool,
 }
 
@@ -149,8 +149,8 @@ impl SampleManager {
         self.is_full = false;
         self.is_active = true;
         self.is_initializing = true;
-        self.is_in_delay_window = false;
-        self.is_in_interval = true
+        self.is_in_delay_window = true;
+        self.is_in_interval = false;
     }
 
     pub(crate) fn dump_print(&self) {
