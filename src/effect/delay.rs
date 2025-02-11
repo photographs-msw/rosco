@@ -239,10 +239,10 @@ impl DelayBuilder {
         let concurrency_factor =
             self.concurrency_factor.unwrap_or(MAX_NUM_SAMPLE_DELAY_WINDOWS);
         
-        // let duration_num_samples = duration_ms as usize * SAMPLES_PER_MS as usize;
-        let duration_num_samples = 70 * SAMPLES_PER_MS as usize;
-        // let interval_num_samples = interval_ms as usize * SAMPLES_PER_MS as usize;
-        let interval_num_samples = 50 as usize * SAMPLES_PER_MS as usize;
+        let duration_num_samples = duration_ms as usize * SAMPLES_PER_MS as usize;
+        // let duration_num_samples = 70 * SAMPLES_PER_MS as usize;
+        let interval_num_samples = interval_ms as usize * SAMPLES_PER_MS as usize;
+        // let interval_num_samples = 50 as usize * SAMPLES_PER_MS as usize;
         // create the pool of SampleManagers
         let mut sample_managers_pool: Vec<SampleManager> = Vec::with_capacity(concurrency_factor);
         for i in 0..concurrency_factor {
@@ -338,7 +338,7 @@ impl Delay {
         // do bookkeeping to release sample_managers to pool
         for idx in indexes_to_release_to_pool.iter() {
             self.active_sample_managers[*idx] = false;
-            self.sample_managers_pool[*idx].reset();
+            // self.sample_managers_pool[*idx].reset();
             self.num_active_sample_managers -= 1;
         }
         // do bookkeeping to take available sample_managers from pool
