@@ -30,10 +30,10 @@ pub(crate) fn play() {
     
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
-        .decay(0.25)
-        .mix(0.9)
-        .interval_ms(30.0)
-        .duration_ms(80.0)
+        .decay(0.3)
+        .mix(0.8)
+        .interval_ms(50.0)
+        .duration_ms(50.0)
         .num_repeats(4)
         .concurrency_factor(4)
         .build().unwrap();

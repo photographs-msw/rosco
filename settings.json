@@ -1,4 +1,6 @@
-"workbench.colorCustomizations": {
-    "editor.background": "#151515",
-    "statusBar.badkground": "#151515"  // Replace with your desired color
+{
+    "workbench.colorCustomizations": {
+        "editor.background": "#052515",
+        "statusBar.background": "#151515"
+    }
 } 
