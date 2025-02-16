@@ -12,7 +12,6 @@ static DEFAULT_DELAY_DECAY: f32 = 0.5;
 static DEFAULT_INTERVAL_DURATION_MS: f32 = 100.0;
 static DEFAULT_DELAY_DURATION_MS: f32 = 20.0;
 static DEFAULT_NUM_REPEATS: usize = 4;
-static MAX_NUM_SAMPLE_DELAY_WINDOWS: usize = 128;
 
 
 // delay_buf: [************************************************************************* ...]
@@ -31,6 +30,7 @@ static MAX_NUM_SAMPLE_DELAY_WINDOWS: usize = 128;
 #[derive(Builder, Clone, Debug, PartialEq)]
 #[builder]
 pub(crate) struct SampleManager {
+
     // the size of the delay sample buffer
     #[builder(field(private))]
     sample_buffer_size: usize,
@@ -44,6 +44,9 @@ pub(crate) struct SampleManager {
    
     num_delay_windows: usize,
     
+    #[builder(default = "PREDELAY_BUFFER_SIZE")]
+    num_predelay_samples: usize,
+
     // the current index for reading the next delay sample from the buffer
     #[builder(default = "0")]
     sample_buffer_read_index: usize,
@@ -81,6 +84,9 @@ pub(crate) struct SampleManager {
 
     #[builder(default = "false")]
     is_in_interval: bool,
+
+    #[builder(default = "0")]
+    spawn_count: i32,
 }
 
 // Not initialized because expect user to initialize with init_delay_buf()
@@ -189,31 +195,18 @@ pub(crate) struct Delay {
     // the number of sample events
     pub(crate) num_repeats: usize,
 
-    // the number of simultaneous delay windows that can be active 
-    pub(crate) concurrency_factor: usize,
+    pub(crate) num_predelay_samples: usize,
 
-    pub(crate) num_active_sample_managers: usize,
-    
     // complement of mix, private compute at build time because it's constant
     #[builder(field(private))]
     mix_complement: f32,
     
-    // the size of the delay sample buffer
-    // #[builder(field(private))]
-    // window_size: usize,
-
     // boundaries of sample indexes in delay windows or in intervals between delay windows
     #[builder(field(private))]
     delay_windows: Vec<bool>,
     
-    // a pool of sample managers, each of which can manage a sample buffer, allocated initially
-    // and then used as a stack to provide active SampleManagers as needed and return inactive
-    // ones to the pool
-    // #[builder(field(private))]
-    // sample_managers_pool: Vec<SampleManager>,
-
     #[builder(field(private))]
-    active_sample_managers: Vec<SampleManager>
+    active_sample_managers: Vec<SampleManager>,
 }
 
 fn build_delay_windows(duration_num_samples: usize, interval_num_samples: usize,
@@ -254,31 +247,12 @@ impl DelayBuilder {
         let interval_ms = self.interval_ms.unwrap_or(DEFAULT_INTERVAL_DURATION_MS);
         let duration_ms = self.duration_ms.unwrap_or(DEFAULT_DELAY_DURATION_MS);
         let num_repeats = self.num_repeats.unwrap_or(DEFAULT_NUM_REPEATS);
-        
-        let concurrency_factor =
-            self.concurrency_factor.unwrap_or(MAX_NUM_SAMPLE_DELAY_WINDOWS);
+        let num_predelay_samples =
+            self.num_predelay_samples.unwrap_or(PREDELAY_BUFFER_SIZE);
         
         let duration_num_samples = duration_ms as usize * SAMPLES_PER_MS as usize;
-        // let duration_num_samples = 70 * SAMPLES_PER_MS as usize;
         let interval_num_samples = interval_ms as usize * SAMPLES_PER_MS as usize;
-        // let interval_num_samples = 50 as usize * SAMPLES_PER_MS as usize;
-        // create the pool of SampleManagers
         
-        // TODO GET RID OF POOL
-        // let mut sample_managers_pool: Vec<SampleManager> = Vec::with_capacity(concurrency_factor);
-        // for _ in 0..concurrency_factor {
-        //     sample_managers_pool.push(
-        //         SampleManagerBuilder::default()
-        //             .sample_buffer_size(duration_num_samples)
-        //             .sample_buffer(Arc::new(VecDeque::with_capacity(duration_num_samples)))
-        //             .delay_windows(build_delay_windows(
-        //                 duration_num_samples,
-        //                 interval_num_samples,
-        //                 num_repeats))
-        //             .num_delay_windows(num_repeats)
-        //             .build().unwrap()
-        //     );
-        // }
         // initialize the delay with one active SampleManager
         let mut active_sample_managers = Vec::new();
         active_sample_managers.push(
@@ -290,12 +264,11 @@ impl DelayBuilder {
                     interval_num_samples,
                     num_repeats))
                 .num_delay_windows(num_repeats)
+                .num_predelay_samples(num_predelay_samples)
                 .build().unwrap()
         );
         
         let mix_complement = 1.0 - mix;
-        // let window_size =
-        //     duration_ms as usize * SAMPLES_PER_MS as usize;
         
         Ok(
             Delay {
@@ -305,14 +278,13 @@ impl DelayBuilder {
                 interval_ms,
                 duration_ms,
                 num_repeats,
-                concurrency_factor,
+                num_predelay_samples,
                 // private
                 mix_complement,
                 // window_size,
                 delay_windows: build_delay_windows(duration_num_samples, interval_num_samples,
                                                    num_repeats),
                 active_sample_managers,
-                num_active_sample_managers: 1,
             }
         )
     }
@@ -328,114 +300,23 @@ impl Delay {
         // any that aren't active will return 0
         // count number of delay samples returned so we can divide total, use mean to normalize
         let mut num_delay_samples = 0;
-        let mut push_count = 0;
-        for (i, sample_manager)
-                in self.active_sample_managers.iter_mut().enumerate() {
-            // capture whether this sample fetch made the manager become full, in which case
-            // we need to add another manager
-            let manager_is_full_before_fetch = sample_manager.is_full;
-
-            // TEMP DEBUG
-            // println!("sample manager {} is active", i);
-            // sample_manager.dump_print();
+        // let mut push = false;
+        for sample_manager in self.active_sample_managers.iter_mut() {
 
             let next_delay_sample = sample_manager.next_sample(sample);
-
-            // TEMP DEBUG
-            // println!("next_delay_sample: {} {}", i, next_delay_sample);
-            // sample_manager.dump_print();
 
             // add each sample returned factored by the decay for that sample manager, each
             // might be in a different delay window
             delay_sample +=
                 next_delay_sample * self.decay.powi(sample_manager.cur_delay_window as i32);
             num_delay_samples += 1;
-
-            // spawn the next active sample manager if this one is still active and is full,
-            // unless the pool is exhausted 
-            // TODO BUG HERE
-            // actual chevk should be are all managers full, only then need a new one
-            // MOVE UP TO MANAGER
-            if !manager_is_full_before_fetch && sample_manager.is_full {
-                push_count += 1;
-            }
-
-            // TODO THIS SEEMS LIKE A BUG TOO
-            // MOVE UP TO MANAGER
-            // should just reset and stay active because we will never need fewer
-            // concurrent buffers then the max number we spawned each time all 
-            // the active managers are full. By definition can't need less
-            // because buffers sizes are fixed, sample internvals are fixed
-            // effect never turns off
-            // if !sample_manager.is_active {
-            //     sample_manager.reset();
-                // just became inactive on this iteration, record index to release to pool
-                // indexes_to_release_to_pool.push(i);
-            // }
         }
-
-        // if push_count > 0 {
-        //     let duration_num_samples = self.duration_ms as usize * SAMPLES_PER_MS as usize;
-        //     let interval_num_samples = self.interval_ms as usize * SAMPLES_PER_MS as usize;
-
-        //     self.active_sample_managers.push(
-        //         SampleManagerBuilder::default()
-        //             .sample_buffer_size(duration_num_samples)
-        //             .sample_buffer(Arc::new(VecDeque::with_capacity(duration_num_samples)))
-        //             .delay_windows(build_delay_windows(
-        //                 duration_num_samples,
-        //                 interval_num_samples,
-        //                 self.num_repeats))
-        //             .num_delay_windows(self.num_repeats)
-        //         .build().unwrap()
-        //     );
-        // }
-
-        // do bookkeeping to release sample_managers to pool
-        // for idx in indexes_to_release_to_pool.iter() {
-        //     self.active_sample_managers[*idx] = false;
-        //     self.num_active_sample_managers -= 1;
-        // }
-        // do bookkeeping to take available sample_managers from pool
-        // let mut taken_count = 0;
-        // if num_to_take_from_pool > 0 {
-        //     for (i, manager_is_active)
-        //             in self.active_sample_managers.iter_mut().enumerate() {
-        //         let is_active = *manager_is_active;
-        //         if !is_active {
-        //             *manager_is_active = true;
-        //             self.sample_managers_pool[i].reset();
-        //             self.num_active_sample_managers += 1;
-        //             taken_count += 1;
-        //             if taken_count == num_to_take_from_pool {
-        //                 break;
-        //             }
-        //         }
-        //     }
-        // }
-        
-        // if (float_leq(delay_sample, 0.0) && float_geq(sample, 0.0)) || 
-        //     (float_geq(delay_sample, 0.0) && float_leq(sample, 0.0)) {
-        //     delay_sample *= -1.0;
-        // }
-
-        // TEMP DEBUG
-        // println!("sample {}, delay_sample: {}", sample, delay_sample);
 
         // normalize the sum of the delay samples by the number of delay samples
         delay_sample /= num_delay_samples as f32;
-
-        // TEMP DEBUG
-        // println!("sample {}, delay_sample: {}", sample, delay_sample);
-
         self.mix_complement * sample + (self.mix * delay_sample)
     }
 
-    // pub(crate) fn reset(&mut self) {
-    //     for i in 0.. self.concurrency_factor {
-    //         self.sample_managers_pool[i].reset();
-    //     }
-    // }
 }
 
 #[allow(dead_code)]

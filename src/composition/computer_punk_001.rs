@@ -30,12 +30,12 @@ pub(crate) fn play() {
     
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
-        .decay(0.3)
-        .mix(0.8)
-        .interval_ms(50.0)
-        .duration_ms(50.0)
-        .num_repeats(4)
-        .concurrency_factor(4)
+        .decay(0.25)
+        .mix(0.75)
+        .interval_ms(70.0)
+        .duration_ms(190.0)
+        .num_repeats(2)
+        .num_predelay_samples(2)
         .build().unwrap();
     
     // Envelopes
@@ -52,14 +52,14 @@ pub(crate) fn play() {
 
     // Flangers
     let flanger = FlangerBuilder::default()
-        .window_size(50)
+        .window_size(8)
         .sample_buffer()
-        .mix(0.9)
+        .mix(0.15)
         .build().unwrap();
     let flanger_2 = FlangerBuilder::default()
         .window_size(6)
         .sample_buffer()
-        .mix(0.9)
+        .mix(0.5)
         .build().unwrap();
 
     // LFOs
@@ -88,7 +88,7 @@ pub(crate) fn play() {
         sampled_note_volume,
         start_time,
         vec![short_envelope],
-        vec![flanger_2.clone()],
+        vec![flanger.clone()],
         vec![delay.clone()],
     );
 
@@ -223,7 +223,7 @@ pub(crate) fn play() {
     // Add Sample Tracks
     // tracks.append(&mut midi_time_tracks_1);
     // tracks.append(&mut midi_time_tracks_2);
-    // tracks.push(sample_track);
+    tracks.push(sample_track);
     // tracks.push(sample_track_offset);
     tracks.push(sample_track_guitar);
     // tracks.push(sample_track_rev);
