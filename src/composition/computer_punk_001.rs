@@ -30,7 +30,7 @@ pub(crate) fn play() {
     
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
-        .decay(0.25)
+        .decay(0.2)
         .mix(0.75)
         .interval_ms(70.0)
         .duration_ms(190.0)
@@ -52,7 +52,7 @@ pub(crate) fn play() {
 
     // Flangers
     let flanger = FlangerBuilder::default()
-        .window_size(8)
+        .window_size(12)
         .sample_buffer()
         .mix(0.15)
         .build().unwrap();
@@ -65,8 +65,8 @@ pub(crate) fn play() {
     // LFOs
     let lfo = LFOBuilder::default()
         .waveforms(vec![Waveform::Sine])
-        .frequency(220.0)
-        .amplitude(0.0029)
+        .frequency(110.0)
+        .amplitude(0.5)
         .build().unwrap();
 
     // /Track Effects
@@ -90,6 +90,7 @@ pub(crate) fn play() {
         vec![short_envelope],
         vec![flanger.clone()],
         vec![delay.clone()],
+        vec![lfo.clone()],
     );
 
     let mut sampled_playback_note_reverse = sampled_playback_note.clone();
@@ -120,6 +121,7 @@ pub(crate) fn play() {
         vec![short_envelope],
         vec![flanger_2.clone()],
         vec![clav_delay.clone()],
+        vec![lfo.clone()],
     );
 
     let sampled_playback_note_guitar = comp_utils::build_sampled_playback_note(
@@ -132,6 +134,7 @@ pub(crate) fn play() {
         vec![short_envelope],
         vec![flanger_2.clone()],
         vec![delay.clone(), delay.clone()],
+        vec![lfo.clone()],
     );
 
     let mut reverse_guitar_delay = delay.clone();

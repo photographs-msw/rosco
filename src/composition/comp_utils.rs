@@ -21,8 +21,7 @@ pub(crate) fn build_sampled_playback_note(sampled_note_pool: &mut NotePool<Sampl
                                           playback_note_pool: &mut NotePool<PlaybackNote>,
                                           file_path: &str, volume: f32, start_time: f32,
                                           envelopes: Vec<Envelope>, flangers: Vec<Flanger>,
-                                          delays: Vec<Delay>) -> PlaybackNote {
-    let sample_buf: SampleBuf = load_sample_data(file_path);
+                                          delays: Vec<Delay>, lfos: Vec<LFO>) -> PlaybackNote {
     let sample_buf: SampleBuf = load_sample_data(file_path);
     let mut sampled_note = sampled_note_pool.acquire().unwrap();
     sampled_note.volume = volume;
@@ -40,7 +39,8 @@ pub(crate) fn build_sampled_playback_note(sampled_note_pool: &mut NotePool<Sampl
     playback_note.envelopes = envelopes;
     playback_note.flangers = flangers;
     playback_note.delays = delays;
-
+    playback_note.lfos = lfos;
+    
     playback_note
 }
 
