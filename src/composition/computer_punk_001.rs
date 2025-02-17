@@ -30,11 +30,12 @@ pub(crate) fn play() {
     
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
-        .decay(0.2)
+        .id(0)
+        .decay(0.3)
         .mix(0.75)
         .interval_ms(70.0)
-        .duration_ms(190.0)
-        .num_repeats(2)
+        .duration_ms(150.0)
+        .num_repeats(4)
         .num_predelay_samples(2)
         .build().unwrap();
     
@@ -109,20 +110,20 @@ pub(crate) fn play() {
     let sampled_playback_note_offset_clone = sampled_playback_note_offset.clone();
     comp_utils::set_notes_offset(&mut vec![sampled_playback_note_offset], offset);
 
-    #[allow(unused_variables)]
-    let mut clav_delay = delay.clone();
-    let sampled_playback_note_clav = comp_utils::build_sampled_playback_note(
-        &mut sampled_note_pool,
-        &mut playback_note_pool,
-        // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
-        "/Users/markweiss/Downloads/punk_computer/001/punk_computer_011.wav",
-        sampled_note_volume,
-        start_time + 0.125,
-        vec![short_envelope],
-        vec![flanger_2.clone()],
-        vec![clav_delay.clone()],
-        vec![lfo.clone()],
-    );
+    // #[allow(unused_variables)]
+    // let mut clav_delay = delay.clone();
+    // let sampled_playback_note_clav = comp_utils::build_sampled_playback_note(
+    //     &mut sampled_note_pool,
+    //     &mut playback_note_pool,
+    //     // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
+    //     "/Users/markweiss/Downloads/punk_computer/001/punk_computer_011.wav",
+    //     sampled_note_volume,
+    //     start_time + 0.125,
+    //     vec![short_envelope],
+    //     vec![flanger_2.clone()],
+    //     vec![clav_delay.clone()],
+    //     vec![lfo.clone()],
+    // );
 
     let sampled_playback_note_guitar = comp_utils::build_sampled_playback_note(
         &mut sampled_note_pool,
@@ -133,7 +134,7 @@ pub(crate) fn play() {
         start_time + 0.375,
         vec![short_envelope],
         vec![flanger_2.clone()],
-        vec![delay.clone(), delay.clone()],
+        vec![delay.clone()],
         vec![lfo.clone()],
     );
 
@@ -213,7 +214,7 @@ pub(crate) fn play() {
             waveforms.clone(),
             vec![envelope],
             vec![flanger.clone(), flanger_2.clone()],
-            vec![delay.clone()],
+            vec![],
             lfo.clone(),
             midi_note_volume * 1.4
         );
@@ -244,44 +245,9 @@ pub(crate) fn play() {
         }
     });
 
-    // println!("First loop and capture loop");
-    // let mut loop_playback_notes = Vec::new();
-    for (i, playback_notes) in rx.iter().enumerate() {
-        let mut out_notes = playback_notes.clone();
-        // if i % 2 == 0 {
-        //     let flanger_3 = FlangerBuilder::default()
-        //         .window_size(i + 2)
-        //         .sample_buffer()
-        //         .mix(0.20)
-        //         .build().unwrap();
-        //     for playback_note in out_notes.iter_mut() {
-        //         playback_note.flangers.push(flanger_3.clone());
-        //     }
-        // }
-        
-        // TEMP DEBUG
-        // let note = out_notes[0].clone();
-        
-        audio_gen::audio_gen::gen_notes_stream(out_notes, oscillators_tables.clone());
-        // loop_playback_notes.push(playback_notes);
+    for playback_notes in rx.iter() {
+        audio_gen::audio_gen::gen_notes_stream(playback_notes,
+            oscillators_tables.clone());
     }
 
-    // println!("First replay loop");
-
-    // for _ in 0..1 {
-    //     for (i, playback_notes) in loop_playback_notes.iter_mut().enumerate() {
-    //         if i % 2 == 0 {
-    //             for playback_note in playback_notes.iter_mut() {
-    //                 let new_flanger = FlangerBuilder::default()
-    //                     .window_size(11)
-    //                     .sample_buffer()
-    //                     .mix(0.2)
-    //                     .build().unwrap();
-    //                 playback_note.flangers.push(new_flanger.clone());
-    //             }
-    //         }
-    //         audio_gen::audio_gen::gen_notes_stream(playback_notes.clone(),
-    //                                                oscillators_tables.clone());
-    //     }
-    // }
 }

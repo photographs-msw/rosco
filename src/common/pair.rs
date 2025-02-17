@@ -1,4 +1,4 @@
-use std::hash::{Hash, Hasher};
+use std::hash::Hash;
 
 #[derive(Clone, Copy, Debug, Eq, Hash, PartialEq)]
 pub(crate) struct Pair<T> (

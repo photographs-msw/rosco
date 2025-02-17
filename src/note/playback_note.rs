@@ -5,7 +5,7 @@ use crate::effect::flanger::Flanger;
 use crate::effect::lfo::LFO;
 use crate::note::constants;
 use crate::note::note;
-use crate::note::note::{Note, NoteBuilder};
+use crate::note::note::Note;
 use crate::note::note_trait::BuilderWrapper;
 use crate::note::sampled_note;
 use crate::note::sampled_note::SampledNote;
