@@ -10,6 +10,7 @@ use crate::common::constants::SAMPLES_PER_MS;
 
 pub(crate) const PREDELAY_BUFFER_SIZE: usize = 20;
 
+static DEFAULT_DELAY_ID: usize = 0;
 static DEFAULT_DELAY_MIX: f32 = 1.0;
 static DEFAULT_DELAY_DECAY: f32 = 0.5;
 static DEFAULT_INTERVAL_DURATION_MS: f32 = 100.0;
@@ -26,10 +27,6 @@ fn add_sample_manager(id: usize, sm_id: usize, sample_buffer_size: usize,
         sample_buffer_write_index: usize, init_buffer_index: usize, cur_delay_window:
         usize, delay_windows_index: usize) {
     
-    if *SAMPLE_MANAGER_ID_COUNTER.lock().unwrap() >= MAX_NUM_ACTIVE_SAMPLE_MANAGERS {
-        return;
-    }
-
     let mut map = ACTIVE_SAMPLE_MANAGERS.lock().unwrap();
     let sample_managers = map.entry(id).or_insert_with(Vec::new);
     sample_managers.push(
@@ -79,56 +76,37 @@ pub(crate) struct SampleManager {
 
     // the id of the sample manager
     id: usize,
-
     // the size of the delay sample buffer
-    // #[builder(field(private))]
     sample_buffer_size: usize,
-
-    // #[builder(field(private))]
     sample_buffer: Arc<RwLock<VecDeque<f32>>>,
-
     // boundaries of sample indexes in delay windows or in intervals between delay windows
     // true if in delay window, false if in interval
     delay_windows: Vec<bool>,
-   
     num_delay_windows: usize,
-    
-    // #[builder(default = "PREDELAY_BUFFER_SIZE")]
     num_predelay_samples: usize,
-
     // the current index for reading the next delay sample from the buffer
-    // #[builder(default = "0")]
     sample_buffer_read_index: AtomicUsize,
-
     // the current index for writing the next delay sample from the buffer
-    // #[builder(default = "0")]
     sample_buffer_write_index: AtomicUsize,
-
     // leader buffer, we don't start reading and incrementing other buffers until we have written
     // this many initializing samples
-    // #[builder(default = "0")]
     init_buffer_index: AtomicUsize,
-    
     // which delay window we are in, used to calculate decay factor
-    // #[builder(default = "1")]
     cur_delay_window: AtomicUsize,
-    
     // position in bit vector of entire length of all delay windows
-    // #[builder(default = "0")]
     delay_windows_index: AtomicUsize,
-    
     // false if the sample manager can still write more samples
     is_full: AtomicBool,
-
     // true if the sample manager hasn't finished going through its delay windows
     is_active: AtomicBool,
-
+    // true if the sample manager is in the pre-delay buffer
     is_pre_delay: AtomicBool,
-        
+    // true if the sample manager is in a delay window
     is_in_delay_window: AtomicBool,
-
+    // true if the sample manager is in an interval
     is_in_interval: AtomicBool,
-
+    // true if the sample manager has spawned a new sample manager; this will happend once
+    // for each Manager when it gets full, up to the global limit of MAX_NUM_ACTIVE_SAMPLE_MANAGERS
     has_spawned: AtomicBool,
 }
 
@@ -189,6 +167,9 @@ impl SampleManager {
         delay_sample 
     }
     
+    // DO NOT reset has_spawned, it is used to track if the sample manager has spawned a new
+    // sample manager; this will happen once for each Manager when it gets full, up to the
+    // global limit of MAX_NUM_ACTIVE_SAMPLE_MANAGERS
     pub(crate) fn reset(&mut self) {
         self.sample_buffer_read_index.store(0, Ordering::SeqCst);
         self.sample_buffer_write_index.store(0, Ordering::SeqCst);
@@ -275,7 +256,11 @@ pub(crate) struct Delay {
     // the number of sample events
     pub(crate) num_repeats: usize,
 
+    // number of samples in the pre-delay buffer
     pub(crate) num_predelay_samples: usize,
+
+    // the number of concurrent sample managers allowed
+    pub(crate) num_concurrent_sample_managers: usize,  
 
     #[builder(field(private))]
     sample_manager_id_counter: usize,
@@ -298,6 +283,9 @@ pub(crate) struct Delay {
     interval_num_samples: usize,
 }
 
+// build the delay windows vectors, just the length of the sequence of indexes in each delay
+// window and the interval between delay windows, set to true or false. To allow fast lookup
+// of whether we add a delay sample as we iterate through samples
 fn build_delay_windows(duration_num_samples: usize, interval_num_samples: usize,
                        num_repeats: usize) -> Vec<bool> {
 
@@ -331,7 +319,7 @@ fn build_delay_windows(duration_num_samples: usize, interval_num_samples: usize,
 impl DelayBuilder {
     
     pub(crate) fn build(&mut self) -> Result<Delay, String> {
-        let id = self.id.unwrap_or(0);
+        let id = self.id.unwrap_or(DEFAULT_DELAY_ID);
         let mix = self.mix.unwrap_or(DEFAULT_DELAY_MIX);
         let decay = self.decay.unwrap_or(DEFAULT_DELAY_DECAY);
         let interval_ms = self.interval_ms.unwrap_or(DEFAULT_INTERVAL_DURATION_MS);
@@ -339,22 +327,20 @@ impl DelayBuilder {
         let num_repeats = self.num_repeats.unwrap_or(DEFAULT_NUM_REPEATS);
         let num_predelay_samples =
             self.num_predelay_samples.unwrap_or(PREDELAY_BUFFER_SIZE);
-        
+        let num_concurrent_sample_managers =
+            self.num_concurrent_sample_managers.unwrap_or(MAX_NUM_ACTIVE_SAMPLE_MANAGERS);
+
         let sample_manager_id_counter = 0;
         let sample_manager_is_full_counter = 0;
         let duration_num_samples = duration_ms as usize * SAMPLES_PER_MS as usize;
         let interval_num_samples = interval_ms as usize * SAMPLES_PER_MS as usize;
         
         // initialize the delay with one active SampleManager
-        let mut active_sample_managers = Vec::new();
-        // TODO MAKE CONSTANT
-        active_sample_managers.push(
-            add_sample_manager(
-                id, next_sample_manager_id(), duration_num_samples,
-                build_delay_windows(duration_num_samples, interval_num_samples, num_repeats),
-                num_repeats, num_predelay_samples,
-                0, 0, 0, 0, 0
-            )
+        add_sample_manager(
+            id, next_sample_manager_id(), duration_num_samples,
+            build_delay_windows(duration_num_samples, interval_num_samples, num_repeats),
+            num_repeats, num_predelay_samples,
+            0, 0, 0, 0, 0
         );
 
         let mix_complement = 1.0 - mix;
@@ -369,6 +355,7 @@ impl DelayBuilder {
                 duration_ms,
                 num_repeats,
                 num_predelay_samples,
+                num_concurrent_sample_managers,
                 // private
                 sample_manager_id_counter,
                 sample_manager_is_full_counter,
@@ -409,12 +396,6 @@ impl Delay {
                     
                     if !sample_manager.has_spawned.load(Ordering::SeqCst) &&
                             sample_manager.is_full.load(Ordering::SeqCst) {
-
-                        // TEMP DEBUG
-                        // println!("IN PUSH BEFORE Current thread: {:?}, delay_id: {},
-                        //     sample_manager_id: {}", std::thread::current().id(), self.id,
-                        //     sample_manager.id);
-
                         sample_manager.has_spawned.store(true, Ordering::SeqCst);
                         push.store(true, Ordering::SeqCst);
                     }
@@ -432,11 +413,9 @@ impl Delay {
         };
 
         // Add new manager outside the lock
-        if push.load(Ordering::SeqCst) {
-            // TEMP DEBUG
-            // println!("IN SPAWN Current thread: {:?}, delay_id: {}, push: {}",
-            //     std::thread::current().id(), self.id, push.load(Ordering::SeqCst));
-
+        // enforce global limit on number of active sample managers
+        if push.load(Ordering::SeqCst) &&
+                *SAMPLE_MANAGER_ID_COUNTER.lock().unwrap() < self.num_concurrent_sample_managers {
             add_sample_manager(
                 self.id,
                 next_sample_manager_id(),
@@ -447,10 +426,10 @@ impl Delay {
                 0, 0, 0, 0, 0
             );
         }
-
         push.store(false, Ordering::SeqCst);
 
         self.mix_complement * sample + (self.mix * final_value)
+
     }
 }
 

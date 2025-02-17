@@ -31,12 +31,13 @@ pub(crate) fn play() {
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
         .id(0)
-        .decay(0.3)
-        .mix(0.75)
+        .decay(0.5)
+        .mix(0.95)
         .interval_ms(70.0)
-        .duration_ms(150.0)
+        .duration_ms(100.0)
         .num_repeats(4)
         .num_predelay_samples(2)
+        .num_concurrent_sample_managers(4)
         .build().unwrap();
     
     // Envelopes
