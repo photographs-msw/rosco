@@ -215,7 +215,7 @@ impl Clone for SampleManager {
         SampleManager {
             id: self.id,
             sample_buffer_size: self.sample_buffer_size,
-            sample_buffer: self.sample_buffer.clone(),
+            sample_buffer: Arc::new(RwLock::new(VecDeque::with_capacity(self.sample_buffer_size))),
             delay_windows: self.delay_windows.clone(),
             num_delay_windows: self.num_delay_windows,
             num_predelay_samples: self.num_predelay_samples,

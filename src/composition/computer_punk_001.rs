@@ -55,12 +55,10 @@ pub(crate) fn play() {
     // Flangers
     let flanger = FlangerBuilder::default()
         .window_size(12)
-        .sample_buffer()
         .mix(0.15)
         .build().unwrap();
     let flanger_2 = FlangerBuilder::default()
         .window_size(6)
-        .sample_buffer()
         .mix(0.5)
         .build().unwrap();
 
