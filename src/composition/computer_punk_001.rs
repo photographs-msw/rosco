@@ -19,8 +19,8 @@ pub(crate) fn play() {
     // Init
     println!("playing 'computer punk {}'\n", COMPUTER_PUNK_VERSION);
 
-    let sampled_note_volume = 0.000009;
-    let sampled_note_rev_volume = 0.000042 * 0.3;
+    let sampled_note_volume = 0.0009;
+    let sampled_note_rev_volume = 0.0042 * 0.3;
 
     // Track Effecte
     #[allow(unused_variables)]
@@ -127,14 +127,14 @@ pub(crate) fn play() {
     // Add additional notes to the sequence
     piano_track_1.sequence.append_note(piano_note_1.clone());
     guitar_track_1.sequence.append_note(guitar_note_1.clone());
-    // piano_seq.append_note(piano_rest_note);
-    // guitar_seq.append_note(guitar_rest_note);
-    // piano_seq.append_note(piano_note_1_c.clone());
-    // guitar_seq.append_note(guitar_rest_note);
-    // piano_seq.append_note(piano_rest_note);
-    // guitar_seq.append_note(guitar_note_1_c.clone());
-    // piano_seq.append_note(piano_note_1_c.clone());
-    // guitar_seq.append_note(guitar_note_1_c.clone());
+    piano_track_1.sequence.append_note((piano_rest_note.clone()));
+    guitar_track_1.sequence.append_note(guitar_rest_note.clone());
+    piano_track_1.sequence.append_note(piano_note_1.clone());
+    guitar_track_1.sequence.append_note(guitar_note_1.clone());
+    piano_track_1.sequence.append_note(piano_rest_note.clone());
+    guitar_track_1.sequence.append_note(guitar_note_1.clone());
+    piano_track_1.sequence.append_note(piano_note_1.clone());
+    guitar_track_1.sequence.append_note(guitar_note_1.clone());
 
     let mut tracks = Vec::new();
     tracks.push(piano_track_1);
