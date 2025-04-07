@@ -265,7 +265,9 @@ impl TimeNoteSequence {
         for i in 0..self.frontier_indexes.len() {
             if self.sequence[self.frontier_indexes[i]].iter().all(
                     |playback_note|
-                    playback_note.note_end_time_ms() < note_time_ms) {
+                    playback_note.note_end_time_ms() < note_time_ms + constants::FLOAT_EPSILON) {
+                    // float_leq(playback_note.note_end_time_ms(),
+                    //     note_time_ms + constants::FLOAT_EPSILON)) {
                 frontier_indexes_to_pop += 1;
             }
         }
