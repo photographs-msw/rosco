@@ -11,8 +11,8 @@ mod sequence;
 mod track;
 mod composition;
 
-use crate::composition::computer_punk_001;
+use crate::composition::computer_punk_003;
 
 fn main() {
-    computer_punk_001::play();
+    computer_punk_003::play();
 }

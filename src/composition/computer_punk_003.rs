@@ -13,13 +13,11 @@ use crate::sequence::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuil
 use crate::track::track_grid::TrackGridBuilder;
 use crate::track::track::TrackBuilder;
 
-#[allow(dead_code)]
 const COMPUTER_PUNK_VERSION: &str = "003";
 
-#[allow(dead_code)]
 pub(crate) fn play() {
     // Init
-    println!("playing 'computer punk {}'\n", COMPUTER_PUNK_VERSION);
+    println!("\n***** Playing 'computer punk {}' *****\n", COMPUTER_PUNK_VERSION);
 
     let sampled_note_volume = 0.0009;
     let sampled_note_rev_volume = 0.0042 * 0.3;
