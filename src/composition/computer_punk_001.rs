@@ -150,6 +150,12 @@ pub(crate) fn play() {
     guitar_track_1.sequence.append_note(
         adjust_note_start_end_time(
             &mut guitar_rest_note, 2.0 * note_dur, note_dur));
+    piano_track_1.sequence.append_note(
+        adjust_note_start_end_time(
+            &mut piano_note_1_rev, 3.0 * note_dur, note_dur));
+    guitar_track_1.sequence.append_note(
+        adjust_note_start_end_time(
+            &mut guitar_note_1_rev, 3.0 * note_dur, note_dur));
 
     let mut tracks = Vec::new();
     tracks.push(piano_track_1);
