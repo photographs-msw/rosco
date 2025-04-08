@@ -25,6 +25,7 @@ pub(crate) fn gen_note_stream(playback_note: PlaybackNote, oscillator_tables: Os
     gen_note_stream_impl::<f32>(&device, &config.into(), oscillator_tables, playback_note);
 }
 
+#[allow(dead_code)]
 pub(crate) fn gen_notes_stream(playback_notes: Vec<PlaybackNote>,
                                oscillator_tables: OscillatorTables)
 {
@@ -117,6 +118,7 @@ where
     std::thread::sleep(time::Duration::from_millis(duration_ms.ceil() as u64));
 }
 
+#[allow(dead_code)]
 fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
                             oscillator_tables: OscillatorTables, mut playback_notes: Vec<PlaybackNote>,
                             note_duration_ms: u64)

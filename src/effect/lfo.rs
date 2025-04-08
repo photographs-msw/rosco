@@ -45,6 +45,7 @@ impl LFOBuilder {
 }
 
 impl LFO {
+    #[allow(dead_code)]
     pub(crate) fn apply_effect(&self, mut sample: f32, sample_count: u64) -> f32 {
         for waveform in self.waveforms.clone() {
             sample += match waveform {

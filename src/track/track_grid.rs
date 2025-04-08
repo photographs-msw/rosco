@@ -42,7 +42,6 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
         let mut track_playback_notes = Vec::new();
 
         for track in self.tracks.iter_mut() {
-            
             track.sequence.set_cur_position(self.cur_position_ms);
             
             for playback_note in track.sequence.next_notes() {
@@ -121,6 +120,7 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
                     note_ref_into_note(playback_note, self.cur_position_ms, window_end_time_ms)
                 )
                 .collect();
+
 
             out_playback_notes.extend_from_slice(&playback_notes);
         }

@@ -1,7 +1,6 @@
 use std::collections::VecDeque;
 use derive_builder::Builder;
 
-use crate::common::constants;
 use crate::common::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::playback_note;
 use crate::note::playback_note::PlaybackNote;
@@ -138,7 +137,7 @@ impl TimeNoteSequence {
     }
 
     pub(crate) fn get_next_notes_window(&mut self) -> Vec<PlaybackNote> {
-
+        
         fn note_ref_into_note(playback_note: &PlaybackNote, cur_notes_time_ms: f32,
                               window_end_time_ms: f32) -> PlaybackNote {
             let mut new_playback_note: PlaybackNote = playback_note.clone();
@@ -148,7 +147,7 @@ impl TimeNoteSequence {
         }
         
         let mut window_playback_notes = Vec::new();
-        self.remove_completed_frontier_indexes(self.cur_position_ms);
+        self.remove_completed_frontier_indexes();
         if self.frontier_indexes.is_empty() {
             return window_playback_notes;
         }
@@ -160,10 +159,11 @@ impl TimeNoteSequence {
         // the current notes time to the frontier min start time + epsilon
         if self.cur_position_ms < window_start_time_ms {
             window_playback_notes.push(
-                playback_note::playback_rest_note(self.cur_position_ms, window_start_time_ms)
+                playback_note::playback_rest_note(self.cur_position_ms,
+                    window_start_time_ms)
             );
+            self.cur_position_ms = window_start_time_ms;
 
-            self.cur_position_ms = window_start_time_ms + constants::FLOAT_EPSILON;
             return window_playback_notes;
         }
 
@@ -206,7 +206,8 @@ impl TimeNoteSequence {
             window_playback_notes.extend_from_slice(&playback_notes);
         }
 
-        self.cur_position_ms = window_end_time_ms + constants::FLOAT_EPSILON;
+        self.cur_position_ms = window_end_time_ms; // + constants::FLOAT_EPSILON;
+
         window_playback_notes
     }
     
@@ -221,7 +222,7 @@ impl TimeNoteSequence {
         &self.sequence[min_frontier_index..(max_frontier_index + 1)]
     }
 
-    fn remove_completed_frontier_indexes(&mut self, note_time_ms: f32) {
+    fn remove_completed_frontier_indexes(&mut self) {
         let mut frontier_indexes_to_pop: usize = 0;
         // Loop over the notes in the position, if any have an end time later than current
         // note time, then the note hasn't been completed yet so the index is still active.
@@ -229,7 +230,9 @@ impl TimeNoteSequence {
         for i in 0..self.frontier_indexes.len() {
             if self.sequence[self.frontier_indexes[i]].iter().all(
                     |playback_note|
-                    float_leq(playback_note.note_end_time_ms(), note_time_ms)) {
+                    // playback_note.note_end_time_ms() < note_time_ms) {
+                    float_leq(playback_note.note_end_time_ms(), self.cur_position_ms)) {
+                    //     note_time_ms + constants::FLOAT_EPSILON)) {
                 frontier_indexes_to_pop += 1;
             }
         }

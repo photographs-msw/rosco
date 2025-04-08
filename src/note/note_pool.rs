@@ -4,6 +4,7 @@ use crate::note::note_trait::BuilderWrapper;
 
 pub struct NotePool<NoteType> {
     available: VecDeque<NoteType>,
+    #[allow(dead_code)]
     capacity: usize,
 }
 
@@ -22,6 +23,7 @@ impl<NoteType> NotePool<NoteType> {
         self.available.pop_front()
     }
     
+    #[allow(dead_code)]
     pub fn release(&mut self, note: NoteType) {
         if self.available.len() < self.capacity {
             self.available.push_back(note);

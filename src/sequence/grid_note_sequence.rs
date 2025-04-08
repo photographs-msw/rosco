@@ -15,7 +15,7 @@ pub(crate) struct GridNoteSequence {
 
 impl AppendNote for GridNoteSequence {
     fn append_note(&mut self, playback_note: PlaybackNote) {
-        self.sequence.push(vec![playback_note]);
+        self.append_note(playback_note);
     }
 }
 
@@ -72,6 +72,10 @@ impl GridNoteSequence {
         self.sequence.insert(self.index, playback_notes);
     }
 
+    pub(crate) fn append_note(&mut self, playback_note: PlaybackNote) {
+        self.sequence.push(vec![playback_note.clone()]);
+    }
+    
     pub(crate) fn insert_note(&mut self, playback_note: PlaybackNote) {
         if playback_note.note_start_time_ms() < 0.0 {
             panic!("Note start time must be >= 0.0");

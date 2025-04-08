@@ -56,6 +56,7 @@ pub(crate) fn load_sample_data(file_path: &str) -> SampleBuf {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn load_midi_file_to_tracks<
     SequenceType: AppendNote + Clone + IterMutWrapper,
     SequenceBuilderType: BuilderWrapper<SequenceType>
@@ -82,6 +83,7 @@ pub(crate) fn load_midi_file_to_tracks<
     midi_time_tracks
 }
 
+#[allow(dead_code)]
 pub(crate) fn load_note_to_new_track<
     SequenceType: AppendNote + Clone + IterMutWrapper,
     SequenceBuilderType: BuilderWrapper<SequenceType>
@@ -113,6 +115,7 @@ pub(crate) fn load_notes_to_new_track<
         .build().unwrap()
 }
 
+#[allow(dead_code)]
 pub(crate) fn set_notes_offset(playback_notes: &mut Vec<PlaybackNote>, offset: f32) {
     for playback_note in playback_notes.iter_mut() {
         playback_note.playback_start_time_ms += offset;

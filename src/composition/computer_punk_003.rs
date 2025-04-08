@@ -13,24 +13,16 @@ use crate::sequence::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuil
 use crate::track::track_grid::TrackGridBuilder;
 use crate::track::track::TrackBuilder;
 
-#[allow(dead_code)]
 const COMPUTER_PUNK_VERSION: &str = "003";
 
-#[allow(dead_code)]
 pub(crate) fn play() {
     // Init
-    println!("playing 'computer punk {}'\n", COMPUTER_PUNK_VERSION);
+    println!("\n***** Playing 'computer punk {}' *****\n", COMPUTER_PUNK_VERSION);
 
-    let waveforms = comp_utils::get_waveforms_from_arg();
-    let oscillators_tables = audio_gen::oscillator::OscillatorTables::new();
+    let sampled_note_volume = 0.0009;
+    let sampled_note_rev_volume = 0.0042 * 0.3;
 
-    let midi_note_volume = 0.95;
-    let sampled_note_volume = 0.000009;
-    let sampled_note_rev_volume = 0.000042 * 0.3;
-
-    // Track Effects
-    // TEST EDIT DELETE ME
-    
+    // Track Effecte
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
         .id(0)

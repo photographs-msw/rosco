@@ -12,6 +12,7 @@ use crate::track::track::{Track, TrackBuilder};
 
 #[allow(dead_code)]
 pub(crate) static DEFAULT_BPM: u8 = 120;
+#[allow(dead_code)]
 static MSECS_PER_MIN: f32 = 60000.0;
 
 // The MIDI standard doesn't support connecting NoteOn and NoteOff events, nor NoteOn events with
@@ -19,6 +20,7 @@ static MSECS_PER_MIN: f32 = 60000.0;
 // We are processing raw Midi events in a stream, so we can't do any better and can only validly
 // process input which doesn't have overlapping notes on the same channel with the same pitch.
 // So the natural key for a current note in NoteOn state waiting for the NoteOff is (channel, pitch)
+#[allow(dead_code)]
 #[derive(Debug, Eq, Hash, PartialEq)]
 struct NoteKey {
     channel: u4,
@@ -175,6 +177,7 @@ pub(crate) fn midi_file_to_tracks<
     tracks
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_beats_per_minute(midi: &midly::Smf) -> u8 {
     for track in midi.tracks.iter() {
         for event in track.iter() {
@@ -201,6 +204,7 @@ pub(crate) fn get_beats_per_minute(midi: &midly::Smf) -> u8 {
     DEFAULT_BPM
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_ticks_per_beat(midi: &midly::Smf) -> u15 {
     let header = midi.header;
 
@@ -214,10 +218,12 @@ pub(crate) fn get_ticks_per_beat(midi: &midly::Smf) -> u15 {
     }
 }
 
+#[allow(dead_code)]
 pub(crate) fn get_ticks_per_ms(ticks_per_beat: u15, beats_per_minute: u8) -> f32 {
     (ticks_per_beat.as_int() as f32 * beats_per_minute as f32) / MSECS_PER_MIN
 }
 
+#[allow(dead_code)]
 fn handle_note_off<SequenceType: AppendNote>(note_key: NoteKey,
                                              ms_since_start: f32,
                                              track_notes_map: &mut HashMap<NoteKey, PlaybackNote>,
