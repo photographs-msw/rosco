@@ -1,6 +1,7 @@
 use crate::audio_gen::{audio_gen, oscillator};
 use crate::audio_gen::oscillator::Waveform;
 use crate::composition::comp_utils;
+use crate::composition::comp_utils::SampleBuf;
 use crate::effect::delay::DelayBuilder;
 use crate::effect::flanger::FlangerBuilder;
 use crate::effect::lfo::LFOBuilder;
@@ -66,18 +67,28 @@ pub(crate) fn play() {
 
     // Load Sample Notes and Tracks
     let start_time = 0.0;
+    let sample_buf: SampleBuf =
+        comp_utils::load_sample_data("/Users/markweiss/Downloads/punk_computer/003/piano_note_1.wav");
+    let end_time = (sample_buf.len as f32 / crate::common::constants::SAMPLE_RATE) * 1000.0;
     let mut piano_note_1 = comp_utils::build_sampled_playback_note(
         &mut sampled_note_pool,
         &mut playback_note_pool,
-        // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
-        "/Users/markweiss/Downloads/punk_computer/003/piano_note_1.wav",
+        &sample_buf,
         sampled_note_volume,
         start_time,
-        vec![short_envelope],
-        vec![flanger.clone()],
-        vec![delay.clone()],
-        vec![lfo.clone()],
+        end_time,
+        vec![],
+        vec![],
+        vec![],
+        vec![],
+        // vec![short_envelope],
+        // vec![flanger.clone()],
+        // vec![delay.clone()],
+        // vec![lfo.clone()],
     );
+    
+    let mut piano_note_64 = piano_note_1.clone();
+    piano_note_64.set_note_end_time_ms(end_time);
 
     let mut piano_note_1_rev = piano_note_1.clone();
     piano_note_1_rev.sampled_note.reverse();
@@ -86,13 +97,16 @@ pub(crate) fn play() {
     let reverse_delay = delay.clone();
     piano_note_1_rev.delays = vec![reverse_delay];
 
+    let sample_buf_2: SampleBuf =
+        comp_utils::load_sample_data("/Users/markweiss/Downloads/punk_computer/003/guitar_note_1.wav");
+    let end_time_2 = (sample_buf_2.len as f32 / crate::common::constants::SAMPLE_RATE) * 1000.0;
     let mut guitar_note_1 = comp_utils::build_sampled_playback_note(
         &mut sampled_note_pool,
         &mut playback_note_pool,
-        // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
-        "/Users/markweiss/Downloads/punk_computer/003/guitar_note_1.wav",
+        &sample_buf_2,
         sampled_note_volume,
         start_time,
+        end_time_2,
         vec![short_envelope],
         vec![flanger_2.clone()],
         vec![delay.clone()],
@@ -115,9 +129,17 @@ pub(crate) fn play() {
     guitar_rest_note.sampled_note.volume = 0.0;
 
     // Create Tracks and append initial notes
-    let piano_sequence: TimeNoteSequence= TimeNoteSequenceBuilder::default().build().unwrap();
+    let piano_sequence: TimeNoteSequence = TimeNoteSequenceBuilder::default().build().unwrap();
     let mut piano_track_1 = TrackBuilder::default()
         .sequence(piano_sequence)
+        .build().unwrap();
+    let piano_sequence_2: TimeNoteSequence = TimeNoteSequenceBuilder::default().build().unwrap();
+    let mut piano_track_2 = TrackBuilder::default()
+        .sequence(piano_sequence_2)
+        .build().unwrap();
+    let piano_sequence_4: TimeNoteSequence = TimeNoteSequenceBuilder::default().build().unwrap();
+    let mut piano_track_4 = TrackBuilder::default()
+        .sequence(piano_sequence_4)
         .build().unwrap();
     let guitar_sequence: TimeNoteSequence = TimeNoteSequenceBuilder::default().build().unwrap();
     let mut guitar_track_1 = TrackBuilder::default()
@@ -131,35 +153,52 @@ pub(crate) fn play() {
     }
 
     // Add additional notes to the sequence
-    let note_dur = piano_note_1.sampled_note.duration_ms();
-    piano_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut piano_note_1, 0.0, note_dur));
-    guitar_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut guitar_note_1, 0.0, note_dur));
-    piano_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut piano_rest_note, 1.0 * note_dur, note_dur));
-    guitar_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut guitar_note_1_rev, 1.0 * note_dur, note_dur));
-    piano_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut piano_note_1, 2.0 * note_dur, note_dur));
-    guitar_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut guitar_rest_note, 2.0 * note_dur, note_dur));
-    piano_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut piano_note_1_rev, 3.0 * note_dur, note_dur));
-    guitar_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut guitar_note_1_rev, 3.0 * note_dur, note_dur));
+    let note_dur = piano_note_64.sampled_note.duration_ms();
+    for i in 0..4 {
+        let note_to_add =
+            adjust_note_start_end_time(&mut piano_note_64, i as f32 * note_dur, note_dur); 
+        piano_track_1.sequence.append_note(note_to_add);
+    }
+    // let note_dur = piano_note_1.sampled_note.duration_ms();
+    // piano_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut piano_note_1, 0.0, note_dur));
+    // guitar_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut guitar_note_1, 0.0, note_dur));
+    // piano_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut piano_rest_note, 1.0 * note_dur, note_dur));
+    // guitar_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut guitar_note_1_rev, 1.0 * note_dur, note_dur));
+    // piano_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut piano_note_1, 2.0 * note_dur, note_dur));
+    // guitar_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut guitar_rest_note, 2.0 * note_dur, note_dur));
+    // piano_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut piano_note_1_rev, 3.0 * note_dur, note_dur));
+    // guitar_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut guitar_note_1_rev, 3.0 * note_dur, note_dur));
 
+    // for i in 0..8 {
+    //     piano_track_2.sequence.append_note(
+    //         adjust_note_start_end_time(
+    //             &mut piano_note_2, i as f32 * note_dur / 2.0, note_dur / 2.0));
+    // }
+    // for i in 0..16 {
+    //     piano_track_4.sequence.append_note(
+    //         adjust_note_start_end_time(
+    //             &mut piano_note_4, i as f32 * note_dur / 4.0, note_dur / 4.0));
+    // }
+            
     let mut tracks = Vec::new();
     tracks.push(piano_track_1);
-    tracks.push(guitar_track_1);
+    // tracks.push(guitar_track_1);
 
     // Load and play Track Grid
     let track_grid =
@@ -170,11 +209,25 @@ pub(crate) fn play() {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         for playback_notes in track_grid {
+            
+            // TEMP DEBUG
+            println!("DEBUG num_notes: {:?}", playback_notes.len());
+            for playback_note in playback_notes.iter() {
+                println!("DEBUG: {:?}", playback_note.sampled_note.volume);
+            }
+            
             tx.send(playback_notes).unwrap();
         }
     });
 
     for playback_notes in rx.iter() {
+        
+        // TEMP DEBUG
+        println!("DEBUG num_notes: {:?}", playback_notes.len());
+        for playback_note in playback_notes.iter() {
+            println!("DEBUG: {:?}", playback_note.sampled_note.volume);
+        }
+        
         audio_gen::gen_notes_stream(playback_notes, oscillator::OscillatorTables::new());
     }
 }

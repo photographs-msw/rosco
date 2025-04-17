@@ -14,27 +14,35 @@ const ARGS_DELIMITER: &str = ",";
 
 pub(crate) struct SampleBuf {
     buf: Vec<f32>,
-    len: usize,
+    pub(crate) len: usize,
+}
+
+pub(crate) fn get_end_time_ms(sample_buf: &SampleBuf) -> f32 {
+    (sample_buf.len as f32 / common::constants::SAMPLE_RATE) * 1000.0
 }
 
 pub(crate) fn build_sampled_playback_note(sampled_note_pool: &mut NotePool<SampledNote>,
                                           playback_note_pool: &mut NotePool<PlaybackNote>,
-                                          file_path: &str, volume: f32, start_time: f32,
-                                          envelopes: Vec<Envelope>, flangers: Vec<Flanger>,
-                                          delays: Vec<Delay>, lfos: Vec<LFO>) -> PlaybackNote {
-    let sample_buf: SampleBuf = load_sample_data(file_path);
+                                          sample_buf: &SampleBuf,
+                                          volume: f32,
+                                          start_time_ms: f32,
+                                          end_time_ms: f32,
+                                          envelopes: Vec<Envelope>,
+                                          flangers: Vec<Flanger>,
+                                          delays: Vec<Delay>,
+                                          lfos: Vec<LFO>) -> PlaybackNote {
     let mut sampled_note = sampled_note_pool.acquire().unwrap();
     sampled_note.volume = volume;
-    sampled_note.start_time_ms = start_time;
-    sampled_note.end_time_ms = (sample_buf.len as f32 / common::constants::SAMPLE_RATE) * 1000.0;
+    sampled_note.start_time_ms = start_time_ms;
+    sampled_note.end_time_ms = end_time_ms;
     sampled_note.set_sample_buf(&sample_buf.buf, sample_buf.len);
 
     let mut playback_note = playback_note_pool.acquire().unwrap();
     playback_note.note_type = NoteType::Sample;
     playback_note.sampled_note = sampled_note;
-    playback_note.playback_start_time_ms = start_time;
-    playback_note.playback_end_time_ms = start_time + ((sample_buf.len as f32 / common::constants::SAMPLE_RATE) * 1000.0);
-    playback_note.playback_sample_start_time = start_time as u64;
+    playback_note.playback_start_time_ms = start_time_ms;
+    playback_note.playback_end_time_ms = end_time_ms;
+    playback_note.playback_sample_start_time = start_time_ms as u64;
     playback_note.playback_sample_end_time = sample_buf.len as u64;
     playback_note.envelopes = envelopes;
     playback_note.flangers = flangers;

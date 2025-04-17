@@ -71,7 +71,7 @@ impl PlaybackNote {
     pub(crate) fn set_note_start_time_ms(&mut self, start_time_ms: f32) {
         match self.note_type {
             NoteType::Oscillator => self.note.start_time_ms = start_time_ms,
-            NoteType::Sample => self.sampled_note.start_time_ms = start_time_ms,
+            NoteType::Sample => self.sampled_note.set_start_time_ms(start_time_ms),
         }
     }
 
@@ -85,7 +85,7 @@ impl PlaybackNote {
     pub(crate) fn set_note_end_time_ms(&mut self, end_time_ms: f32) {
         match self.note_type {
             NoteType::Oscillator => self.note.end_time_ms = end_time_ms,
-            NoteType::Sample => self.sampled_note.end_time_ms = end_time_ms,
+            NoteType::Sample => self.sampled_note.set_end_time_ms(end_time_ms),
         }
     }
 
