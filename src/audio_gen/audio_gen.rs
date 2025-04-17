@@ -44,9 +44,9 @@ pub(crate) fn gen_notes_stream(playback_notes: Vec<PlaybackNote>,
     let window_duration_ms = (window_end_time_ms - window_start_time_ms).floor() as u64;
     
     // TEMP DEBUG
-    println!("DEBUG: window_start_time ms {}", window_start_time_ms);
-    println!("DEBUG: window end time ms {}", window_end_time_ms);
-    println!("DEBUG: window duration ms {}", window_duration_ms);
+    println!("DEBUG GEN: window_start_time ms {}", window_start_time_ms);
+    println!("DEBUG GEN: window end time ms {}", window_end_time_ms);
+    println!("DEBUG GEN: window duration ms {}", window_duration_ms);
 
     gen_notes_stream_impl::<f32>(&device, &config.into(), oscillator_tables, playback_notes,
                                  window_duration_ms);

@@ -86,7 +86,7 @@ pub(crate) fn play() {
         // vec![delay.clone()],
         // vec![lfo.clone()],
     );
-    
+
     let mut piano_note_64 = piano_note_1.clone();
     piano_note_64.set_note_end_time_ms(end_time);
 
@@ -156,7 +156,7 @@ pub(crate) fn play() {
     let note_dur = piano_note_64.sampled_note.duration_ms();
     for i in 0..4 {
         let note_to_add =
-            adjust_note_start_end_time(&mut piano_note_64, i as f32 * note_dur, note_dur); 
+            adjust_note_start_end_time(&mut piano_note_64, i as f32 * note_dur, note_dur);
         piano_track_1.sequence.append_note(note_to_add);
     }
     // let note_dur = piano_note_1.sampled_note.duration_ms();
@@ -209,25 +209,27 @@ pub(crate) fn play() {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
         for playback_notes in track_grid {
-            
+
             // TEMP DEBUG
-            println!("DEBUG num_notes: {:?}", playback_notes.len());
+            println!("DEBUG SPAWN: {:?}", playback_notes.len());
             for playback_note in playback_notes.iter() {
-                println!("DEBUG: {:?}", playback_note.sampled_note.volume);
+                println!("DEBUG SPAWN: {:?}", playback_note.sampled_note.volume);
             }
-            
+
             tx.send(playback_notes).unwrap();
         }
     });
 
     for playback_notes in rx.iter() {
-        
+
         // TEMP DEBUG
         println!("DEBUG num_notes: {:?}", playback_notes.len());
         for playback_note in playback_notes.iter() {
-            println!("DEBUG: {:?}", playback_note.sampled_note.volume);
+            println!("DEBUG PLAY: {:?}", playback_note.sampled_note.volume);
+            println!("DEBUG PLAY: {:?}", playback_note.sampled_note.start_time_ms);
+            println!("DEBUG PLAY: {:?}", playback_note.sampled_note.end_time_ms);
         }
-        
+
         audio_gen::gen_notes_stream(playback_notes, oscillator::OscillatorTables::new());
     }
 }
