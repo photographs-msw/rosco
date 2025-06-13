@@ -70,7 +70,7 @@ pub(crate) fn play() {
         &mut sampled_note_pool,
         &mut playback_note_pool,
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
-        "/Users/markweiss/Downloads/punk_computer/003/piano_note_1.wav",
+        "/Users/markweiss/Downloads/punk_computer/003/piano_note_1_clipped.wav",
         sampled_note_volume,
         start_time,
         vec![short_envelope],
@@ -86,43 +86,42 @@ pub(crate) fn play() {
     let reverse_delay = delay.clone();
     piano_note_1_rev.delays = vec![reverse_delay];
 
-    let mut guitar_note_1 = comp_utils::build_sampled_playback_note(
-        &mut sampled_note_pool,
-        &mut playback_note_pool,
-        // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
-        "/Users/markweiss/Downloads/punk_computer/003/guitar_note_1.wav",
-        sampled_note_volume,
-        start_time,
-        vec![short_envelope],
-        vec![flanger_2.clone()],
-        vec![delay.clone()],
-        vec![lfo.clone()],
-    );
+    // let mut guitar_note_1 = comp_utils::build_sampled_playback_note(
+    //     &mut sampled_note_pool,
+    //     &mut playback_note_pool,
+    //     // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
+    //     "/Users/markweiss/Downloads/punk_computer/003/guitar_note_1.wav",
+    //     sampled_note_volume,
+    //     start_time,
+    //     vec![short_envelope],
+    //     vec![flanger_2.clone()],
+    //     vec![delay.clone()],
+    //     vec![lfo.clone()],
+    // );
 
-
-    let reverse_guitar_delay = delay.clone();
-    let mut guitar_note_1_rev = guitar_note_1.clone();
-    guitar_note_1_rev.sampled_note.reverse();
-    guitar_note_1_rev.sampled_note.volume = sampled_note_rev_volume;
-    guitar_note_1_rev.flangers = vec![flanger.clone(),
-                                                         flanger_2.clone(),
-                                                         flanger.clone()];
-    guitar_note_1_rev.delays = vec![reverse_guitar_delay.clone()];
+    // let reverse_guitar_delay = delay.clone();
+    // let mut guitar_note_1_rev = guitar_note_1.clone();
+    // guitar_note_1_rev.sampled_note.reverse();
+    // guitar_note_1_rev.sampled_note.volume = sampled_note_rev_volume;
+    // guitar_note_1_rev.flangers = vec![flanger.clone(),
+    //                                                      flanger_2.clone(),
+    //                                                      flanger.clone()];
+    // guitar_note_1_rev.delays = vec![reverse_guitar_delay.clone()];
     
     let mut piano_rest_note = piano_note_1.clone();
     piano_rest_note.sampled_note.volume = 0.0;
-    let mut guitar_rest_note = guitar_note_1.clone();
-    guitar_rest_note.sampled_note.volume = 0.0;
+    // let mut guitar_rest_note = guitar_note_1.clone();
+    // guitar_rest_note.sampled_note.volume = 0.0;
 
     // Create Tracks and append initial notes
     let piano_sequence: TimeNoteSequence= TimeNoteSequenceBuilder::default().build().unwrap();
     let mut piano_track_1 = TrackBuilder::default()
         .sequence(piano_sequence)
         .build().unwrap();
-    let guitar_sequence: TimeNoteSequence = TimeNoteSequenceBuilder::default().build().unwrap();
-    let mut guitar_track_1 = TrackBuilder::default()
-        .sequence(guitar_sequence)
-        .build().unwrap();
+    // let guitar_sequence: TimeNoteSequence = TimeNoteSequenceBuilder::default().build().unwrap();
+    // let mut guitar_track_1 = TrackBuilder::default()
+    //     .sequence(guitar_sequence)
+    //     .build().unwrap();
 
     fn adjust_note_start_end_time(note: &mut PlaybackNote, start_time: f32, note_dur: f32) -> PlaybackNote {
         note.set_note_start_time_ms(start_time);
@@ -135,31 +134,31 @@ pub(crate) fn play() {
     piano_track_1.sequence.append_note(
         adjust_note_start_end_time(
             &mut piano_note_1, 0.0, note_dur));
-    guitar_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut guitar_note_1, 0.0, note_dur));
+    // guitar_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut guitar_note_1, 0.0, note_dur));
     piano_track_1.sequence.append_note(
         adjust_note_start_end_time(
-            &mut piano_rest_note, 1.0 * note_dur, note_dur));
-    guitar_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut guitar_note_1_rev, 1.0 * note_dur, note_dur));
+            &mut piano_note_1, 1.0 * note_dur, note_dur));
+    // guitar_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut guitar_note_1_rev, 1.0 * note_dur, note_dur));
     piano_track_1.sequence.append_note(
         adjust_note_start_end_time(
             &mut piano_note_1, 2.0 * note_dur, note_dur));
-    guitar_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut guitar_rest_note, 2.0 * note_dur, note_dur));
+    // guitar_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut guitar_rest_note, 2.0 * note_dur, note_dur));
     piano_track_1.sequence.append_note(
         adjust_note_start_end_time(
             &mut piano_note_1_rev, 3.0 * note_dur, note_dur));
-    guitar_track_1.sequence.append_note(
-        adjust_note_start_end_time(
-            &mut guitar_note_1_rev, 3.0 * note_dur, note_dur));
+    // guitar_track_1.sequence.append_note(
+    //     adjust_note_start_end_time(
+    //         &mut guitar_note_1_rev, 3.0 * note_dur, note_dur));
 
     let mut tracks = Vec::new();
     tracks.push(piano_track_1);
-    tracks.push(guitar_track_1);
+    // tracks.push(guitar_track_1);
 
     // Load and play Track Grid
     let track_grid =
