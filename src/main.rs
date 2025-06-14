@@ -10,6 +10,7 @@ mod note;
 mod sequence;
 mod track;
 mod composition;
+mod meter;
 
 use crate::composition::computer_punk_001;
 

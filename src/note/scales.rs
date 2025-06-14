@@ -1,7 +1,7 @@
 use crate::note::constants::PITCH_TO_FREQ_HZ;
 
 #[allow(dead_code)]
-pub(crate) enum WesternPitch{
+pub(crate) enum WesternPitch {
     C,
     CSharp,
     DFlat,
