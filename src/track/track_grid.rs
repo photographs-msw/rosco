@@ -83,6 +83,7 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
         let window_start_time_ms = get_frontier_min_start_time(&track_playback_notes);
         let window_end_time_ms = get_frontier_min_end_time(
             &track_playback_notes, self.cur_position_ms);
+
         // If the current note time is earlier than that, emit a rest note and increment
         // the current notes time to the frontier min start time + epsilon
         if self.cur_position_ms < window_start_time_ms {
@@ -94,13 +95,15 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
         let mut out_playback_notes = Vec::new();
 
         // If the current note time is the same as the frontier min start time, emit all notes
-        // in the frontier with the same start time and increment the current notes time to the
-        // earliest end time in the frontier. This is the next window emit, note to end time.
+        // that start in the current window (from cur_position_ms to window_end_time_ms)
         if float_eq(self.cur_position_ms, window_start_time_ms) {
             let playback_notes: Vec<PlaybackNote> = track_playback_notes
                 .iter()
-                .filter(|playback_note|
-                        float_eq(playback_note.note_start_time_ms(), self.cur_position_ms))
+                .filter(|playback_note| {
+                    let start_time = playback_note.note_start_time_ms();
+                    float_geq(start_time, self.cur_position_ms) &&
+                    float_leq(start_time, window_end_time_ms)
+                })
                 .map(|playback_note| note_ref_into_note(
                     playback_note, self.cur_position_ms, window_end_time_ms))
                 .collect();
@@ -119,7 +122,7 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
                     note_ref_into_note(playback_note, self.cur_position_ms, window_end_time_ms)
                 )
                 .collect();
-            
+
             out_playback_notes.extend_from_slice(&playback_notes);
         }
 
