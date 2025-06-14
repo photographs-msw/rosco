@@ -42,18 +42,9 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
         let mut track_playback_notes = Vec::new();
 
         for track in self.tracks.iter_mut() {
-            
-            // TEMP DEBUG
-            println!("IN TrackGrid::next_notes() track");
-
             track.sequence.set_cur_position(self.cur_position_ms);
             
             for playback_note in track.sequence.next_notes() {
-                
-                // TEMP DEBUG
-                println!("IN TrackGrid::next_notes() playback_note");
-                println!("cur_position_ms: {:?}", self.cur_position_ms);
-
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder
                         .envelopes(playback_note.envelopes.clone())
@@ -78,10 +69,6 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
                         );
                     }
                     NoteType::Sample => {
-                        
-                        // TEMP DEBUG 
-                        println!("IN TrackGrid::next_notes() Sample note");
-
                         track_playback_notes.push(
                             playback_note_builder
                                 .note_type(NoteType::Sample)
@@ -96,18 +83,9 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
         let window_start_time_ms = get_frontier_min_start_time(&track_playback_notes);
         let window_end_time_ms = get_frontier_min_end_time(
             &track_playback_notes, self.cur_position_ms);
-
-        // TEMP DEBUG
-        println!("window_start_time_ms: {:?}", window_start_time_ms);
-        println!("window_end_time_ms: {:?}", window_end_time_ms);
-
         // If the current note time is earlier than that, emit a rest note and increment
         // the current notes time to the frontier min start time + epsilon
         if self.cur_position_ms < window_start_time_ms {
-
-            // TEMP DEBU
-            println!("IN TrackGrid::next_notes() rest note");
-
             self.cur_position_ms = window_start_time_ms + FLOAT_EPSILON;
             return vec![playback_note::playback_rest_note(self.cur_position_ms,
                                                           window_start_time_ms)];
@@ -141,16 +119,11 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
                     note_ref_into_note(playback_note, self.cur_position_ms, window_end_time_ms)
                 )
                 .collect();
-
-
+            
             out_playback_notes.extend_from_slice(&playback_notes);
         }
 
         self.cur_position_ms = window_end_time_ms + FLOAT_EPSILON;
-        
-        // TEMP DEBuG
-        println!("self.cur_position_ms: {:?}", self.cur_position_ms);
-        println!("out_playback_notes.len(): {:?}", out_playback_notes.len());
 
         out_playback_notes
     }
@@ -196,15 +169,7 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> Iterator for TrackGrid
 
     fn next(&mut self) -> Option<Self::Item> {
         let playback_notes= self.next_notes();
-        
-        // TEMP DEBUG
-        println!("IN TrackGrid::next(), playback_notes.len(): {:?}", playback_notes.len());
-        println!("IN TrackGrid::next(), playback_notes.is_empty(): {:?}", playback_notes.is_empty());
-
         if playback_notes.is_empty() {
-            
-            // TEMP DEBUG
-            println!("IN TrackGrid::next(), playback_notes.is_empty() returning None");
             return None;
         }
 
