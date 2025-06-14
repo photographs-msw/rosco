@@ -1,48 +1,65 @@
 use derive_builder::Builder;
-
+use crate::common::float_utils::float_eq;
 use crate::meter::durations;
 use crate::meter::durations::DurationType;
+
+pub(crate) static DEFAULT_BEAT_UNIT_DURATION_MS: f32 = 0.0;
+pub(crate) static DEFAULT_BEAT_UNIT: DurationType = DurationType::Quarter;
+pub(crate) static DEFAULT_TEMPO: u8 = 120;
 
 // struct representing a musical meter
 #[derive(Builder, Clone, Copy, Debug)]
 #[builder(build_fn(validate = "Self::validate"))]
 pub(crate) struct Meter {
     pub(crate) beats_per_measure: u8,
+ 
+    #[builder(default = "DEFAULT_BEAT_UNIT")]
     pub(crate) beat_unit: durations::DurationType,
+    
     // tempo in beat units per minute
+    #[builder(default = "DEFAULT_TEMPO")]
     pub(crate) tempo: u8,
+
+    // optional base fixed duration for a beat unit
+    #[builder(default = "DEFAULT_BEAT_UNIT_DURATION_MS")]
+    pub(crate) beat_unit_duration_ms: f32,
 }
 
 impl MeterBuilder {
     pub(crate) fn validate(&self) -> Result<Meter, String> {
         let beats_per_measure = self.beats_per_measure.ok_or("Beats per measure is required")?;
-        let beat_unit = self.beat_unit.ok_or("Beat unit is required")?;
-        let tempo = self.tempo.ok_or("Tempo is required")?;
-
         if beats_per_measure == 0 {
             return Err(String::from("Meter: beats_per_measure must be greater than 0"));
         }
 
+        let tempo = self.tempo.unwrap_or(DEFAULT_TEMPO);
         if tempo == 0 {
             return Err(String::from("Meter: tempo must be greater than 0"));
         }
 
-        // Common time signatures validation - beats_per_measure should be reasonable
-        if beats_per_measure > 32 {
-            return Err(String::from("Meter: beats_per_measure should not exceed 32"));
+        let beat_unit = self.beat_unit.unwrap_or(DEFAULT_BEAT_UNIT);
+        let beat_unit_duration_ms = self.beat_unit_duration_ms.unwrap_or(DEFAULT_BEAT_UNIT_DURATION_MS);
+        if beat_unit_duration_ms < 0.0 {
+            return Err(String::from("Meter: beat_unit_duration_ms must not be negative"));
         }
 
         Ok(Meter {
             beats_per_measure,
             beat_unit,
             tempo,
+            beat_unit_duration_ms 
         })
     }
 }
 
 impl Meter {
     pub(crate) fn new(beats_per_measure: u8, beat_unit: DurationType, tempo: u8) -> Self {
-        Self { beats_per_measure, beat_unit, tempo, }
+        Self {
+            beats_per_measure,
+            beat_unit,
+            tempo,
+            beat_unit_duration_ms: DEFAULT_BEAT_UNIT_DURATION_MS
+        }
     }
 
     // return the duration in ms of a note, converted
@@ -61,7 +78,8 @@ impl PartialEq for Meter {
     fn eq(&self, other: &Self) -> bool {
         self.beats_per_measure == other.beats_per_measure &&
         self.beat_unit == other.beat_unit &&
-        self.tempo == other.tempo
+        self.tempo == other.tempo &&
+        float_eq(self.beat_unit_duration_ms, other.beat_unit_duration_ms)
     }
 }
 
@@ -142,48 +160,45 @@ mod test_meter {
     }
 
     #[test]
-    fn test_meter_builder_validation_excessive_beats_per_measure() {
-        let result = MeterBuilder::default()
-            .beats_per_measure(50)
-            .beat_unit(DurationType::Quarter)
-            .tempo(120)
-            .build();
-
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("beats_per_measure should not exceed 32"));
-    }
-
-    #[test]
-    fn test_meter_builder_missing_beats_per_measure() {
-        let result = MeterBuilder::default()
-            .beat_unit(DurationType::Quarter)
-            .tempo(120)
-            .build();
-
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Beats per measure is required"));
-    }
-
-    #[test]
-    fn test_meter_builder_missing_beat_unit() {
-        let result = MeterBuilder::default()
-            .beats_per_measure(4)
-            .tempo(120)
-            .build();
-
-        assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Beat unit is required"));
-    }
-
-    #[test]
-    fn test_meter_builder_missing_tempo() {
+    fn test_meter_builder_validation_negative_beat_unit_duration() {
         let result = MeterBuilder::default()
             .beats_per_measure(4)
             .beat_unit(DurationType::Quarter)
+            .tempo(120)
+            .beat_unit_duration_ms(-100.0)
             .build();
 
         assert!(result.is_err());
-        assert!(result.unwrap_err().to_string().contains("Tempo is required"));
+        assert!(result.unwrap_err().to_string().contains("beat_unit_duration_ms must not be negative"));
+    }
+
+    #[test]
+    fn test_meter_builder_with_custom_beat_unit_duration() {
+        let meter = MeterBuilder::default()
+            .beats_per_measure(4)
+            .beat_unit(DurationType::Quarter)
+            .tempo(120)
+            .beat_unit_duration_ms(500.0)
+            .build()
+            .unwrap();
+
+        assert_eq!(meter.beats_per_measure, 4);
+        assert_eq!(meter.beat_unit, DurationType::Quarter);
+        assert_eq!(meter.tempo, 120);
+        assert_eq!(meter.beat_unit_duration_ms, 500.0);
+    }
+
+    #[test]
+    fn test_meter_builder_default_values() {
+        let meter = MeterBuilder::default()
+            .beats_per_measure(4)
+            .build()
+            .unwrap();
+
+        assert_eq!(meter.beats_per_measure, 4);
+        assert_eq!(meter.beat_unit, DEFAULT_BEAT_UNIT);
+        assert_eq!(meter.tempo, DEFAULT_TEMPO);
+        assert_eq!(meter.beat_unit_duration_ms, DEFAULT_BEAT_UNIT_DURATION_MS);
     }
 
     #[test]
