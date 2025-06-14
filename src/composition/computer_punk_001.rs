@@ -22,7 +22,7 @@ pub(crate) fn play() {
     let sampled_note_volume = 0.0009;
     let sampled_note_rev_volume = 0.0042 * 0.3;
 
-    // Track Effecte
+    // Track Effect
     #[allow(unused_variables)]
     let delay = DelayBuilder::default()
         .id(0)
@@ -114,9 +114,13 @@ pub(crate) fn play() {
     // guitar_rest_note.sampled_note.volume = 0.0;
 
     // Create Tracks and append initial notes
-    let piano_sequence: TimeNoteSequence= TimeNoteSequenceBuilder::default().build().unwrap();
+    let piano_sequence_1: TimeNoteSequence= TimeNoteSequenceBuilder::default().build().unwrap();
+    let piano_sequence_2: TimeNoteSequence= TimeNoteSequenceBuilder::default().build().unwrap();
     let mut piano_track_1 = TrackBuilder::default()
-        .sequence(piano_sequence)
+        .sequence(piano_sequence_1)
+        .build().unwrap();
+    let mut piano_track_2 = TrackBuilder::default()
+        .sequence(piano_sequence_2)
         .build().unwrap();
     // let guitar_sequence: TimeNoteSequence = TimeNoteSequenceBuilder::default().build().unwrap();
     // let mut guitar_track_1 = TrackBuilder::default()
@@ -134,30 +138,43 @@ pub(crate) fn play() {
     piano_track_1.sequence.append_note(
         adjust_note_start_end_time(
             &mut piano_note_1, 0.0, note_dur));
+    piano_track_2.sequence.append_note(
+        adjust_note_start_end_time(
+            &mut piano_note_1, 0.5, note_dur));
     // guitar_track_1.sequence.append_note(
     //     adjust_note_start_end_time(
     //         &mut guitar_note_1, 0.0, note_dur));
     piano_track_1.sequence.append_note(
         adjust_note_start_end_time(
-            &mut piano_note_1, 1.0 * note_dur, note_dur));
+            &mut piano_rest_note, 1.0 * note_dur, note_dur));
+    piano_track_2.sequence.append_note(
+        adjust_note_start_end_time(
+            &mut piano_rest_note, (1.0 * note_dur) + 0.5, note_dur));
     // guitar_track_1.sequence.append_note(
     //     adjust_note_start_end_time(
     //         &mut guitar_note_1_rev, 1.0 * note_dur, note_dur));
     piano_track_1.sequence.append_note(
         adjust_note_start_end_time(
             &mut piano_note_1, 2.0 * note_dur, note_dur));
+    piano_track_2.sequence.append_note(
+        adjust_note_start_end_time(
+            &mut piano_note_1, (2.0 * note_dur) + 0.5, note_dur));
     // guitar_track_1.sequence.append_note(
     //     adjust_note_start_end_time(
     //         &mut guitar_rest_note, 2.0 * note_dur, note_dur));
     piano_track_1.sequence.append_note(
         adjust_note_start_end_time(
             &mut piano_note_1_rev, 3.0 * note_dur, note_dur));
+    piano_track_2.sequence.append_note(
+        adjust_note_start_end_time(
+            &mut piano_note_1_rev, (3.0 * note_dur) + 0.5, note_dur));
     // guitar_track_1.sequence.append_note(
     //     adjust_note_start_end_time(
     //         &mut guitar_note_1_rev, 3.0 * note_dur, note_dur));
 
     let mut tracks = Vec::new();
     tracks.push(piano_track_1);
+    tracks.push(piano_track_2);
     // tracks.push(guitar_track_1);
 
     // Load and play Track Grid
