@@ -140,7 +140,7 @@ pub(crate) fn play() {
             &mut piano_note_1, 0.0, note_dur));
     piano_track_2.sequence.append_note(
         adjust_note_start_end_time(
-            &mut piano_note_1, 0.5, note_dur));
+            &mut piano_note_1, 1.0, note_dur));
     // guitar_track_1.sequence.append_note(
     //     adjust_note_start_end_time(
     //         &mut guitar_note_1, 0.0, note_dur));
@@ -149,7 +149,7 @@ pub(crate) fn play() {
             &mut piano_rest_note, 1.0 * note_dur, note_dur));
     piano_track_2.sequence.append_note(
         adjust_note_start_end_time(
-            &mut piano_rest_note, (1.0 * note_dur) + 0.5, note_dur));
+            &mut piano_note_1, (1.0 * note_dur) + 0.5, note_dur));
     // guitar_track_1.sequence.append_note(
     //     adjust_note_start_end_time(
     //         &mut guitar_note_1_rev, 1.0 * note_dur, note_dur));
@@ -158,7 +158,7 @@ pub(crate) fn play() {
             &mut piano_note_1, 2.0 * note_dur, note_dur));
     piano_track_2.sequence.append_note(
         adjust_note_start_end_time(
-            &mut piano_note_1, (2.0 * note_dur) + 0.5, note_dur));
+            &mut piano_rest_note, (2.0 * note_dur) + 0.5, note_dur));
     // guitar_track_1.sequence.append_note(
     //     adjust_note_start_end_time(
     //         &mut guitar_rest_note, 2.0 * note_dur, note_dur));
@@ -167,7 +167,7 @@ pub(crate) fn play() {
             &mut piano_note_1_rev, 3.0 * note_dur, note_dur));
     piano_track_2.sequence.append_note(
         adjust_note_start_end_time(
-            &mut piano_note_1_rev, (3.0 * note_dur) + 0.5, note_dur));
+            &mut piano_note_1, (3.0 * note_dur) + 1.0, note_dur));
     // guitar_track_1.sequence.append_note(
     //     adjust_note_start_end_time(
     //         &mut guitar_note_1_rev, 3.0 * note_dur, note_dur));
