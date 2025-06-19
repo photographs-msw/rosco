@@ -1,2 +1,2 @@
-mod durations;
+pub(crate) mod durations;
 mod meter;

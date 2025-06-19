@@ -19,7 +19,7 @@ pub(crate) enum Waveform {
 }
 
 #[derive(Clone, Debug, PartialEq)]
-pub(crate)  struct OscillatorTables {
+pub(crate) struct OscillatorTables {
     pub(crate) sine_table: Arc<Vec<f32>>,
     pub(crate) saw_table: Arc<Vec<f32>>,
     pub(crate) square_table: Arc<Vec<f32>>,
