@@ -10,6 +10,7 @@ use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapp
 static INIT_START_TIME: f32 = 0.0;
 
 #[derive(Builder, Clone, Debug)]
+#[derive(Default)]
 pub(crate) struct TimeNoteSequence {
     #[builder(default = "Vec::new()")]
     sequence: Vec<Vec<PlaybackNote>>,
