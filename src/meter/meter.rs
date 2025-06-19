@@ -53,13 +53,20 @@ impl MeterBuilder {
 }
 
 impl Meter {
-    #[allow(dead_code)]
+    pub(crate) fn new(beats_per_measure: u8, beat_unit: DurationType, tempo: u8) -> Self {
+        Self {
+            beats_per_measure,
+            beat_unit,
+            tempo,
+            beat_unit_duration_ms: DEFAULT_BEAT_UNIT_DURATION_MS
+        }
+    }
+
     // return the duration in ms of a note, converted
     pub(crate) fn beat_duration(&self) -> f32 {
         60000.0 / (self.tempo as f32 * self.beat_unit.to_factor())
     }
 
-    #[allow(dead_code)]
     // return the duration of a note of a given duration type
     pub(crate) fn note_duration(&self, duration_type: DurationType) -> f32 {
         let duration_factor: f32 = duration_type.to_factor() / self.beat_unit.to_factor();
