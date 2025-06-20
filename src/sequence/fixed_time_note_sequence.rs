@@ -13,6 +13,14 @@ fn calculate_step_duration_ms(tempo: u8, duration_type: DurationType) -> f32 {
     quarter_note_duration_ms * (duration_type.to_factor() / 0.25)
 }
 
+/*
+A sequence of notes that are played back in fixed time steps. Notes are grouped by step. All notes
+added are adjusted to have an end time that matches the step duration. Wraps a TimeNoteSequence
+and delegates to it but adds the fixed time step behavior.
+
+NOTE: Doesn't use the derive_builder macros because for whatever reason they didn't play nice with
+the computed step_duration_ms field, even with the same pattern followed as Flanger.
+ */
 #[allow(dead_code)]
 #[derive(Clone, Debug)]
 pub(crate) struct FixedTimeNoteSequence {

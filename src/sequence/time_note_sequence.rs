@@ -9,6 +9,10 @@ use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapp
 #[allow(dead_code)]
 static INIT_START_TIME: f32 = 0.0;
 
+/**
+A sequence of notes that are played back in time order. Notes are grouped by start time. A frontier
+of indexes is maintained that contains all notes that have not completed playing.
+*/
 #[derive(Builder, Clone, Debug)]
 #[derive(Default)]
 pub(crate) struct TimeNoteSequence {
