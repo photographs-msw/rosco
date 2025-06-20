@@ -2,6 +2,7 @@ use derive_builder::Builder;
 
 use crate::note::playback_note::{PlaybackNote};
 use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper, NextNotes, SetCurPosition};
+use crate::midi::midi::{HasGetNotesAt, HasSequenceLen};
 
 /**
 Simple vec of vec sequence. Direct access to notes at an index, or just the first note at an index.
@@ -52,6 +53,21 @@ impl SetCurPosition for GridNoteSequence {
 impl IterMutWrapper for GridNoteSequence {
     fn iter_mut(&mut self) -> std::slice::IterMut<Vec<PlaybackNote>> {
         self.sequence.iter_mut()
+    }
+}
+
+impl HasGetNotesAt for GridNoteSequence {
+    fn get_notes_at(&self, index: usize) -> Vec<PlaybackNote> {
+        if index > self.sequence.len() - 1 {
+            return vec![];
+        }
+        self.sequence[index].clone()
+    }
+}
+
+impl HasSequenceLen for GridNoteSequence {
+    fn sequence_len(&self) -> usize {
+        self.sequence.len()
     }
 }
 

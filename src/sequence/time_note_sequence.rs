@@ -5,6 +5,7 @@ use crate::common::float_utils::{float_eq, float_geq, float_leq};
 use crate::note::playback_note;
 use crate::note::playback_note::PlaybackNote;
 use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper, NextNotes, SetCurPosition};
+use crate::midi::midi::{HasGetNotesAt, HasSequenceLen};
 
 #[allow(dead_code)]
 static INIT_START_TIME: f32 = 0.0;
@@ -61,6 +62,21 @@ impl SetCurPosition for TimeNoteSequence {
 impl IterMutWrapper for TimeNoteSequence {
     fn iter_mut(&mut self) -> std::slice::IterMut<Vec<PlaybackNote>> {
         self.sequence.iter_mut()
+    }
+}
+
+impl HasGetNotesAt for TimeNoteSequence {
+    fn get_notes_at(&self, index: usize) -> Vec<PlaybackNote> {
+        if index >= self.sequence.len() {
+            return Vec::new();
+        }
+        self.sequence[index].clone()
+    }
+}
+
+impl HasSequenceLen for TimeNoteSequence {
+    fn sequence_len(&self) -> usize {
+        self.sequence.len()
     }
 }
 

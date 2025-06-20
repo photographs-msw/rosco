@@ -1,6 +1,7 @@
 use crate::meter::durations::DurationType;
 use crate::note::playback_note::PlaybackNote;
 use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper, NextNotes, SetCurPosition};
+use crate::midi::midi::{HasGetNotesAt, HasSequenceLen};
 use crate::sequence::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
 
 pub(crate) static DEFAULT_DURATION_TYPE: DurationType = DurationType::Quarter;
@@ -134,6 +135,18 @@ impl SetCurPosition for FixedTimeNoteSequence {
 impl IterMutWrapper for FixedTimeNoteSequence {
     fn iter_mut(&mut self) -> std::slice::IterMut<Vec<PlaybackNote>> {
         self.inner_sequence.iter_mut()
+    }
+}
+
+impl HasGetNotesAt for FixedTimeNoteSequence {
+    fn get_notes_at(&self, index: usize) -> Vec<PlaybackNote> {
+        self.inner_sequence.get_notes_at(index)
+    }
+}
+
+impl HasSequenceLen for FixedTimeNoteSequence {
+    fn sequence_len(&self) -> usize {
+        self.inner_sequence.sequence_len()
     }
 }
 
