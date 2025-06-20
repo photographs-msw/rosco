@@ -10,7 +10,6 @@ pub(crate) static SIXTEENTH: f32 = 0.0625;
 pub(crate) static THIRTY_SECOND: f32 = 0.03125;
 pub(crate) static SIXTY_FOURTH: f32 = 0.015625;
 
-#[allow(dead_code)]
 #[derive(Clone, Copy, Debug, Hash, PartialEq, Eq)]
 pub(crate) enum DurationType {
     Whole,
@@ -61,7 +60,10 @@ impl DurationBuilder {
 }
 
 impl Duration {
-    #[allow(dead_code)]
+    pub(crate) fn new(duration_type: DurationType, duration_ms: f32) -> Self {
+        Self { duration_type, duration_ms }
+    }
+
     pub(crate) fn duration_factor(&self) -> f32 {
         self.duration_type.to_factor()
     }
