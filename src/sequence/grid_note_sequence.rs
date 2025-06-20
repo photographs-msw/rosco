@@ -1,8 +1,12 @@
 use derive_builder::Builder;
 
-use crate::note::playback_note::{default_playback_note, PlaybackNote};
+use crate::note::playback_note::{PlaybackNote};
 use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper, NextNotes, SetCurPosition};
 
+/**
+Simple vec of vec sequence. Direct access to notes at an index, or just the first note at an index.
+If an insert index is off the end the note will be appended. No opinion on any note properties.
+*/
 #[derive(Builder, Clone, Debug)]
 pub(crate) struct GridNoteSequence {
     #[builder(default = "Vec::new()")]
@@ -134,24 +138,6 @@ impl GridNoteSequence {
         self.sequence[index].clone()
     }
     
-    // Only makes sense with an index and as an internal method
-    // Would be public in a grid- rather than time-based sequencer
-    pub(crate) fn notes_iter_mut(&mut self) -> std::slice::IterMut<PlaybackNote> {
-        if self.index >= self.sequence.len() {
-            return [default_playback_note(); 0].iter_mut();
-        }
-        self.sequence[self.index].iter_mut()
-    }
-
-    // Only makes sense with an index and as an internal method
-    // Would be public in a grid- rather than time-based sequencer
-    pub(crate) fn notes_iter(&self) -> std::slice::Iter<PlaybackNote> {
-        if self.index >= self.sequence.len() {
-            return [default_playback_note(); 0].iter();
-        }
-        self.sequence[self.index].iter()
-    }
-
     // Only makes sense with an index and as an internal method
     // Would be public in a grid- rather than time-based sequencer
     pub(crate) fn notes_len(&self) -> usize {

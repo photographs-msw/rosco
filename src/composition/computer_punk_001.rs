@@ -58,7 +58,6 @@ pub(crate) fn play() {
     // /Track Effects
     
     let note_pool_capacity = 100;
-    // let note_pool: NotePool<Note> = NotePool::new::<NoteBuilder>(note_pool_capacity);
     let mut sampled_note_pool: NotePool<SampledNote> =
         NotePool::new::<SampledNoteBuilder>(note_pool_capacity);
     let mut playback_note_pool: NotePool<PlaybackNote> =
@@ -69,7 +68,6 @@ pub(crate) fn play() {
     let mut piano_note_1 = comp_utils::build_sampled_playback_note(
         &mut sampled_note_pool,
         &mut playback_note_pool,
-        // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
         "/Users/markweiss/Downloads/punk_computer/003/piano_note_1_clipped.wav",
         sampled_note_volume,
         start_time,
