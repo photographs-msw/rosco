@@ -1,16 +1,15 @@
-use std::collections::HashMap;
 use std::str::FromStr;
 
 use crate::audio_gen::oscillator::Waveform;
-use crate::effect::delay::{Delay, DelayBuilder};
-use crate::effect::flanger::{Flanger, FlangerBuilder};
-use crate::effect::lfo::{LFO, LFOBuilder};
-use crate::envelope::envelope::{Envelope, EnvelopeBuilder};
+use crate::effect::delay::{DelayBuilder};
+use crate::effect::flanger::{FlangerBuilder};
+use crate::effect::lfo::{LFOBuilder};
+use crate::envelope::envelope::{EnvelopeBuilder};
 use crate::envelope::envelope_pair::EnvelopePair;
 use crate::meter::durations::DurationType as MeterDurationType;
-use crate::note::note::{Note, NoteBuilder};
+use crate::note::note::{NoteBuilder};
 use crate::note::playback_note::{NoteType, PlaybackNote, PlaybackNoteBuilder};
-use crate::note::sampled_note::{SampledNote, SampledNoteBuilder};
+use crate::note::sampled_note::{SampledNoteBuilder};
 use crate::note::scales::WesternPitch;
 use crate::sequence::fixed_time_note_sequence::{FixedTimeNoteSequence, FixedTimeNoteSequenceBuilder};
 use crate::sequence::note_sequence_trait::AppendNote;
@@ -114,30 +113,20 @@ impl WaveformType {
 pub enum WesternPitchType {
     C,
     CSharp,
-    CSharpAlt, // C#
     DFlat,
-    DFlatAlt, // Db
     D,
     DSharp,
-    DSharpAlt, // D#
     EFlat,
-    EFlatAlt, // Eb
     E,
     F,
     FSharp,
-    FSharpAlt, // F#
     GFlat,
-    GFlatAlt, // Gb
     G,
     GSharp,
-    GSharpAlt, // G#
     AFlat,
-    AFlatAlt, // Ab
     A,
     ASharp,
-    ASharpAlt, // A#
     BFlat,
-    BFlatAlt, // Bb
     B,
 }
 
@@ -147,31 +136,21 @@ impl FromStr for WesternPitchType {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
             "C" => Ok(WesternPitchType::C),
-            "CSharp" => Ok(WesternPitchType::CSharp),
-            "C#" => Ok(WesternPitchType::CSharpAlt),
-            "DFlat" => Ok(WesternPitchType::DFlat),
-            "Db" => Ok(WesternPitchType::DFlatAlt),
+            "CSharp" | "C#" => Ok(WesternPitchType::CSharp),
+            "DFlat" | "Db" => Ok(WesternPitchType::DFlat),
             "D" => Ok(WesternPitchType::D),
-            "DSharp" => Ok(WesternPitchType::DSharp),
-            "D#" => Ok(WesternPitchType::DSharpAlt),
-            "EFlat" => Ok(WesternPitchType::EFlat),
-            "Eb" => Ok(WesternPitchType::EFlatAlt),
+            "DSharp" | "D#" => Ok(WesternPitchType::DSharp),
+            "EFlat" | "Eb" => Ok(WesternPitchType::EFlat),
             "E" => Ok(WesternPitchType::E),
             "F" => Ok(WesternPitchType::F),
-            "FSharp" => Ok(WesternPitchType::FSharp),
-            "F#" => Ok(WesternPitchType::FSharpAlt),
-            "GFlat" => Ok(WesternPitchType::GFlat),
-            "Gb" => Ok(WesternPitchType::GFlatAlt),
+            "FSharp" | "F#" => Ok(WesternPitchType::FSharp),
+            "GFlat" | "Gb" => Ok(WesternPitchType::GFlat),
             "G" => Ok(WesternPitchType::G),
-            "GSharp" => Ok(WesternPitchType::GSharp),
-            "G#" => Ok(WesternPitchType::GSharpAlt),
-            "AFlat" => Ok(WesternPitchType::AFlat),
-            "Ab" => Ok(WesternPitchType::AFlatAlt),
+            "GSharp" | "G#" => Ok(WesternPitchType::GSharp),
+            "AFlat" | "Ab" => Ok(WesternPitchType::AFlat),
             "A" => Ok(WesternPitchType::A),
-            "ASharp" => Ok(WesternPitchType::ASharp),
-            "A#" => Ok(WesternPitchType::ASharpAlt),
-            "BFlat" => Ok(WesternPitchType::BFlat),
-            "Bb" => Ok(WesternPitchType::BFlatAlt),
+            "ASharp" | "A#" => Ok(WesternPitchType::ASharp),
+            "BFlat" | "Bb" => Ok(WesternPitchType::BFlat),
             "B" => Ok(WesternPitchType::B),
             _ => Err(format!("Unknown western pitch: {}", s)),
         }
@@ -182,21 +161,21 @@ impl WesternPitchType {
     fn to_western_pitch(&self) -> WesternPitch {
         match self {
             WesternPitchType::C => WesternPitch::C,
-            WesternPitchType::CSharp | WesternPitchType::CSharpAlt => WesternPitch::CSharp,
-            WesternPitchType::DFlat | WesternPitchType::DFlatAlt => WesternPitch::DFlat,
+            WesternPitchType::CSharp => WesternPitch::CSharp,
+            WesternPitchType::DFlat => WesternPitch::DFlat,
             WesternPitchType::D => WesternPitch::D,
-            WesternPitchType::DSharp | WesternPitchType::DSharpAlt => WesternPitch::DSharp,
-            WesternPitchType::EFlat | WesternPitchType::EFlatAlt => WesternPitch::EFlat,
+            WesternPitchType::DSharp => WesternPitch::DSharp,
+            WesternPitchType::EFlat => WesternPitch::EFlat,
             WesternPitchType::E => WesternPitch::E,
             WesternPitchType::F => WesternPitch::F,
-            WesternPitchType::FSharp | WesternPitchType::FSharpAlt => WesternPitch::FSharp,
-            WesternPitchType::GFlat | WesternPitchType::GFlatAlt => WesternPitch::GFlat,
+            WesternPitchType::FSharp => WesternPitch::FSharp,
+            WesternPitchType::GFlat => WesternPitch::GFlat,
             WesternPitchType::G => WesternPitch::G,
-            WesternPitchType::GSharp | WesternPitchType::GSharpAlt => WesternPitch::GSharp,
-            WesternPitchType::AFlat | WesternPitchType::AFlatAlt => WesternPitch::AFlat,
+            WesternPitchType::GSharp => WesternPitch::GSharp,
+            WesternPitchType::AFlat => WesternPitch::AFlat,
             WesternPitchType::A => WesternPitch::A,
-            WesternPitchType::ASharp | WesternPitchType::ASharpAlt => WesternPitch::ASharp,
-            WesternPitchType::BFlat | WesternPitchType::BFlatAlt => WesternPitch::BFlat,
+            WesternPitchType::ASharp => WesternPitch::ASharp,
+            WesternPitchType::BFlat => WesternPitch::BFlat,
             WesternPitchType::B => WesternPitch::B,
         }
     }
@@ -297,12 +276,31 @@ impl Parser {
         let mut in_file_path = false;
         let mut chars = input.chars().peekable();
         let mut at_line_start = true;
+        let mut line_buffer = String::new();
 
         while let Some(ch) = chars.next() {
+            // Buffer the line for blank line detection
+            if ch == '\n' {
+                if !in_comment {
+                    // If the line is blank (only whitespace), skip it
+                    if line_buffer.trim().is_empty() {
+                        at_line_start = true;
+                        line_buffer.clear();
+                        continue;
+                    }
+                }
+                at_line_start = true;
+                line_buffer.clear();
+            } else {
+                line_buffer.push(ch);
+                if !ch.is_whitespace() {
+                    at_line_start = false;
+                }
+            }
+
             if in_comment {
                 if ch == '\n' {
                     in_comment = false;
-                    at_line_start = true;
                 }
                 continue;
             }
@@ -310,12 +308,6 @@ impl Parser {
             if at_line_start && ch == '#' {
                 in_comment = true;
                 continue;
-            }
-
-            if ch == '\n' {
-                at_line_start = true;
-            } else if !ch.is_whitespace() {
-                at_line_start = false;
             }
 
             if in_file_path {
@@ -461,11 +453,11 @@ impl Parser {
     }
 
     fn parse_effect_def(&mut self) -> Result<EffectDef, String> {
-        if self.peek() == "mix" {
+        if self.peek() == "delay" {
             self.parse_delay_def()
-        } else if self.peek() == "window_size" {
+        } else if self.peek() == "flanger" {
             self.parse_flanger_def()
-        } else if self.peek() == "freq" {
+        } else if self.peek() == "lfo" {
             self.parse_lfo_def()
         } else {
             Err(format!("Unknown effect type: {}", self.peek()))
@@ -473,6 +465,7 @@ impl Parser {
     }
 
     fn parse_delay_def(&mut self) -> Result<EffectDef, String> {
+        self.expect("delay")?;
         self.expect("mix")?;
         let mix = self.parse_f32()?;
         self.expect("decay")?;
@@ -500,6 +493,7 @@ impl Parser {
     }
 
     fn parse_flanger_def(&mut self) -> Result<EffectDef, String> {
+        self.expect("flanger")?;
         self.expect("window_size")?;
         let window_size = self.parse_usize()?;
         self.expect("mix")?;
@@ -512,6 +506,7 @@ impl Parser {
     }
 
     fn parse_lfo_def(&mut self) -> Result<EffectDef, String> {
+        self.expect("lfo")?;
         self.expect("freq")?;
         let freq = self.parse_f32()?;
         self.expect("amp")?;
@@ -596,7 +591,21 @@ impl Parser {
     fn parse_note_freq(&mut self) -> Result<f32, String> {
         let token = self.advance();
         
-        // Try to parse as western pitch first
+        // Try to parse as octave,western_pitch format first
+        if let Ok(octave) = token.parse::<u8>() {
+            if self.peek() == "," {
+                self.advance(); // consume comma
+                let pitch_token = self.advance();
+                if let Ok(pitch) = WesternPitchType::from_str(&pitch_token) {
+                    let western_pitch = pitch.to_western_pitch();
+                    return Ok(western_pitch.get_frequency(octave));
+                } else {
+                    return Err(format!("Invalid western pitch: {}", pitch_token));
+                }
+            }
+        }
+        
+        // Try to parse as western pitch (default octave 4)
         if let Ok(pitch) = WesternPitchType::from_str(&token) {
             let western_pitch = pitch.to_western_pitch();
             // Default to octave 4 (middle C)
@@ -625,7 +634,7 @@ impl Parser {
     }
 
     fn is_effect_start(&self) -> bool {
-        self.peek() == "mix" || self.peek() == "window_size" || self.peek() == "freq"
+        self.peek() == "delay" || self.peek() == "flanger" || self.peek() == "lfo"
     }
 
     fn is_note_declaration_start(&self) -> bool {
@@ -868,12 +877,15 @@ mod tests {
         let input = r#"
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
             a 0.1,0.8 d 0.3,0.6 s 0.8,0.4 r 1.0,0.0
-            mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+            delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             osc:sine:440.0:0.5:0
             osc:square:880.0:0.3:4
         "#;
 
         let result = parse_dsl(input);
+        if let Err(e) = &result {
+            println!("Parse error: {}", e);
+        }
         assert!(result.is_ok());
         
         let track_grid = result.unwrap();
@@ -892,17 +904,15 @@ mod tests {
             osc:sine:220.0:0.4:0
             
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
-            window_size 8 mix 0.3
+            flanger window_size 8 mix 0.3
             samp:/path/to/sample.wav:0.6:2
         "#;
 
-        let tokens = super::Parser::tokenize(input);
-        println!("TOKENS: {:?}", tokens);
         let result = parse_dsl(input);
-        if let Err(e) = &result {
-            println!("Parse error: {}", e);
-        }
         assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 2);
     }
 
     #[test]
@@ -913,12 +923,20 @@ mod tests {
             osc:triangle:F#:0.3:4
         "#;
 
-        let tokens = super::Parser::tokenize(input);
-        println!("TOKENS: {:?}", tokens);
         let result = parse_dsl(input);
-        if let Err(e) = &result {
-            println!("Parse error: {}", e);
-        }
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_parse_octave_western_pitch() {
+        let input = r#"
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            osc:sine:4,C:0.5:0
+            osc:triangle:5,F#:0.3:4
+            osc:square:3,A:0.7:8
+        "#;
+
+        let result = parse_dsl(input);
         assert!(result.is_ok());
     }
 
@@ -927,9 +945,9 @@ mod tests {
         let input = r#"
             FixedTimeNoteSequence dur Half tempo 100 num_steps 32
             a 0.1,0.9 d 0.4,0.6 s 0.8,0.3 r 1.0,0.0
-            mix 0.8 decay 0.6 interval_ms 80.0 duration_ms 40.0 num_repeats 5 num_predelay_samples 15 num_concurrent_delays 3
-            window_size 12 mix 0.4
-            freq 2.5 amp 0.3 waveforms sine,triangle
+            delay mix 0.8 decay 0.6 interval_ms 80.0 duration_ms 40.0 num_repeats 5 num_predelay_samples 15 num_concurrent_delays 3
+            flanger window_size 12 mix 0.4
+            lfo freq 2.5 amp 0.3 waveforms sine,triangle
             osc:sine,square:440.0:0.7:0
         "#;
 
