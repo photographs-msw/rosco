@@ -1,6 +1,6 @@
 use derive_builder::Builder;
 use crate::meter::durations::DurationType;
-use crate::sequence::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
+use crate::sequence::time_note_sequence::{TimeNoteSequence};
 use crate::sequence::note_sequence_trait::{AppendNote, BuilderWrapper, NextNotes, SetCurPosition};
 
 #[allow(dead_code)]

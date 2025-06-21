@@ -209,11 +209,7 @@ impl TimeNoteSequence {
             window_playback_notes.extend_from_slice(&playback_notes);
         }
 
-<<<<<<< HEAD
-        self.cur_position_ms = window_end_time_ms; // + constants::FLOAT_EPSILON;
-=======
         self.cur_position_ms = window_end_time_ms;
->>>>>>> b8b63fc (code cleanup)
 
         window_playback_notes
     }
