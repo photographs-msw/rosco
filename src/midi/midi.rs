@@ -45,11 +45,6 @@ pub(crate) fn midi_file_to_tracks<
     let bpm = get_beats_per_minute(&midi);
     let ticks_per_beat = get_ticks_per_beat(&midi);
     let ticks_per_ms: f32 = get_ticks_per_ms(ticks_per_beat, bpm);
-    
-    // TEMP DEBUG
-    // println!("DEBUG MIDI BPM: {} TICKS PER BEAT {} TICKS PER MS {}", bpm, ticks_per_beat, ticks_per_ms);
-    // panic!("DEBUG STOP");
-
     let mut ticks_since_start: u28 = u28::from(0);
     for track in midi.tracks.iter() {
         for event in track.iter() {
@@ -86,10 +81,6 @@ pub(crate) fn midi_file_to_tracks<
                                                 ticks_since_start.as_int() as f32 / ticks_per_ms;
                                             match note_type {
                                                 NoteType::Oscillator => { 
-                                                    
-                                                    // TEMP DEBUG
-                                                    // println!("DEBUG MIDI_NOTE_ON NOTE_KEY {:?} KEY {:?} for track {}", note_key, key, note_key.channel.as_int());
-                                                    
                                                     let note =
                                                         NoteBuilder::default().
                                                             frequency(
@@ -98,10 +89,6 @@ pub(crate) fn midi_file_to_tracks<
                                                             .start_time_ms(note_start_time_ms)
                                                             .end_time_ms(note_start_time_ms)
                                                             .build().unwrap();
-
-
-                                                    // TEMP DEBUG
-                                                    // println!("DEBUG NOTE {:#?}", note);
 
                                                     track_notes_map.insert(
                                                        note_key,
@@ -235,8 +222,4 @@ fn handle_note_off<SequenceType: AppendNote>(note_key: NoteKey,
     playback_note.playback_end_time_ms = ms_since_start;
     track_sequence_map.get_mut(&note_key.channel).unwrap().append_note(playback_note);
     track_notes_map.remove(&note_key);
-
-    // TEMP DEBUG
-    // println!("DEBUG MIDI_NOTE_OFF NOTE_KEY {:?} for track {}", note_key, note_key.channel.as_int());
-    // println!("DEBUG MIDI_NOTE_OFF NOTE: {:#?} added to track {}", note, note_key.channel.as_int());
 }
