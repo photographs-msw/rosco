@@ -1,4 +1,3 @@
-
 use derive_builder::Builder;
 use crate::common::constants::SAMPLE_RATE;
 
@@ -9,9 +8,10 @@ pub(crate) const BUF_STORAGE_SIZE: usize = (SAMPLE_RATE as usize * 2) as usize;
 
 #[allow(dead_code)]
 #[derive(Builder, Clone, Debug, PartialEq)]
+#[builder(build_fn(skip))] // needed for custom build()
 pub(crate) struct SampledNote {
-    #[builder(default = "Vec::with_capacity(BUF_STORAGE_SIZE)", setter(skip))]
-    pub (crate) sample_buf: Vec<f32>,
+    #[builder(default = "String::new()")]
+    pub(crate) file_path: String,
     
     #[builder(default = "0", setter(skip))]
     pub(crate) buf_size: usize,
@@ -27,6 +27,9 @@ pub(crate) struct SampledNote {
 
     #[builder(default = "INIT_START_TIME")]
     pub(crate) end_time_ms: f32,
+
+    #[builder(default = "Vec::with_capacity(BUF_STORAGE_SIZE)", setter(skip))]
+    sample_buf: Vec<f32>,
 }
 
 #[allow(dead_code)]
@@ -102,6 +105,42 @@ impl SampledNote {
 impl BuilderWrapper<SampledNote> for SampledNoteBuilder {
     fn new() -> SampledNote {
         SampledNoteBuilder::default().build().unwrap()
+    }
+}
+
+impl SampledNoteBuilder {
+
+    pub(crate) fn build(&mut self) -> Result<SampledNote, String> {
+        let buf_size = BUF_STORAGE_SIZE;
+        let sample_index = 0;
+        let volume = self.volume.unwrap_or(DEFAULT_VOLUME);
+        let start_time_ms = self.start_time_ms.unwrap_or(INIT_START_TIME);
+        let end_time_ms = self.end_time_ms.unwrap_or(INIT_START_TIME);
+
+        let mut sample_buf: Vec<f32> = Vec::with_capacity(crate::note::sampled_note::BUF_STORAGE_SIZE);
+        
+        // Only try to read audio file if file_path is provided and not empty
+        if let Some(file_path) = &self.file_path {
+            if !file_path.is_empty() {
+                let sample_data =
+                    crate::audio_gen::audio_gen::read_audio_file(file_path).into_boxed_slice();
+                for sample in sample_data.iter() {
+                    sample_buf.push(*sample as f32);
+                }
+            }
+        }
+        
+        Ok(
+            SampledNote {
+                file_path: self.file_path.take().unwrap_or_default(),
+                buf_size,
+                sample_index,
+                volume,
+                start_time_ms,
+                end_time_ms,
+                sample_buf,
+            }
+        )
     }
 }
 
