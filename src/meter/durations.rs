@@ -60,10 +60,12 @@ impl DurationBuilder {
 }
 
 impl Duration {
+    #[allow(dead_code)]
     pub(crate) fn new(duration_type: DurationType, duration_ms: f32) -> Self {
         Self { duration_type, duration_ms }
     }
 
+    #[allow(dead_code)]
     pub(crate) fn duration_factor(&self) -> f32 {
         self.duration_type.to_factor()
     }

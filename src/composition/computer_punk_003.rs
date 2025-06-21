@@ -15,6 +15,7 @@ use crate::track::track::TrackBuilder;
 
 const COMPUTER_PUNK_VERSION: &str = "003";
 
+#[allow(dead_code)]
 pub(crate) fn play() {
     // Init
     println!("\n***** Playing 'computer punk {}' *****\n", COMPUTER_PUNK_VERSION);

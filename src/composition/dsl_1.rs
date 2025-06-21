@@ -5,9 +5,14 @@ pub(crate) fn play() {
     println!("playing dsl 1");
 
     let input = r#"
-    FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
-    a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
-    delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+    let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.9 r 1.0,0.0
+    let delay1 = delay mix 0.9 decay 0.1 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2 
+    let flanger1 = flanger window_size 15 mix 0.5
+
+    FixedTimeNoteSequence dur Half tempo 60 num_steps 16
+    $env1
+    $delay1
+    $flanger1
 
     osc:sine:440.0:0.9:0
     osc:triangle:440.0:0.3:0

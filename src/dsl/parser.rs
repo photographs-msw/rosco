@@ -1313,6 +1313,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Undefined macro '$undefined_macro' encountered on line 3: \n  $undefined_macro")]
     fn test_macro_expansion_undefined() {
         let input = r#"
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
@@ -1320,9 +1321,9 @@ mod tests {
             osc:sine:440.0:0.5:0
         "#;
 
-        let result = parse_dsl(input);
-        // Should still parse successfully, with $undefined_macro treated as literal text
-        assert!(result.is_ok());
+        // The panic happens inside Parser::new, which is called by parse_dsl.
+        // We don't need to check the result, just confirm that the call panics.
+        let _ = parse_dsl(input);
     }
 
     #[test]

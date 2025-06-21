@@ -15,6 +15,7 @@ use crate::note::sampled_note::SampledNote;
 
 const ARGS_DELIMITER: &str = ",";
 
+#[allow(dead_code)]
 pub(crate) struct SampleBuf {
     buf: Vec<f32>,
     len: usize,
