@@ -124,31 +124,32 @@ pub(crate) fn play() {
         .sequence(guitar_sequence)
         .build().unwrap();
 
-    fn adjust_note_start_time(note: &mut PlaybackNote, start_time: f32) -> PlaybackNote {
+    fn adjust_note_start_end_time(note: &mut PlaybackNote, start_time: f32, note_dur: f32) -> PlaybackNote {
         note.set_note_start_time_ms(start_time);
+        note.set_note_end_time_ms(start_time + note_dur);
         note.clone()
     }
 
     // Add additional notes to the sequence
     let note_dur = piano_note_1.sampled_note.duration_ms();
     piano_track_1.sequence.append_note(
-        adjust_note_start_time(
-            &mut piano_note_1, 0.0));
+        adjust_note_start_end_time(
+            &mut piano_note_1, 0.0, note_dur));
     guitar_track_1.sequence.append_note(
-        adjust_note_start_time(
-            &mut guitar_note_1, 0.0));
+        adjust_note_start_end_time(
+            &mut guitar_note_1, 0.0, note_dur));
     piano_track_1.sequence.append_note(
-        adjust_note_start_time(
-            &mut piano_rest_note, 1.0 * note_dur));
+        adjust_note_start_end_time(
+            &mut piano_rest_note, 1.0 * note_dur, note_dur));
     guitar_track_1.sequence.append_note(
-        adjust_note_start_time(
-            &mut guitar_note_1_rev, 1.0 * note_dur));
+        adjust_note_start_end_time(
+            &mut guitar_note_1_rev, 1.0 * note_dur, note_dur));
     piano_track_1.sequence.append_note(
-        adjust_note_start_time(
-            &mut piano_note_1_rev, 2.0 * note_dur));
+        adjust_note_start_end_time(
+            &mut piano_note_1, 2.0 * note_dur, note_dur));
     guitar_track_1.sequence.append_note(
-        adjust_note_start_time(
-            &mut guitar_rest_note, 2.0 * note_dur));
+        adjust_note_start_end_time(
+            &mut guitar_rest_note, 2.0 * note_dur, note_dur));
 
     let mut tracks = Vec::new();
     tracks.push(piano_track_1);
