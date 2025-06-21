@@ -1,12 +1,15 @@
 use crate::{audio_gen, common, midi, note};
-use crate::audio_gen::oscillator::Waveform;
+use crate::audio_gen::audio_gen::gen_notes_stream;
+use crate::audio_gen::oscillator::{OscillatorTables, Waveform};
 use crate::effect::delay::Delay;
 use crate::effect::flanger::Flanger;
 use crate::effect::lfo::LFO;
 use crate::envelope::envelope::Envelope;
 use crate::note::playback_note::{NoteType, PlaybackNote};
-use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper};
+use crate::sequence::note_sequence_trait::{AppendNote, AppendNotes, BuilderWrapper, IterMutWrapper,
+    NextNotes, SetCurPosition};
 use crate::track::track::{Track, TrackBuilder};
+use crate::track::track_grid::TrackGrid;
 use crate::note::note_pool::NotePool;
 use crate::note::sampled_note::SampledNote;
 
@@ -159,4 +162,26 @@ pub(crate) fn get_waveforms_from_arg() -> Vec<Waveform> {
             matched
         })
         .collect()
+}
+
+pub(crate) fn play_track_grid<SequenceType>(track_grid: TrackGrid<SequenceType>)
+where
+    // Add Send + 'static bounds to ensure thread safety
+    SequenceType: NextNotes + Iterator + SetCurPosition + Send + 'static,
+    // The Item of the iterator must also be Send to be sent across the channel
+    <SequenceType as Iterator>::Item: Send,
+{
+    let (tx, rx) = std::sync::mpsc::channel();
+    std::thread::spawn(move || {
+        for playback_notes in track_grid {
+            if tx.send(playback_notes).is_err() {
+                // The receiver has hung up, so we can stop the thread.
+                break;
+            }
+        }
+    });
+
+    for playback_notes in rx.iter() {
+        gen_notes_stream(playback_notes, OscillatorTables::new());
+    }
 }

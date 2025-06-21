@@ -18,6 +18,7 @@ use crate::track::track_effects::{TrackEffects, TrackEffectsBuilder};
 use crate::track::track_grid::{TrackGrid, TrackGridBuilder};
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum DslDurationType {
     Whole,
     Half,
@@ -54,6 +55,7 @@ impl FromStr for DslDurationType {
 }
 
 impl DslDurationType {
+    #[allow(dead_code)]
     fn to_factor(&self) -> f32 {
         match self {
             DslDurationType::Whole => 1.0,
@@ -69,6 +71,7 @@ impl DslDurationType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum WaveformType {
     Sine,
     Sin,
@@ -110,6 +113,7 @@ impl WaveformType {
 }
 
 #[derive(Debug, Clone, PartialEq)]
+#[allow(dead_code)]
 pub enum WesternPitchType {
     C,
     CSharp,
@@ -158,6 +162,7 @@ impl FromStr for WesternPitchType {
 }
 
 impl WesternPitchType {
+    #[allow(dead_code)]
     fn to_western_pitch(&self) -> WesternPitch {
         match self {
             WesternPitchType::C => WesternPitch::C,
@@ -182,6 +187,7 @@ impl WesternPitchType {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct DelayDef {
     pub mix: f32,
     pub decay: f32,
@@ -193,12 +199,14 @@ pub struct DelayDef {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct FlangerDef {
     pub window_size: usize,
     pub mix: f32,
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct LFODef {
     pub freq: f32,
     pub amp: f32,
@@ -206,6 +214,7 @@ pub struct LFODef {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum EffectDef {
     Delay(DelayDef),
     Flanger(FlangerDef),
@@ -213,6 +222,7 @@ pub enum EffectDef {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct EnvelopeDef {
     pub attack: (f32, f32),
     pub decay: (f32, f32),
@@ -221,6 +231,7 @@ pub struct EnvelopeDef {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct SequenceDef {
     pub dur: DslDurationType,
     pub tempo: u8,
@@ -228,6 +239,7 @@ pub struct SequenceDef {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum NoteDeclaration {
     Oscillator {
         waveforms: Vec<WaveformType>,
@@ -243,6 +255,7 @@ pub enum NoteDeclaration {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct OuterBlock {
     pub sequence_def: SequenceDef,
     pub envelope_defs: Vec<EnvelopeDef>,
@@ -251,16 +264,19 @@ pub struct OuterBlock {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Script {
     pub outer_blocks: Vec<OuterBlock>,
 }
 
+#[allow(dead_code)]
 pub struct Parser {
     tokens: Vec<String>,
     current: usize,
 }
 
 impl Parser {
+    #[allow(dead_code)]
     pub fn new(input: &str) -> Self {
         let tokens = Self::tokenize(input);
         Self {
