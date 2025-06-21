@@ -18,14 +18,15 @@ DURATION_TYPE -> Whole | Half | Quarter | Eighth | Sixteenth | ThirtySecond | Si
 TEMPO -> u8
 NUM_STEPS -> usize
 ENVELOPE_PAIR -> f32,f32
-DELAY -> mix f32 decay f32 interval_ms f32 duration_ms f32 num_repeats usize num_predelay_samples usize num_concurrent_delays uszie 
-FLANGER -> window_size usize mix f32
+DELAY -> delay mix f32 decay f32 interval_ms f32 duration_ms f32 num_repeats usize num_predelay_samples usize num_concurrent_delays uszie 
+FLANGER -> flanger window_size usize mix f32
 WAVEFORM -> sine | sin | square | sqr | triangle | tri | sawtooth | saw | guassiannoise | noise
 WAVEFORMS -> WAVEFORM, | WAVEFORM
-LFO -> freq f32 amp f32 waveforms WAVEFORMS
+LFO -> lfo freq f32 amp f32 waveforms WAVEFORMS
 EFFECT_DEF -> DELAY | FLANGER | LFO
 WESTERN_PITCH -> C | CSharp | C#| DFlat | Db | D | DSharp | D#| EFlat | Eb| E | F | FSharp | F#| GFlat | Gb| G | GSharp | G# | AFlat | Ab | A | ASharp | A#| BFlat | Bb | B
-NOTE_FREQ -> f32 | WESTERN_PITCH
+OCTAVE -> 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+NOTE_FREQ -> f32 | OCTAVE,WESTERN_PITCH
 VOLUME -> f32
 STEP_INDEX -> usize
 FILE_PATH -> .+

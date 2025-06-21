@@ -29,7 +29,7 @@ mod tests {
         let input = r#"
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
             a 0.1,0.8 d 0.3,0.6 s 0.8,0.4 r 1.0,0.0
-            mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+            delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             osc:sine:440.0:0.5:0
             osc:square:880.0:0.3:4
         "#;
@@ -53,7 +53,7 @@ mod tests {
             osc:sine:220.0:0.4:0
             
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
-            window_size 8 mix 0.3
+            flanger window_size 8 mix 0.3
             samp:/path/to/sample.wav:0.6:2
         "#;
 
@@ -77,13 +77,26 @@ mod tests {
     }
 
     #[test]
+    fn test_parse_octave_western_pitch() {
+        let input = r#"
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            osc:sine:4,C:0.5:0
+            osc:triangle:5,F#:0.3:4
+            osc:square:3,A:0.7:8
+        "#;
+
+        let result = parse_dsl(input);
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn test_parse_complex_effects() {
         let input = r#"
             FixedTimeNoteSequence dur Half tempo 100 num_steps 32
             a 0.1,0.9 d 0.4,0.6 s 0.8,0.3 r 1.0,0.0
-            mix 0.8 decay 0.6 interval_ms 80.0 duration_ms 40.0 num_repeats 5 num_predelay_samples 15 num_concurrent_delays 3
-            window_size 12 mix 0.4
-            freq 2.5 amp 0.3 waveforms sine,triangle
+            delay mix 0.8 decay 0.6 interval_ms 80.0 duration_ms 40.0 num_repeats 5 num_predelay_samples 15 num_concurrent_delays 3
+            flanger window_size 12 mix 0.4
+            lfo freq 2.5 amp 0.3 waveforms sine,triangle
             osc:sine,square:440.0:0.7:0
         "#;
 
