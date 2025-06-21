@@ -195,8 +195,12 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> Iterator for TrackGrid
         
         // TEMP DEBUG
         println!("IN TrackGrid::next(), playback_notes.len(): {:?}", playback_notes.len());
+        println!("IN TrackGrid::next(), playback_notes.is_empty(): {:?}", playback_notes.is_empty());
 
         if playback_notes.is_empty() {
+            
+            // TEMP DEBUG
+            println!("IN TrackGrid::next(), playback_notes.is_empty() returning None");
             return None;
         }
 
