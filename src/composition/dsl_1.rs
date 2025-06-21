@@ -17,14 +17,22 @@ pub(crate) fn play() {
     osc:sine:440.0:0.9:0
     osc:triangle:440.0:0.3:0
 
+    samp:/Users/markweiss/Downloads/punk_computer/003/piano_note_1_clipped.wav:0.005:2
+    
     osc:square:880.0:9.5:4
     osc:triangle:880.0:3.5:4
 
+    samp:/Users/markweiss/Downloads/punk_computer/003/piano_note_1_clipped.wav:0.005:6
+    
     osc:sine:440.0:0.9:8
     osc:triangle:440.0:0.3:8
 
+    samp:/Users/markweiss/Downloads/punk_computer/003/piano_note_1_clipped.wav:0.005:10
+    
     osc:square:880.0:9.5:12
     osc:triangle:880.0:3.5:12
+    
+    samp:/Users/markweiss/Downloads/punk_computer/003/piano_note_1_clipped.wav:0.005:14
 "#;
 
     play_track_grid(parse_dsl(input).unwrap());

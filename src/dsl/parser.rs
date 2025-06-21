@@ -940,6 +940,7 @@ impl Parser {
             }
             NoteDeclaration::Sample { file_path, volume, .. } => {
                 let sampled_note = SampledNoteBuilder::default()
+                    .file_path(file_path.clone())
                     .volume(*volume)
                     .start_time_ms(start_time_ms)
                     .end_time_ms(end_time_ms)
