@@ -1043,6 +1043,7 @@ mod tests {
             delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             osc:sine:440.0:0.5:0
             osc:square:880.0:0.3:4
+            samp:/Users/markweiss/RustroverProjects/osc_bak/src/dsl/test_data/test_sample.wav:0.005:2
         "#;
 
         let result = parse_dsl(input);
@@ -1068,7 +1069,7 @@ mod tests {
             
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
             flanger window_size 8 mix 0.3
-            samp:/path/to/sample.wav:0.6:2
+            samp:/Users/markweiss/RustroverProjects/osc_bak/src/dsl/test_data/test_sample.wav:0.005:2
         "#;
 
         let result = parse_dsl(input);
