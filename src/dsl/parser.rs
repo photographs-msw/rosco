@@ -1,4 +1,6 @@
 use std::str::FromStr;
+use std::collections::HashMap;
+use regex;
 
 use crate::audio_gen::oscillator::Waveform;
 use crate::effect::delay::{DelayBuilder};
@@ -265,7 +267,15 @@ pub struct OuterBlock {
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
+pub struct MacroDef {
+    pub name: String,
+    pub expression: String,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Script {
+    pub macro_defs: HashMap<String, String>,
     pub outer_blocks: Vec<OuterBlock>,
 }
 
@@ -278,11 +288,78 @@ pub struct Parser {
 impl Parser {
     #[allow(dead_code)]
     pub fn new(input: &str) -> Self {
-        let tokens = Self::tokenize(input);
+        let expanded_input = Self::expand_macros(input).unwrap_or_else(|_| input.to_string());
+        let tokens = Self::tokenize(&expanded_input);
         Self {
             tokens,
             current: 0,
         }
+    }
+
+    fn expand_macros(input: &str) -> Result<String, String> {
+        let mut expanded = input.to_string();
+        let mut macro_defs = HashMap::new();
+        
+        // First pass: collect all macro definitions
+        let lines: Vec<&str> = input.lines().collect();
+        let mut i = 0;
+        
+        while i < lines.len() {
+            let line = lines[i].trim();
+            if line.starts_with("let ") {
+                // Parse macro definition
+                if let Some((name, value)) = Self::parse_macro_definition_line(line)? {
+                    macro_defs.insert(name, value);
+                }
+            } else if line.starts_with("FixedTimeNoteSequence") {
+                // Stop at first outer block
+                break;
+            }
+            i += 1;
+        }
+        
+        // Multi-pass expansion: repeat until no changes
+        let mut changed = true;
+        while changed {
+            changed = false;
+            let mut new_expanded = expanded.clone();
+            for (name, value) in &macro_defs {
+                let pattern = format!("${}", name);
+                if new_expanded.contains(&pattern) {
+                    new_expanded = new_expanded.replace(&pattern, value);
+                    changed = true;
+                }
+            }
+            expanded = new_expanded;
+        }
+        // Check for any remaining $name that is not in macro_defs and panic with details
+        let re = regex::Regex::new(r"\$([a-zA-Z][a-zA-Z0-9\-_]*)").unwrap();
+        for (line_idx, line) in expanded.lines().enumerate() {
+            for cap in re.captures_iter(line) {
+                let macro_name = &cap[1];
+                if !macro_defs.contains_key(macro_name) {
+                    panic!(
+                        "Undefined macro '${}' encountered on line {}: \n  {}",
+                        macro_name,
+                        line_idx + 1,
+                        line.trim()
+                    );
+                }
+            }
+        }
+        Ok(expanded)
+    }
+
+    fn parse_macro_definition_line(line: &str) -> Result<Option<(String, String)>, String> {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() < 4 || parts[0] != "let" || parts[2] != "=" {
+            return Ok(None);
+        }
+        
+        let name = parts[1].to_string();
+        let value = parts[3..].join(" ");
+        
+        Ok(Some((name, value)))
     }
 
     fn tokenize(input: &str) -> Vec<String> {
@@ -380,14 +457,25 @@ impl Parser {
     }
 
     fn parse_script(&mut self) -> Result<Script, String> {
+        let mut macro_defs = HashMap::new();
         let mut outer_blocks = Vec::new();
         
+        // Parse macro definitions first
+        while self.current < self.tokens.len() && self.peek() == "let" {
+            let (name, expression) = self.parse_assignment()?;
+            macro_defs.insert(name, expression);
+        }
+        
+        // Parse outer blocks
         while self.current < self.tokens.len() {
             let block = self.parse_outer_block()?;
             outer_blocks.push(block);
         }
 
-        Ok(Script { outer_blocks })
+        Ok(Script { 
+            macro_defs,
+            outer_blocks 
+        })
     }
 
     fn parse_outer_block(&mut self) -> Result<OuterBlock, String> {
@@ -868,6 +956,64 @@ impl Parser {
             }
         }
     }
+
+    fn parse_assignment(&mut self) -> Result<(String, String), String> {
+        self.expect("let")?;
+        let name = self.parse_identifier()?;
+        self.expect("=")?;
+        let expression = self.parse_expression()?;
+        Ok((name, expression))
+    }
+
+    fn parse_identifier(&mut self) -> Result<String, String> {
+        let token = self.advance();
+        if token.chars().next().map_or(false, |c| c.is_alphabetic()) &&
+           token.chars().all(|c| c.is_alphanumeric() || c == '-' || c == '_') {
+            Ok(token)
+        } else {
+            Err(format!("Invalid identifier: {}", token))
+        }
+    }
+
+    fn parse_expression(&mut self) -> Result<String, String> {
+        let mut expression_tokens = Vec::new();
+        
+        // Parse until we reach the end of the line or encounter another 'let'
+        while self.current < self.tokens.len() {
+            let token = self.peek();
+            
+            // Stop if we encounter another 'let' (start of next macro definition)
+            if token == "let" {
+                break;
+            }
+            
+            // Stop if we encounter 'FixedTimeNoteSequence' (start of outer block)
+            if token == "FixedTimeNoteSequence" {
+                break;
+            }
+            
+            expression_tokens.push(self.advance());
+        }
+        
+        if expression_tokens.is_empty() {
+            return Err("Empty expression".to_string());
+        }
+        
+        // Reconstruct the original text by joining tokens intelligently
+        let mut expression = String::new();
+        for (i, token) in expression_tokens.iter().enumerate() {
+            if i > 0 {
+                // Add space before token, except for certain punctuation
+                let prev = &expression_tokens[i - 1];
+                if token != "," && token != ":" && prev != "," && prev != ":" {
+                    expression.push(' ');
+                }
+            }
+            expression.push_str(token);
+        }
+        
+        Ok(expression.trim().to_string())
+    }
 }
 
 impl NoteDeclaration {
@@ -976,5 +1122,233 @@ mod tests {
         assert_eq!(track.effects.delays.len(), 1);
         assert_eq!(track.effects.flangers.len(), 1);
         assert_eq!(track.effects.lfos.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_macro_definitions() {
+        let input = r#"
+            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+            let flanger1 = flanger window_size 8 mix 0.3
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            osc:sine:440.0:0.5:0
+        "#;
+
+        let mut parser = Parser::new(input);
+        let script = parser.parse_script().unwrap();
+        
+        // Verify macro definitions are parsed correctly
+        assert_eq!(script.macro_defs.len(), 3);
+        
+        // Check that env1 contains the envelope definition
+        assert_eq!(script.macro_defs.get("env1").unwrap(), "a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0");
+        
+        // Check that delay1 contains the delay definition
+        assert_eq!(script.macro_defs.get("delay1").unwrap(), "delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2");
+        
+        // Check that flanger1 contains the flanger definition
+        assert_eq!(script.macro_defs.get("flanger1").unwrap(), "flanger window_size 8 mix 0.3");
+        
+        // Verify that outer blocks are still parsed correctly
+        assert_eq!(script.outer_blocks.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_macro_definitions_with_whitespace() {
+        let input = r#"
+            let env1 =   a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0   
+            let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            osc:sine:440.0:0.5:0
+        "#;
+
+        let mut parser = Parser::new(input);
+        let script = parser.parse_script().unwrap();
+        
+        // Verify that whitespace is trimmed from expressions
+        assert_eq!(script.macro_defs.get("env1").unwrap(), "a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0");
+        assert_eq!(script.macro_defs.get("delay1").unwrap(), "delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2");
+    }
+
+    #[test]
+    fn test_parse_multiple_macro_definitions() {
+        let input = r#"
+            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let env2 = a 0.1,0.9 d 0.2,0.7 s 0.9,0.4 r 0.8,0.1
+            let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+            let lfo1 = lfo freq 2.0 amp 0.3 waveforms sine,triangle
+            let note1 = osc:sine:440.0:0.5:0
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            osc:sine:880.0:0.3:4
+        "#;
+
+        let mut parser = Parser::new(input);
+        let script = parser.parse_script().unwrap();
+        
+        // Verify all macro definitions are parsed
+        assert_eq!(script.macro_defs.len(), 5);
+        
+        // Check each macro definition
+        assert_eq!(script.macro_defs.get("env1").unwrap(), "a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0");
+        assert_eq!(script.macro_defs.get("env2").unwrap(), "a 0.1,0.9 d 0.2,0.7 s 0.9,0.4 r 0.8,0.1");
+        assert_eq!(script.macro_defs.get("delay1").unwrap(), "delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2");
+        assert_eq!(script.macro_defs.get("lfo1").unwrap(), "lfo freq 2.0 amp 0.3 waveforms sine,triangle");
+        assert_eq!(script.macro_defs.get("note1").unwrap(), "osc:sine:440.0:0.5:0");
+        
+        // Verify that outer blocks are still parsed correctly
+        assert_eq!(script.outer_blocks.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_identifier_validation() {
+        let input = r#"
+            let valid-name = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let valid_name = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+            let validName123 = flanger window_size 8 mix 0.3
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            osc:sine:440.0:0.5:0
+        "#;
+
+        let mut parser = Parser::new(input);
+        let script = parser.parse_script().unwrap();
+        
+        // Verify that valid identifiers with hyphens, underscores, and numbers are accepted
+        assert_eq!(script.macro_defs.len(), 3);
+        assert!(script.macro_defs.contains_key("valid-name"));
+        assert!(script.macro_defs.contains_key("valid_name"));
+        assert!(script.macro_defs.contains_key("validName123"));
+    }
+
+    #[test]
+    fn test_macro_expansion_basic() {
+        let input = r#"
+            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            $env1
+            $delay1
+            osc:sine:440.0:0.5:0
+        "#;
+
+        let result = parse_dsl(input);
+        assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 1);
+        
+        let track = &track_grid.tracks[0];
+        // Should have one envelope and one delay from the expanded macros
+        assert_eq!(track.effects.envelopes.len(), 1);
+        assert_eq!(track.effects.delays.len(), 1);
+    }
+
+    #[test]
+    fn test_macro_expansion_multiple_uses() {
+        let input = r#"
+            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let flanger1 = flanger window_size 8 mix 0.3
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            $env1
+            $flanger1
+            osc:sine:440.0:0.5:0
+            
+            FixedTimeNoteSequence dur Eighth tempo 140 num_steps 8
+            $env1
+            $flanger1
+            osc:square:880.0:0.3:4
+        "#;
+
+        let result = parse_dsl(input);
+        assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 2);
+        
+        // Both tracks should have the same envelope and flanger from expanded macros
+        for track in &track_grid.tracks {
+            assert_eq!(track.effects.envelopes.len(), 1);
+            assert_eq!(track.effects.flangers.len(), 1);
+        }
+    }
+
+    #[test]
+    fn test_macro_expansion_nested() {
+        let input = r#"
+            let base_env = a 0.1,0.9 d 0.2,0.7 s 0.9,0.4 r 0.8,0.1
+            let env1 = $base_env
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            $env1
+            osc:sine:440.0:0.5:0
+        "#;
+
+        let result = parse_dsl(input);
+        assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 1);
+        
+        let track = &track_grid.tracks[0];
+        // Should have one envelope from the expanded macro
+        assert_eq!(track.effects.envelopes.len(), 1);
+    }
+
+    #[test]
+    fn test_macro_expansion_in_sequence() {
+        let input = r#"
+            let my_tempo = 140
+            let my_steps = 8
+            FixedTimeNoteSequence dur Quarter tempo $my_tempo num_steps $my_steps
+            osc:sine:440.0:0.5:0
+        "#;
+
+        let result = parse_dsl(input);
+        assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 1);
+        
+        let track = &track_grid.tracks[0];
+        // The sequence should have been expanded with the macro values
+        assert_eq!(track.sequence.tempo, 140);
+    }
+
+    #[test]
+    fn test_macro_expansion_undefined() {
+        let input = r#"
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            $undefined_macro
+            osc:sine:440.0:0.5:0
+        "#;
+
+        let result = parse_dsl(input);
+        // Should still parse successfully, with $undefined_macro treated as literal text
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn test_macro_expansion_complex() {
+        let input = r#"
+            let attack_params = 0.2,0.8
+            let decay_params = 0.3,0.6
+            let sustain_params = 0.8,0.5
+            let release_params = 1.0,0.0
+            let env1 = a $attack_params d $decay_params s $sustain_params r $release_params
+            let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            $env1
+            $delay1
+            osc:sine:440.0:0.5:0
+        "#;
+
+        let result = parse_dsl(input);
+        assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 1);
+        
+        let track = &track_grid.tracks[0];
+        // Should have one envelope and one delay from the expanded macros
+        assert_eq!(track.effects.envelopes.len(), 1);
+        assert_eq!(track.effects.delays.len(), 1);
     }
 } 

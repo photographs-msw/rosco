@@ -1,42 +1,61 @@
 # Overview of Script Structure and Processing
 
-When the script is parsed, the parser first creates a @track.rs Vec<Track>.
+When the script is parsed, the parser first creates a @track.rs `Vec<Track>`.
 
-It then reads each outer block. For each outer block the parser creates a new @fixed_time_note_sequence.rs FixedTimeNoteSequence and a new @track_effects.rs TrackEffects. The envelope and effects declared in the script are converted to their corresponding structs, @envelope.rs Envelope, @flanger.rs Flanger, @delay.rs Delay, @lfo.rs LFO. These are passed to the builder call to create the TrackEffects. Then a @track.rs Track is built, setting its sequence to the new FixedTimeNoteSequence and its track_effects to the new TrackEffects.
+The parser then processes macro substitution declarations at the top of the script, before the first `Outer Block`. These declarations use the `let` keyword to bind expressions to identifiers for later reuse. Macro names can then be referenced throughout the script using the `$` prefix syntax (e.g., `$env1`).
 
-After this the parser processes each line defining a new note declaration, constructing a @note.rs @playback_note.rs @sampled_note.rs @oscillator.rs PlaybackNote of either type osc for a Note based on its waveforms, or of type samp for SampledNote. Each note is added to the current Sequence
+It then reads each `Outer Block`. For each one, the parser creates a new `FixedTimeNoteSequence` and a new `TrackEffects`. The envelope and effects declared in the script are converted to their corresponding structs, `Envelope`, `Flanger`, `Delay` and `LFO`. These are passed to the builder call to create the `TrackEffects`. Then a Track is built, setting its sequence to the new `FixedTimeNoteSequence` and its track_effects to the new `TrackEffects`.
 
-After the last outer block, the parser constructs a @track_grid.rs TrackGrid, setting its tracks to the Vec<Track> and returns it
+After this the parser processes each line defining a new note declaration, constructing a `PlaybackNote` of either type `osc` for a `Note` based on its waveforms, or of type `samp` for `SampledNote`. Each note is added to the current sequence.
 
-# Syntax Specification
+After the last outer block, the parser constructs a `TrackGrid`, setting its tracks to the `Vec<Track>` and returns it.
 
-Expressions are ALL_CAPS. Terminals are normal case or lower case. '+' = 'one or more'. '*' = 'zero or more'. '{1}' = 'exactly one'. '|' is alternation. '.' is any chracter.
+# DSL Syntax Specification
+
+- Expressions are ALL_CAPS
+- Terminals are a sequence upper- and/or lower-case characters and possibly other ASCII characters
+- `+` means "one or more"
+- `*` means "zero or more"
+- `{1}` means "exactly one"
+- `|` indicates alternation
+- `.` represents any chracter
+
+--- 
 
 COMMENT -> #.*
+
+DELAY -> delay mix f32 decay f32 interval_ms f32 duration_ms f32 num_repeats usize num_predelay_samples usize num_concurrent_delays uszie 
+FLANGER -> flanger window_size usize mix f32
+LFO -> lfo freq f32 amp f32 waveforms WAVEFORMS
+EFFECT_DEF -> DELAY | FLANGER | LFO
+
+WESTERN_PITCH -> C | CSharp | C#| DFlat | Db | D | DSharp | D#| EFlat | Eb| E | F | FSharp | F#| GFlat | Gb | G | GSharp | G# | AFlat | Ab | A | ASharp | A#| BFlat | Bb | B
+OCTAVE -> 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
+NOTE_FREQ -> f32 | OCTAVE,WESTERN_PITCH
+WAVEFORM -> sine | sin | square | sqr | triangle | tri | sawtooth | saw | guassiannoise | noise
+WAVEFORMS -> WAVEFORM, | WAVEFORM
+VOLUME -> f32
+FILE_PATH -> .+
+STEP_INDEX -> usize
+OSC_NOTE -> osc:WAVEFORMS:NOTE_FREQ:VOLUME:STEP_INDEX
+SAMP_NOTE -> samp:FILE_PATH:VOLUME:STEP_INDEX
+NOTE_DECLARATION -> OSC_NOTE | SAMP_NOTE
 
 DURATION_TYPE -> Whole | Half | Quarter | Eighth | Sixteenth | ThirtySecond | SixtyFourth | 1 | 1/2 | 1/4 | 1/8 | 1/16 | 1/32 | 1/64
 TEMPO -> u8
 NUM_STEPS -> usize
-ENVELOPE_PAIR -> f32,f32
-DELAY -> delay mix f32 decay f32 interval_ms f32 duration_ms f32 num_repeats usize num_predelay_samples usize num_concurrent_delays uszie 
-FLANGER -> flanger window_size usize mix f32
-WAVEFORM -> sine | sin | square | sqr | triangle | tri | sawtooth | saw | guassiannoise | noise
-WAVEFORMS -> WAVEFORM, | WAVEFORM
-LFO -> lfo freq f32 amp f32 waveforms WAVEFORMS
-EFFECT_DEF -> DELAY | FLANGER | LFO
-WESTERN_PITCH -> C | CSharp | C#| DFlat | Db | D | DSharp | D#| EFlat | Eb| E | F | FSharp | F#| GFlat | Gb| G | GSharp | G# | AFlat | Ab | A | ASharp | A#| BFlat | Bb | B
-OCTAVE -> 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8
-NOTE_FREQ -> f32 | OCTAVE,WESTERN_PITCH
-VOLUME -> f32
-STEP_INDEX -> usize
-FILE_PATH -> .+
-OSC_NOTE -> osc:WAVEFORMS:NOTE_FREQ:VOLUME:STEP_INDEX
-SAMP_NOTE -> samp:FILE_PATH:VOLUME:STEP_INDEX
-
 SEQUENCE_DEF -> FixedTimeNoteSequence dur DURATION_TYPE tempo TEMPO num_steps NUM_STEPS
+
+ENVELOPE_PAIR -> f32,f32
 ENVELOPE_DEF -> a ENVELOPE_PAIR d ENVELOPE_PAIR s ENVELOPE_PAIR r ENVELOPE_PAIR
-NOTE_DECLARATION -> OSC_NOTE | SAMP_NOTE
+
+IDENTIFIER -> `[a-zA-Z][a-zA-Z0-9\-_]*`
+MACRO_REFERENCE -> $IDENTIFIER
+EXPR -> ENVELOPE_DEF | EFFECT_DEF | SEQUENCE_DEF | NOTE_DECLARATION | MACRO_REFERENCE
+ASSIGNMENT -> let IDENTIFIER = EXPR
 
 OUTER_BLOCK -> SEQUENCE_DEF{1} ENVELOPE_DEF* EFFECT_DEF* NOTE_DECLARATION*
 
-SCRIPT -> OUTER_BLOCK+
+SCRIPT -> ASSIGNMENT* OUTER_BLOCK+
+
+---
