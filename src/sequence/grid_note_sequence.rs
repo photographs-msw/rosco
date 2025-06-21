@@ -73,6 +73,10 @@ impl GridNoteSequence {
     }
 
     pub(crate) fn append_note(&mut self, playback_note: PlaybackNote) {
+        
+        // TEMP DEBUG
+        println!("IN append_note(), self.sequence.len(): {:?}", self.sequence.len());
+
         self.sequence.push(vec![playback_note.clone()]);
     }
     
@@ -234,6 +238,11 @@ impl<'a> Iterator for GridNoteSequence {
 
     fn next(&mut self) -> Option<Self::Item> {
         let playback_notes = self.get_notes_at(self.index);
+        
+        // TEMP DEBUG
+        println!("playback_notes: {:?}", playback_notes);
+        println!("self.index: {:?}", self.index);
+
         self.increment();
         if playback_notes.is_empty() {
             return None;

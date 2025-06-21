@@ -137,7 +137,6 @@ impl TimeNoteSequence {
     }
 
     pub(crate) fn get_next_notes_window(&mut self) -> Vec<PlaybackNote> {
-        
         fn note_ref_into_note(playback_note: &PlaybackNote, cur_notes_time_ms: f32,
                               window_end_time_ms: f32) -> PlaybackNote {
             let mut new_playback_note: PlaybackNote = playback_note.clone();
@@ -149,15 +148,27 @@ impl TimeNoteSequence {
         let mut window_playback_notes = Vec::new();
         self.remove_completed_frontier_indexes();
         if self.frontier_indexes.is_empty() {
+            
+            // TEMP DEBUG
+            println!("IN TimeNoteSequence::get_next_notes_window() empty frontier");
+
             return window_playback_notes;
         }
 
         let window_start_time_ms = self.get_frontier_min_start_time();
         let window_end_time_ms = self.get_frontier_min_end_time(self.cur_position_ms);
         
+        // TEMP DEBUG
+        println!("IN TimeNoteSequence::get_next_notes_window() window_start_time_ms: {:?}", window_start_time_ms);
+        println!("IN TimeNoteSequence::get_next_notes_window() window_end_time_ms: {:?}", window_end_time_ms);
+
         // If the current note time is earlier than that, emit a rest note and increment
         // the current notes time to the frontier min start time + epsilon
         if self.cur_position_ms < window_start_time_ms {
+            
+            // TEMP DEBUG
+            println!("IN TimeNoteSequence::get_next_notes_window() rest note");
+
             window_playback_notes.push(
                 playback_note::playback_rest_note(self.cur_position_ms,
                     window_start_time_ms)
@@ -171,6 +182,10 @@ impl TimeNoteSequence {
         // in the frontier with the same start time and increment the current notes time to the
         // earliest end time in the frontier. This is the next window emit, note to end time.
         if float_eq(self.cur_position_ms, window_start_time_ms) {
+            
+            // TEMP DEBUG
+            println!("IN TimeNoteSequence::get_next_notes_window() same as frontier min start time");
+
             let playback_notes: Vec<PlaybackNote> = self.get_frontier_notes()
                 .iter()
                 .flatten()
@@ -189,6 +204,10 @@ impl TimeNoteSequence {
             // frontier that are playing at the current notes time and emit them up to end time
             // as the next window and increment the current notes time to the end time
         } else if self.cur_position_ms > window_start_time_ms {
+            
+            // TEMP DEBUG
+            println!("IN TimeNoteSequence::get_next_notes_window() cur_position_ms > window_start_time_ms");
+
             let playback_notes: Vec<PlaybackNote> = self.get_frontier_notes()
                 .iter()
                 .flatten()
@@ -230,9 +249,7 @@ impl TimeNoteSequence {
         for i in 0..self.frontier_indexes.len() {
             if self.sequence[self.frontier_indexes[i]].iter().all(
                     |playback_note|
-                    // playback_note.note_end_time_ms() < note_time_ms) {
                     float_leq(playback_note.note_end_time_ms(), self.cur_position_ms)) {
-                    //     note_time_ms + constants::FLOAT_EPSILON)) {
                 frontier_indexes_to_pop += 1;
             }
         }
@@ -309,6 +326,10 @@ impl<'a> Iterator for TimeNoteSequence {
 
     fn next(&mut self) -> Option<Self::Item> {
         let notes_window = self.get_next_notes_window();
+        
+        // TEMP DEBUG
+        println!("IN TimeNoteSequence::next(), notes_window.len(): {:?}", notes_window.len());
+
         if notes_window.is_empty() {
             return None;
         }

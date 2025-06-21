@@ -9,7 +9,7 @@ use crate::envelope::envelope_pair::EnvelopePair;
 use crate::note::note_pool::NotePool;
 use crate::note::playback_note::{PlaybackNote, PlaybackNoteBuilder};
 use crate::note::sampled_note::{SampledNote, SampledNoteBuilder};
-use crate::sequence::grid_note_sequence::{GridNoteSequence, GridNoteSequenceBuilder};
+use crate::sequence::time_note_sequence::{TimeNoteSequence, TimeNoteSequenceBuilder};
 use crate::track::track_grid::TrackGridBuilder;
 use crate::track::track::TrackBuilder;
 
@@ -66,7 +66,7 @@ pub(crate) fn play() {
 
     // Load Sample Notes and Tracks
     let start_time = 0.0;
-    let piano_note_1 = comp_utils::build_sampled_playback_note(
+    let mut piano_note_1 = comp_utils::build_sampled_playback_note(
         &mut sampled_note_pool,
         &mut playback_note_pool,
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
@@ -86,7 +86,7 @@ pub(crate) fn play() {
     let reverse_delay = delay.clone();
     piano_note_1_rev.delays = vec![reverse_delay];
 
-    let guitar_note_1 = comp_utils::build_sampled_playback_note(
+    let mut guitar_note_1 = comp_utils::build_sampled_playback_note(
         &mut sampled_note_pool,
         &mut playback_note_pool,
         // "/Users/markweiss/Downloads/punk_computer/001/punk_computer_003_16bit.wav",
@@ -115,26 +115,34 @@ pub(crate) fn play() {
     guitar_rest_note.sampled_note.volume = 0.0;
 
     // Create Tracks and append initial notes
-    let piano_sequence = GridNoteSequenceBuilder::default().build().unwrap();
+    let piano_sequence: TimeNoteSequence= TimeNoteSequenceBuilder::default().build().unwrap();
     let mut piano_track_1 = TrackBuilder::default()
         .sequence(piano_sequence)
         .build().unwrap();
-    let guitar_sequence = GridNoteSequenceBuilder::default().build().unwrap();
+    let guitar_sequence: TimeNoteSequence = TimeNoteSequenceBuilder::default().build().unwrap();
     let mut guitar_track_1 = TrackBuilder::default()
         .sequence(guitar_sequence)
         .build().unwrap();
-    
+
+    fn adjust_note_start_time(note: &mut PlaybackNote, start_time: f32) -> PlaybackNote {
+        note.set_note_start_time_ms(start_time);
+        note.clone()
+    }
+
     // Add additional notes to the sequence
-    piano_track_1.sequence.append_note(piano_note_1.clone());
-    guitar_track_1.sequence.append_note(guitar_note_1.clone());
-    piano_track_1.sequence.append_note((piano_rest_note.clone()));
-    guitar_track_1.sequence.append_note(guitar_rest_note.clone());
-    piano_track_1.sequence.append_note(piano_note_1.clone());
-    guitar_track_1.sequence.append_note(guitar_note_1.clone());
-    piano_track_1.sequence.append_note(piano_rest_note.clone());
-    guitar_track_1.sequence.append_note(guitar_note_1.clone());
-    piano_track_1.sequence.append_note(piano_note_1.clone());
-    guitar_track_1.sequence.append_note(guitar_note_1.clone());
+    let note_dur = piano_note_1.sampled_note.duration_ms();
+    piano_track_1.sequence.append_note(
+        adjust_note_start_time(
+            &mut piano_note_1, 0.0));
+    guitar_track_1.sequence.append_note(
+        adjust_note_start_time(
+            &mut guitar_note_1, 0.0));
+    piano_track_1.sequence.append_note(
+        adjust_note_start_time(
+            &mut piano_rest_note, 1.0 * note_dur));
+    guitar_track_1.sequence.append_note(
+        adjust_note_start_time(
+            &mut guitar_note_1_rev, 1.0 * note_dur));
 
     let mut tracks = Vec::new();
     tracks.push(piano_track_1);
@@ -142,7 +150,7 @@ pub(crate) fn play() {
 
     // Load and play Track Grid
     let track_grid =
-        TrackGridBuilder::<GridNoteSequence>::default()
+        TrackGridBuilder::<TimeNoteSequence>::default()
         .tracks(tracks)
         .build().unwrap();
 
