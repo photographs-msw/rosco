@@ -314,6 +314,8 @@ impl Parser {
         let expanded_input = Self::expand_macros(input).unwrap_or_else(|e| {
             panic!("Failed to expand macros: {}", e);
         });
+        // Strip leading whitespace from expanded_input
+        let expanded_input = expanded_input.trim_start().to_string();
         let tokens = Self::tokenize(&expanded_input);
         Self {
             tokens,
@@ -343,19 +345,24 @@ impl Parser {
                     let parameters = Self::extract_template_parameters(&value);
                     template_defs.insert(name, (value, parameters));
                 }
+            // TODO CHANGE TO A sequence KEYWORD
             } else if line.starts_with("FixedTimeNoteSequence") {
                 // Stop at first outer block
                 break;
             }
             i += 1;
         }
+
+        // --- FIX: Expand apply expressions ONCE before macro multi-pass ---
+        let (apply_expanded, _apply_changed) = Self::expand_apply_expressions(&expanded, &template_defs)?;
+        expanded = apply_expanded;
+        // --- END FIX ---
         
-        // Multi-pass expansion: repeat until no changes
+        // Multi-pass expansion: repeat until no changes (for macros only)
         let mut changed = true;
+        let mut new_expanded = expanded.clone();
         while changed {
             changed = false;
-            let mut new_expanded = expanded.clone();
-            
             // Expand macros
             for (name, value) in &macro_defs {
                 let pattern = format!("${}", name);
@@ -364,19 +371,11 @@ impl Parser {
                     changed = true;
                 }
             }
-            
-            // Expand apply expressions
-            let (new_expanded_apply, apply_changed) = Self::expand_apply_expressions(&new_expanded, &template_defs)?;
-            new_expanded = new_expanded_apply;
-            if apply_changed {
-                changed = true;
-            }
-            
-            expanded = new_expanded;
+            expanded = new_expanded.clone();
         }
         
         // Check for any remaining $name that is not in macro_defs and panic with details
-        let re = regex::Regex::new(r"\$([a-zA-Z][a-zA-Z0-9\-_]*)").unwrap();
+        let re = regex::Regex::new(r"\\$([a-zA-Z][a-zA-Z0-9\-_]*)").unwrap();
         for (line_idx, line) in expanded.lines().enumerate() {
             for cap in re.captures_iter(line) {
                 let macro_name = &cap[1];
@@ -418,18 +417,21 @@ impl Parser {
     }
 
     fn expand_apply_expressions(input: &str, template_defs: &HashMap<String, (String, Vec<String>)>) -> Result<(String, bool), String> {
-        let mut expanded = input.to_string();
-        let mut new_expanded = expanded.clone();
+        let expanded = input.to_string();
         let mut apply_changed = false;
         
         let lines: Vec<&str> = input.lines().collect();
         let mut new_lines = Vec::new();
         
-        for line in lines {
+        println!("Processing {} lines for apply expansion", lines.len());
+        
+        for (line_num, line) in lines.iter().enumerate() {
             let trimmed_line = line.trim();
             if trimmed_line.starts_with("apply ") {
+                println!("Found apply line {}: {}", line_num, trimmed_line);
                 // Parse and expand apply expression
                 let expanded_lines = Self::parse_and_expand_apply_line(trimmed_line, template_defs)?;
+                println!("Expanded to {} lines: {:?}", expanded_lines.len(), expanded_lines);
                 new_lines.extend(expanded_lines);
             } else {
                 new_lines.push(line.to_string());
@@ -440,6 +442,8 @@ impl Parser {
         if new_expanded_apply != expanded {
             apply_changed = true;
         }
+        
+        println!("Total lines after expansion: {}", new_lines.len());
         
         Ok((new_expanded_apply, apply_changed))
     }
@@ -481,7 +485,7 @@ impl Parser {
         }
         
         // Get template definition
-        let (template_expr, template_params) = template_defs.get(&template_name)
+        let (template_expr, _template_params) = template_defs.get(&template_name)
             .ok_or_else(|| format!("Template '{}' not found", template_name))?;
         
         // Generate all combinations of parameter values
@@ -509,7 +513,7 @@ impl Parser {
         let mut combinations = Vec::new();
         
         for value in values {
-            let mut combination = vec![(param.clone(), value.clone())];
+            let combination = vec![(param.clone(), value.clone())];
             combinations.push(combination);
         }
         
@@ -538,37 +542,41 @@ impl Parser {
         let mut in_file_path = false;
         let mut chars = input.chars().peekable();
         let mut at_line_start = true;
-        let mut line_buffer = String::new();
 
         while let Some(ch) = chars.next() {
-            // Buffer the line for blank line detection
+            // Handle newlines
             if ch == '\n' {
-                if !in_comment {
-                    // If the line is blank (only whitespace), skip it
-                    if line_buffer.trim().is_empty() {
-                        at_line_start = true;
-                        line_buffer.clear();
-                        continue;
-                    }
+                if !current_token.is_empty() {
+                    tokens.push(current_token.clone());
+                    current_token.clear();
                 }
+                in_comment = false;
                 at_line_start = true;
-                line_buffer.clear();
-            } else {
-                line_buffer.push(ch);
-                if !ch.is_whitespace() {
-                    at_line_start = false;
-                }
-            }
-
-            if in_comment {
-                if ch == '\n' {
-                    in_comment = false;
-                }
                 continue;
             }
 
+            // Skip comments
+            if in_comment {
+                continue;
+            }
+
+            // Check for comment start at beginning of line
             if at_line_start && ch == '#' {
+                if !current_token.is_empty() {
+                    tokens.push(current_token.clone());
+                    current_token.clear();
+                }
                 in_comment = true;
+                continue;
+            }
+
+            // Update at_line_start flag
+            if !ch.is_whitespace() {
+                at_line_start = false;
+            }
+
+            // Skip whitespace at line start
+            if at_line_start && ch.is_whitespace() {
                 continue;
             }
 
@@ -597,12 +605,12 @@ impl Parser {
             }
 
             match ch {
-                ':' | ',' | ' ' | '\n' | '\r' | '\t' => {
+                ':' | ',' | ' ' | '\r' | '\t' => {
                     if !current_token.is_empty() {
                         tokens.push(current_token.clone());
                         current_token.clear();
                     }
-                    if ch != ' ' && ch != '\n' && ch != '\r' && ch != '\t' {
+                    if ch != ' ' && ch != '\r' && ch != '\t' {
                         tokens.push(ch.to_string());
                     }
                 }
@@ -621,6 +629,9 @@ impl Parser {
     }
 
     pub fn parse(&mut self) -> Result<TrackGrid<FixedTimeNoteSequence>, String> {
+        println!("Starting to parse {} tokens", self.tokens.len());
+        println!("Tokens: {:?}", self.tokens);
+        
         let script = self.parse_script()?;
         self.build_track_grid(script)
     }
@@ -662,7 +673,7 @@ impl Parser {
         let mut note_declarations = Vec::new();
 
         // Parse optional envelope definitions
-        while self.current < self.tokens.len() && self.peek() == "a" {
+        while self.current < self.tokens.len() && self.peek() == "envelope" {
             let envelope_def = self.parse_envelope_def()?;
             envelope_defs.push(envelope_def);
         }
@@ -675,9 +686,13 @@ impl Parser {
 
         // Parse note declarations
         while self.current < self.tokens.len() && self.is_note_declaration_start() {
+            println!("Parsing note declaration at token position {}", self.current);
             let note_declaration = self.parse_note_declaration()?;
+            println!("Parsed note: {:?}", note_declaration);
             note_declarations.push(note_declaration);
         }
+
+        println!("Total note declarations parsed: {}", note_declarations.len());
 
         Ok(OuterBlock {
             sequence_def,
@@ -709,6 +724,7 @@ impl Parser {
     }
 
     fn parse_envelope_def(&mut self) -> Result<EnvelopeDef, String> {
+        self.expect("envelope")?;
         self.expect("a")?;
         let attack = self.parse_envelope_pair()?;
         self.expect("d")?;
@@ -1246,9 +1262,37 @@ mod tests {
     fn test_parse_simple_script() {
         let input = r#"
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
-            a 0.1,0.8 d 0.3,0.6 s 0.8,0.4 r 1.0,0.0
+            envelope a 0.1,0.8 d 0.3,0.6 s 0.8,0.4 r 1.0,0.0
             delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             osc:sine:440.0:0.5:0
+            osc:square:880.0:0.3:4
+            samp:/Users/markweiss/RustroverProjects/osc_bak/src/dsl/test_data/test_sample.wav:0.005:2
+        "#;
+
+        let result = parse_dsl(input);
+        if let Err(e) = &result {
+            println!("Parse error: {}", e);
+        }
+        assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 1);
+        
+        let track = &track_grid.tracks[0];
+        assert_eq!(track.effects.envelopes.len(), 1);
+        assert_eq!(track.effects.delays.len(), 1);
+    }
+
+    #[test]
+    fn test_parse_script_with_comments() {
+        let input = r#"
+            # This is a comment
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            envelope a 0.1,0.8 d 0.3,0.6 s 0.8,0.4 r 1.0,0.0
+            # Another comment
+            delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
+            osc:sine:440.0:0.5:0
+            # Comment after note
             osc:square:880.0:0.3:4
             samp:/Users/markweiss/RustroverProjects/osc_bak/src/dsl/test_data/test_sample.wav:0.005:2
         "#;
@@ -1271,7 +1315,7 @@ mod tests {
     fn test_parse_multiple_blocks() {
         let input = r#"
             FixedTimeNoteSequence dur Eighth tempo 140 num_steps 8
-            a 0.05,0.9 d 0.2,0.7 s 0.9,0.5 r 1.0,0.0
+            envelope a 0.05,0.9 d 0.2,0.7 s 0.9,0.5 r 1.0,0.0
             osc:sine:220.0:0.4:0
             
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
@@ -1315,7 +1359,7 @@ mod tests {
     fn test_parse_complex_effects() {
         let input = r#"
             FixedTimeNoteSequence dur Half tempo 100 num_steps 32
-            a 0.1,0.9 d 0.4,0.6 s 0.8,0.3 r 1.0,0.0
+            envelope a 0.1,0.9 d 0.4,0.6 s 0.8,0.3 r 1.0,0.0
             delay mix 0.8 decay 0.6 interval_ms 80.0 duration_ms 40.0 num_repeats 5 num_predelay_samples 15 num_concurrent_delays 3
             flanger window_size 12 mix 0.4
             lfo freq 2.5 amp 0.3 waveforms sine,triangle
@@ -1336,7 +1380,7 @@ mod tests {
     #[test]
     fn test_parse_macro_definitions() {
         let input = r#"
-            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let env1 = envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
             let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             let flanger1 = flanger window_size 8 mix 0.3
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
@@ -1350,7 +1394,7 @@ mod tests {
         assert_eq!(script.macro_defs.len(), 3);
         
         // Check that env1 contains the envelope definition
-        assert_eq!(script.macro_defs.get("env1").unwrap(), "a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0");
+        assert_eq!(script.macro_defs.get("env1").unwrap(), "envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0");
         
         // Check that delay1 contains the delay definition
         assert_eq!(script.macro_defs.get("delay1").unwrap(), "delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2");
@@ -1365,7 +1409,7 @@ mod tests {
     #[test]
     fn test_parse_macro_definitions_with_whitespace() {
         let input = r#"
-            let env1 =   a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0   
+            let env1 =   envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0   
             let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
             osc:sine:440.0:0.5:0
@@ -1375,15 +1419,15 @@ mod tests {
         let script = parser.parse_script().unwrap();
         
         // Verify that whitespace is trimmed from expressions
-        assert_eq!(script.macro_defs.get("env1").unwrap(), "a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0");
+        assert_eq!(script.macro_defs.get("env1").unwrap(), "envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0");
         assert_eq!(script.macro_defs.get("delay1").unwrap(), "delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2");
     }
 
     #[test]
     fn test_parse_multiple_macro_definitions() {
         let input = r#"
-            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
-            let env2 = a 0.1,0.9 d 0.2,0.7 s 0.9,0.4 r 0.8,0.1
+            let env1 = envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let env2 = envelope a 0.1,0.9 d 0.2,0.7 s 0.9,0.4 r 0.8,0.1
             let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             let lfo1 = lfo freq 2.0 amp 0.3 waveforms sine,triangle
             let note1 = osc:sine:440.0:0.5:0
@@ -1398,8 +1442,8 @@ mod tests {
         assert_eq!(script.macro_defs.len(), 5);
         
         // Check each macro definition
-        assert_eq!(script.macro_defs.get("env1").unwrap(), "a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0");
-        assert_eq!(script.macro_defs.get("env2").unwrap(), "a 0.1,0.9 d 0.2,0.7 s 0.9,0.4 r 0.8,0.1");
+        assert_eq!(script.macro_defs.get("env1").unwrap(), "envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0");
+        assert_eq!(script.macro_defs.get("env2").unwrap(), "envelope a 0.1,0.9 d 0.2,0.7 s 0.9,0.4 r 0.8,0.1");
         assert_eq!(script.macro_defs.get("delay1").unwrap(), "delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2");
         assert_eq!(script.macro_defs.get("lfo1").unwrap(), "lfo freq 2.0 amp 0.3 waveforms sine,triangle");
         assert_eq!(script.macro_defs.get("note1").unwrap(), "osc:sine:440.0:0.5:0");
@@ -1411,7 +1455,7 @@ mod tests {
     #[test]
     fn test_parse_identifier_validation() {
         let input = r#"
-            let valid-name = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let valid-name = envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
             let valid_name = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             let validName123 = flanger window_size 8 mix 0.3
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
@@ -1431,7 +1475,7 @@ mod tests {
     #[test]
     fn test_macro_expansion_basic() {
         let input = r#"
-            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let env1 = envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
             let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
             $env1
@@ -1454,7 +1498,7 @@ mod tests {
     #[test]
     fn test_macro_expansion_multiple_uses() {
         let input = r#"
-            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let env1 = envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
             let flanger1 = flanger window_size 8 mix 0.3
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
             $env1
@@ -1483,7 +1527,7 @@ mod tests {
     #[test]
     fn test_macro_expansion_nested() {
         let input = r#"
-            let base_env = a 0.1,0.9 d 0.2,0.7 s 0.9,0.4 r 0.8,0.1
+            let base_env = envelope a 0.1,0.9 d 0.2,0.7 s 0.9,0.4 r 0.8,0.1
             let env1 = $base_env
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
             $env1
@@ -1522,7 +1566,8 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "Undefined macro '$undefined_macro' encountered on line 3: \n  $undefined_macro")]
+    #[should_panic(expected = "Undefined macro or template '$undefined_macro' encountered on line 3: 
+  $undefined_macro")]
     fn test_macro_expansion_undefined() {
         let input = r#"
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
@@ -1542,7 +1587,7 @@ mod tests {
             let decay_params = 0.3,0.6
             let sustain_params = 0.8,0.5
             let release_params = 1.0,0.0
-            let env1 = a $attack_params d $decay_params s $sustain_params r $release_params
+            let env1 = envelope a $attack_params d $decay_params s $sustain_params r $release_params
             let delay1 = delay mix 0.5 decay 0.7 interval_ms 100.0 duration_ms 50.0 num_repeats 3 num_predelay_samples 10 num_concurrent_delays 2
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
             $env1
@@ -1646,7 +1691,7 @@ mod tests {
     #[test]
     fn test_template_and_macro_together() {
         let input = r#"
-            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            let env1 = envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
             template osc_template1 = osc:sine:440.0:0.9:{step}
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
             $env1
@@ -1679,6 +1724,7 @@ mod tests {
     }
 
     #[test]
+    #[should_panic(expected = "Template 'undefined_template' not found")]
     fn test_debug_undefined_template() {
         let input = r#"
             FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16

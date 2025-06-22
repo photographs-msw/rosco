@@ -18,6 +18,7 @@ pub(crate) struct TrackGrid<SequenceType: NextNotes + Iterator + SetCurPosition>
 impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType> {
 
     pub(crate) fn next_notes(&mut self) -> Vec<PlaybackNote> {
+        println!("TrackGrid::next_notes() called at position: {}", self.cur_position_ms);
 
         fn note_ref_into_note(playback_note: &PlaybackNote, cur_notes_time_ms: f32,
                               window_end_time_ms: f32) -> PlaybackNote {
@@ -40,11 +41,16 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
         }
 
         let mut track_playback_notes = Vec::new();
+        let mut all_tracks_done = true;
 
-        for track in self.tracks.iter_mut() {
+        for (i, track) in self.tracks.iter_mut().enumerate() {
             track.sequence.set_cur_position(self.cur_position_ms);
-            
-            for playback_note in track.sequence.next_notes() {
+            let notes = track.sequence.next_notes();
+            println!("Track {} returned {} notes", i, notes.len());
+            if !notes.is_empty() {
+                all_tracks_done = false;
+            }
+            for playback_note in notes {
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder
                         .playback_start_time_ms(playback_note.playback_start_time_ms)
@@ -81,14 +87,23 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
             }
         }
 
+        println!("all_tracks_done: {}, track_playback_notes.len(): {}", all_tracks_done, track_playback_notes.len());
+
+        // If all tracks are done, return empty vector to end the iterator
+        if all_tracks_done && track_playback_notes.is_empty() {
+            println!("All tracks done, returning empty vector");
+            return vec![];
+        }
+
         let window_start_time_ms = get_frontier_min_start_time(&track_playback_notes);
         let window_end_time_ms = get_frontier_min_end_time(
             &track_playback_notes, self.cur_position_ms);
 
-        // If the current note time is earlier than that, emit a rest note and increment
-        // the current notes time to the frontier min start time + epsilon
+        println!("window_start_time_ms: {}, window_end_time_ms: {}", window_start_time_ms, window_end_time_ms);
+
         if self.cur_position_ms < window_start_time_ms {
             self.cur_position_ms = window_start_time_ms + FLOAT_EPSILON;
+            println!("Emitting rest note from {} to {}", self.cur_position_ms, window_start_time_ms);
             return vec![playback_note::playback_rest_note(self.cur_position_ms,
                                                           window_start_time_ms)];
         }
@@ -128,6 +143,7 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
         }
 
         self.cur_position_ms = window_end_time_ms + FLOAT_EPSILON;
+        println!("Returning {} notes, advancing to position: {}", out_playback_notes.len(), self.cur_position_ms);
 
         out_playback_notes
     }
@@ -144,6 +160,11 @@ fn get_frontier_min_start_time(playback_notes: &Vec<PlaybackNote>) -> f32 {
 }
 
 fn get_frontier_min_end_time(playback_notes: &Vec<PlaybackNote>, note_time_ms: f32) -> f32 {
+    if playback_notes.is_empty() {
+        // If there are no notes, return a reasonable end time
+        return note_time_ms + 5_000.0; // 5 seconds window
+    }
+
     let mut end_time_ms = f32::MAX;
 
     // First pass, is what is the earliest end time in the future, after note_time_ms
@@ -163,6 +184,12 @@ fn get_frontier_min_end_time(playback_notes: &Vec<PlaybackNote>, note_time_ms: f
             playback_note.note_start_time_ms() < end_time_ms {
             end_time_ms = playback_note.note_start_time_ms();
         }
+    }
+
+    // If we still have f32::MAX, it means no valid end time was found
+    // Return a reasonable fallback
+    if end_time_ms == f32::MAX {
+        end_time_ms = note_time_ms + 10_000.0; // 10 seconds window
     }
 
     end_time_ms

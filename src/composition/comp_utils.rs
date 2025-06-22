@@ -174,15 +174,29 @@ where
 {
     let (tx, rx) = std::sync::mpsc::channel();
     std::thread::spawn(move || {
+        println!("Playback thread started");
+        let mut note_count = 0;
         for playback_notes in track_grid {
+            note_count += 1;
+            println!("Sending note batch {} with {} notes", note_count, playback_notes.len());
             if tx.send(playback_notes).is_err() {
                 // The receiver has hung up, so we can stop the thread.
+                println!("Receiver hung up, stopping playback thread");
                 break;
             }
         }
+        println!("Playback thread finished after sending {} note batches", note_count);
+        // Explicitly drop the sender to close the channel
+        drop(tx);
+        println!("Sender dropped, channel should be closed");
     });
 
+    println!("Main thread starting to receive notes");
+    let mut received_count = 0;
     for playback_notes in rx.iter() {
+        received_count += 1;
+        println!("Received note batch {} with {} notes", received_count, playback_notes.len());
         gen_notes_stream(playback_notes, OscillatorTables::new());
     }
+    println!("Main thread finished receiving notes");
 }

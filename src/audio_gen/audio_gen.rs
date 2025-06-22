@@ -146,7 +146,15 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
     ).unwrap();
     stream.play().unwrap();
 
-    std::thread::sleep(time::Duration::from_millis(note_duration_ms));
+    // Safety check: limit sleep duration to prevent hanging
+    let max_sleep_ms = 10000; // 10 seconds max
+    let actual_sleep_ms = std::cmp::min(note_duration_ms, max_sleep_ms);
+    
+    if note_duration_ms > max_sleep_ms {
+        println!("Warning: note duration {}ms exceeds maximum {}ms, limiting sleep", note_duration_ms, max_sleep_ms);
+    }
+    
+    std::thread::sleep(time::Duration::from_millis(actual_sleep_ms));
 }
 
 fn write_stream<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)

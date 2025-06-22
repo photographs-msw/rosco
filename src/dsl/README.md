@@ -49,7 +49,7 @@ NUM_STEPS -> usize
 SEQUENCE_DEF -> FixedTimeNoteSequence dur DURATION_TYPE tempo TEMPO num_steps NUM_STEPS
 
 ENVELOPE_PAIR -> f32,f32
-ENVELOPE_DEF -> a ENVELOPE_PAIR d ENVELOPE_PAIR s ENVELOPE_PAIR r ENVELOPE_PAIR
+ENVELOPE_DEF -> envelope a ENVELOPE_PAIR d ENVELOPE_PAIR s ENVELOPE_PAIR r ENVELOPE_PAIR
 
 IDENTIFIER -> `[a-zA-Z][a-zA-Z0-9\-_]{}*`
 MACRO_REFERENCE -> $IDENTIFIER
@@ -100,3 +100,10 @@ samp:/path/to/file.wav:0.5:4
 samp:/path/to/file.wav:0.8:0
 samp:/path/to/file.wav:0.8:4
 ```
+
+### Envelope Definition
+```
+envelope a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+```
+
+This defines an envelope with attack, decay, sustain, and release parameters.
