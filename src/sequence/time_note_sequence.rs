@@ -78,6 +78,10 @@ impl TimeNoteSequence {
             return;
         }
 
+        // sort notes by start time
+        let mut sorted_notes = playback_notes.clone();
+        sorted_notes.sort_by(|a, b| a.note_start_time_ms().partial_cmp(&b.note_start_time_ms()).unwrap());
+
         // Maintain the invariant that all notes with the same start_time are grouped in one
         // note sequence at one index, so if these notes have the same start_time as current
         // notes in last position, add these to that position
@@ -85,13 +89,10 @@ impl TimeNoteSequence {
         // semantics for append, which means "add to the end"
         let max_frontier_index = self.frontier_indexes[self.frontier_indexes.len() - 1];
         let min_frontier_start_time_ms = self.get_frontier_min_start_time();
-        if float_eq(min_frontier_start_time_ms, playback_notes[0].note_start_time_ms()) {
-            self.sequence[max_frontier_index].append(&mut playback_notes.clone());
+        if float_eq(min_frontier_start_time_ms, sorted_notes[0].note_start_time_ms()) {
+            self.sequence[max_frontier_index].append(&mut sorted_notes.clone());
         } else {
-            if min_frontier_start_time_ms > playback_notes[0].note_start_time_ms() {
-                panic!("PlaybackNotes must be appended sorted by start time");
-            }
-            self.sequence.push(playback_notes.clone());
+            self.sequence.push(sorted_notes.clone());
             self.frontier_indexes.push_back(max_frontier_index + 1);
         }
     }

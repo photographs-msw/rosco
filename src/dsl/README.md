@@ -4,6 +4,8 @@ When the script is parsed, the parser first creates a @track.rs `Vec<Track>`.
 
 The parser then processes macro substitution declarations at the top of the script, before the first `Outer Block`. These declarations use the `let` keyword to bind expressions to identifiers for later reuse. Macro names can then be referenced throughout the script using the `$` prefix syntax (e.g., `$env1`).
 
+The parser also processes template definitions using the `template` keyword. Templates are similar to macros but can contain parameter placeholders in the form `{param_name}`. Templates are applied using the `apply` keyword with parameter values.
+
 It then reads each `Outer Block`. For each one, the parser creates a new `FixedTimeNoteSequence` and a new `TrackEffects`. The envelope and effects declared in the script are converted to their corresponding structs, `Envelope`, `Flanger`, `Delay` and `LFO`. These are passed to the builder call to create the `TrackEffects`. Then a Track is built, setting its sequence to the new `FixedTimeNoteSequence` and its track_effects to the new `TrackEffects`.
 
 After this the parser processes each line defining a new note declaration, constructing a `PlaybackNote` of either type `osc` for a `Note` based on its waveforms, or of type `samp` for `SampledNote`. Each note is added to the current sequence.
@@ -49,13 +51,52 @@ SEQUENCE_DEF -> FixedTimeNoteSequence dur DURATION_TYPE tempo TEMPO num_steps NU
 ENVELOPE_PAIR -> f32,f32
 ENVELOPE_DEF -> a ENVELOPE_PAIR d ENVELOPE_PAIR s ENVELOPE_PAIR r ENVELOPE_PAIR
 
-IDENTIFIER -> `[a-zA-Z][a-zA-Z0-9\-_]*`
+IDENTIFIER -> `[a-zA-Z][a-zA-Z0-9\-_]{}*`
 MACRO_REFERENCE -> $IDENTIFIER
 EXPR -> ENVELOPE_DEF | EFFECT_DEF | SEQUENCE_DEF | NOTE_DECLARATION | MACRO_REFERENCE
 ASSIGNMENT -> let IDENTIFIER = EXPR
 
+TEMPLATE -> template IDENTIFIER = EXPR
+APPLY_IDENTIFIER -> IDENTIFIER
+APPLY_ARG -> APPLY_IDENTIFIER:EXPR
+APPLY -> apply APPLY_ARG+ IDENTIFIER
+
 OUTER_BLOCK -> SEQUENCE_DEF{1} ENVELOPE_DEF* EFFECT_DEF* NOTE_DECLARATION*
 
-SCRIPT -> ASSIGNMENT* OUTER_BLOCK+
+SCRIPT -> ASSIGNMENT* TEMPLATE* OUTER_BLOCK+
 
 ---
+
+## Template and Apply Examples
+
+### Template Definition
+```
+template osc_template1 = osc:sine:440.0:0.9:{step}
+```
+
+This defines a template named `osc_template1` with a parameter `{step}` that can be substituted.
+
+### Apply Expression
+```
+apply step:0,8 $osc_template1
+```
+
+This applies the `osc_template1` template with the `step` parameter set to values `0` and `8`, generating:
+```
+osc:sine:440.0:0.9:0
+osc:sine:440.0:0.9:8
+```
+
+### Multiple Parameters
+```
+template samp_template1 = samp:/path/to/file.wav:{volume}:{step}
+apply volume:0.5,0.8 step:0,4 $samp_template1
+```
+
+This generates four lines:
+```
+samp:/path/to/file.wav:0.5:0
+samp:/path/to/file.wav:0.5:4
+samp:/path/to/file.wav:0.8:0
+samp:/path/to/file.wav:0.8:4
+```

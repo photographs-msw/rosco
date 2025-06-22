@@ -274,8 +274,31 @@ pub struct MacroDef {
 
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
+pub struct TemplateDef {
+    pub name: String,
+    pub expression: String,
+    pub parameters: Vec<String>, // List of parameter names like "step"
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ApplyArg {
+    pub parameter: String, // e.g., "step"
+    pub values: Vec<String>, // e.g., ["0", "8"]
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
+pub struct ApplyExpression {
+    pub args: Vec<ApplyArg>,
+    pub template_name: String,
+}
+
+#[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub struct Script {
     pub macro_defs: HashMap<String, String>,
+    pub template_defs: HashMap<String, TemplateDef>,
     pub outer_blocks: Vec<OuterBlock>,
 }
 
@@ -288,7 +311,9 @@ pub struct Parser {
 impl Parser {
     #[allow(dead_code)]
     pub fn new(input: &str) -> Self {
-        let expanded_input = Self::expand_macros(input).unwrap_or_else(|_| input.to_string());
+        let expanded_input = Self::expand_macros(input).unwrap_or_else(|e| {
+            panic!("Failed to expand macros: {}", e);
+        });
         let tokens = Self::tokenize(&expanded_input);
         Self {
             tokens,
@@ -299,8 +324,9 @@ impl Parser {
     fn expand_macros(input: &str) -> Result<String, String> {
         let mut expanded = input.to_string();
         let mut macro_defs = HashMap::new();
+        let mut template_defs = HashMap::new();
         
-        // First pass: collect all macro definitions
+        // First pass: collect all macro and template definitions
         let lines: Vec<&str> = input.lines().collect();
         let mut i = 0;
         
@@ -310,6 +336,12 @@ impl Parser {
                 // Parse macro definition
                 if let Some((name, value)) = Self::parse_macro_definition_line(line)? {
                     macro_defs.insert(name, value);
+                }
+            } else if line.starts_with("template ") {
+                // Parse template definition
+                if let Some((name, value)) = Self::parse_template_definition_line(line)? {
+                    let parameters = Self::extract_template_parameters(&value);
+                    template_defs.insert(name, (value, parameters));
                 }
             } else if line.starts_with("FixedTimeNoteSequence") {
                 // Stop at first outer block
@@ -323,6 +355,8 @@ impl Parser {
         while changed {
             changed = false;
             let mut new_expanded = expanded.clone();
+            
+            // Expand macros
             for (name, value) in &macro_defs {
                 let pattern = format!("${}", name);
                 if new_expanded.contains(&pattern) {
@@ -330,16 +364,25 @@ impl Parser {
                     changed = true;
                 }
             }
+            
+            // Expand apply expressions
+            let (new_expanded_apply, apply_changed) = Self::expand_apply_expressions(&new_expanded, &template_defs)?;
+            new_expanded = new_expanded_apply;
+            if apply_changed {
+                changed = true;
+            }
+            
             expanded = new_expanded;
         }
+        
         // Check for any remaining $name that is not in macro_defs and panic with details
         let re = regex::Regex::new(r"\$([a-zA-Z][a-zA-Z0-9\-_]*)").unwrap();
         for (line_idx, line) in expanded.lines().enumerate() {
             for cap in re.captures_iter(line) {
                 let macro_name = &cap[1];
-                if !macro_defs.contains_key(macro_name) {
+                if !macro_defs.contains_key(macro_name) && !template_defs.contains_key(macro_name) {
                     panic!(
-                        "Undefined macro '${}' encountered on line {}: \n  {}",
+                        "Undefined macro or template '${}' encountered on line {}: \n  {}",
                         macro_name,
                         line_idx + 1,
                         line.trim()
@@ -360,6 +403,132 @@ impl Parser {
         let value = parts[3..].join(" ");
         
         Ok(Some((name, value)))
+    }
+
+    fn parse_template_definition_line(line: &str) -> Result<Option<(String, String)>, String> {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() < 4 || parts[0] != "template" || parts[2] != "=" {
+            return Ok(None);
+        }
+        
+        let name = parts[1].to_string();
+        let value = parts[3..].join(" ");
+        
+        Ok(Some((name, value)))
+    }
+
+    fn expand_apply_expressions(input: &str, template_defs: &HashMap<String, (String, Vec<String>)>) -> Result<(String, bool), String> {
+        let mut expanded = input.to_string();
+        let mut new_expanded = expanded.clone();
+        let mut apply_changed = false;
+        
+        let lines: Vec<&str> = input.lines().collect();
+        let mut new_lines = Vec::new();
+        
+        for line in lines {
+            let trimmed_line = line.trim();
+            if trimmed_line.starts_with("apply ") {
+                // Parse and expand apply expression
+                let expanded_lines = Self::parse_and_expand_apply_line(trimmed_line, template_defs)?;
+                new_lines.extend(expanded_lines);
+            } else {
+                new_lines.push(line.to_string());
+            }
+        }
+        
+        let new_expanded_apply = new_lines.join("\n");
+        if new_expanded_apply != expanded {
+            apply_changed = true;
+        }
+        
+        Ok((new_expanded_apply, apply_changed))
+    }
+
+    fn parse_and_expand_apply_line(line: &str, template_defs: &HashMap<String, (String, Vec<String>)>) -> Result<Vec<String>, String> {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() < 3 || parts[0] != "apply" {
+            return Err("Invalid apply expression".to_string());
+        }
+        
+        let mut args = Vec::new();
+        let mut template_name = String::new();
+        let mut i = 1;
+        
+        // Parse apply arguments
+        while i < parts.len() {
+            let part = parts[i];
+            if part.starts_with("$") {
+                // This is the template name
+                template_name = part[1..].to_string();
+                break;
+            } else if part.contains(':') {
+                // This is an apply argument
+                let arg_parts: Vec<&str> = part.split(':').collect();
+                if arg_parts.len() != 2 {
+                    return Err(format!("Invalid apply argument format: {}", part));
+                }
+                let parameter = arg_parts[0].to_string();
+                let values: Vec<String> = arg_parts[1].split(',').map(|s| s.to_string()).collect();
+                args.push((parameter, values));
+            } else {
+                return Err(format!("Unexpected token in apply expression: {}", part));
+            }
+            i += 1;
+        }
+        
+        if template_name.is_empty() {
+            return Err("No template name found in apply expression".to_string());
+        }
+        
+        // Get template definition
+        let (template_expr, template_params) = template_defs.get(&template_name)
+            .ok_or_else(|| format!("Template '{}' not found", template_name))?;
+        
+        // Generate all combinations of parameter values
+        let mut expanded_lines = Vec::new();
+        let combinations = Self::generate_parameter_combinations(&args)?;
+        
+        for combination in combinations {
+            let mut expanded_expr = template_expr.clone();
+            for (param, value) in combination {
+                let pattern = format!("{{{}}}", param);
+                expanded_expr = expanded_expr.replace(&pattern, &value);
+            }
+            expanded_lines.push(expanded_expr);
+        }
+        
+        Ok(expanded_lines)
+    }
+
+    fn generate_parameter_combinations(args: &[(String, Vec<String>)]) -> Result<Vec<Vec<(String, String)>>, String> {
+        if args.is_empty() {
+            return Ok(vec![vec![]]);
+        }
+        
+        let (param, values) = &args[0];
+        let mut combinations = Vec::new();
+        
+        for value in values {
+            let mut combination = vec![(param.clone(), value.clone())];
+            combinations.push(combination);
+        }
+        
+        // If there are more args, recursively combine them
+        if args.len() > 1 {
+            let sub_combinations = Self::generate_parameter_combinations(&args[1..])?;
+            let mut new_combinations = Vec::new();
+            
+            for combination in combinations {
+                for sub_combination in &sub_combinations {
+                    let mut new_combination = combination.clone();
+                    new_combination.extend(sub_combination.clone());
+                    new_combinations.push(new_combination);
+                }
+            }
+            combinations = new_combinations;
+        }
+        
+        Ok(combinations)
     }
 
     fn tokenize(input: &str) -> Vec<String> {
@@ -458,12 +627,19 @@ impl Parser {
 
     fn parse_script(&mut self) -> Result<Script, String> {
         let mut macro_defs = HashMap::new();
+        let mut template_defs = HashMap::new();
         let mut outer_blocks = Vec::new();
         
         // Parse macro definitions first
         while self.current < self.tokens.len() && self.peek() == "let" {
             let (name, expression) = self.parse_assignment()?;
             macro_defs.insert(name, expression);
+        }
+        
+        // Parse template definitions
+        while self.current < self.tokens.len() && self.peek() == "template" {
+            let template_def = self.parse_template_definition()?;
+            template_defs.insert(template_def.name.clone(), template_def);
         }
         
         // Parse outer blocks
@@ -474,6 +650,7 @@ impl Parser {
 
         Ok(Script { 
             macro_defs,
+            template_defs,
             outer_blocks 
         })
     }
@@ -966,6 +1143,36 @@ impl Parser {
         Ok((name, expression))
     }
 
+    fn parse_template_definition(&mut self) -> Result<TemplateDef, String> {
+        self.expect("template")?;
+        let name = self.parse_identifier()?;
+        self.expect("=")?;
+        let expression = self.parse_expression()?;
+        
+        // Extract parameters from the expression (look for {param} patterns)
+        let parameters = Self::extract_template_parameters(&expression);
+        
+        Ok(TemplateDef {
+            name,
+            expression,
+            parameters,
+        })
+    }
+
+    fn extract_template_parameters(expression: &str) -> Vec<String> {
+        let mut parameters = Vec::new();
+        let re = regex::Regex::new(r"\{([a-zA-Z][a-zA-Z0-9\-_]*)\}").unwrap();
+        
+        for cap in re.captures_iter(expression) {
+            let param_name = cap[1].to_string();
+            if !parameters.contains(&param_name) {
+                parameters.push(param_name);
+            }
+        }
+        
+        parameters
+    }
+
     fn parse_identifier(&mut self) -> Result<String, String> {
         let token = self.advance();
         if token.chars().next().map_or(false, |c| c.is_alphabetic()) &&
@@ -1353,5 +1560,136 @@ mod tests {
         // Should have one envelope and one delay from the expanded macros
         assert_eq!(track.effects.envelopes.len(), 1);
         assert_eq!(track.effects.delays.len(), 1);
+    }
+
+    #[test]
+    fn test_template_definition() {
+        let input = r#"
+            template osc_template1 = osc:sine:440.0:0.9:{step}
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            osc:sine:880.0:0.3:4
+        "#;
+
+        let mut parser = Parser::new(input);
+        let script = parser.parse_script().unwrap();
+        
+        // Verify template definition is parsed correctly
+        assert_eq!(script.template_defs.len(), 1);
+        
+        let template = script.template_defs.get("osc_template1").unwrap();
+        assert_eq!(template.expression, "osc:sine:440.0:0.9:{step}");
+        assert_eq!(template.parameters, vec!["step"]);
+        
+        // Verify that outer blocks are still parsed correctly
+        assert_eq!(script.outer_blocks.len(), 1);
+    }
+
+    #[test]
+    fn test_template_with_multiple_parameters() {
+        let input = r#"
+            template samp_template1 = samp:/path/to/file.wav:{volume}:{step}
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            osc:sine:880.0:0.3:4
+        "#;
+
+        let mut parser = Parser::new(input);
+        let script = parser.parse_script().unwrap();
+        
+        // Verify template definition is parsed correctly
+        assert_eq!(script.template_defs.len(), 1);
+        
+        let template = script.template_defs.get("samp_template1").unwrap();
+        assert_eq!(template.expression, "samp:/path/to/file.wav:{volume}:{step}");
+        assert_eq!(template.parameters, vec!["volume", "step"]);
+    }
+
+    #[test]
+    fn test_apply_expression_basic() {
+        let input = r#"
+            template osc_template1 = osc:sine:440.0:0.9:{step}
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            apply step:0,8 $osc_template1
+        "#;
+
+        let result = parse_dsl(input);
+        assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 1);
+        
+        let track = &track_grid.tracks[0];
+        // Should have two notes from the expanded template
+        // We can't directly access the notes, but we can verify the track was created successfully
+        assert_eq!(track.sequence.tempo, 120);
+    }
+
+    #[test]
+    fn test_apply_expression_multiple_parameters() {
+        let input = r#"
+            template samp_template1 = samp:/Users/markweiss/RustroverProjects/osc_bak/src/dsl/test_data/test_sample.wav:{volume}:{step}
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            apply volume:0.5,0.8 step:0,4 $samp_template1
+        "#;
+
+        let result = parse_dsl(input);
+        assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 1);
+        
+        let track = &track_grid.tracks[0];
+        // Should have four notes from the expanded template (2 volumes × 2 steps)
+        // We can't directly access the notes, but we can verify the track was created successfully
+        assert_eq!(track.sequence.tempo, 120);
+    }
+
+    #[test]
+    fn test_template_and_macro_together() {
+        let input = r#"
+            let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.5 r 1.0,0.0
+            template osc_template1 = osc:sine:440.0:0.9:{step}
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            $env1
+            apply step:0,8 $osc_template1
+        "#;
+
+        let result = parse_dsl(input);
+        assert!(result.is_ok());
+        
+        let track_grid = result.unwrap();
+        assert_eq!(track_grid.tracks.len(), 1);
+        
+        let track = &track_grid.tracks[0];
+        // Should have one envelope and two notes
+        assert_eq!(track.effects.envelopes.len(), 1);
+        // We can't directly access the notes, but we can verify the track was created successfully
+        assert_eq!(track.sequence.tempo, 120);
+    }
+
+    #[test]
+    #[should_panic(expected = "Template 'undefined_template' not found")]
+    fn test_apply_undefined_template() {
+        let input = r#"
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            apply step:0,8 $undefined_template
+        "#;
+
+        // The panic happens inside Parser::new, which is called by parse_dsl.
+        let _ = parse_dsl(input);
+    }
+
+    #[test]
+    fn test_debug_undefined_template() {
+        let input = r#"
+            FixedTimeNoteSequence dur Quarter tempo 120 num_steps 16
+            apply step:0,8 $undefined_template
+        "#;
+
+        // Let's see what happens during expansion
+        let result = Parser::expand_macros(input);
+        println!("Expand result: {:?}", result);
+        
+        // The panic should happen here
+        let _ = parse_dsl(input);
     }
 } 
