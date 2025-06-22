@@ -4,7 +4,7 @@ use crate::envelope::envelope::Envelope;
 use crate::effect::flanger::Flanger;
 use crate::effect::lfo::LFO;
 
-#[derive(Builder, Clone, Debug)]
+#[derive(Builder, Clone, Debug, PartialEq)]
 pub(crate) struct TrackEffects {
     #[allow(dead_code)]
     #[builder(default = "Vec::new()")]

@@ -9,6 +9,7 @@ use crate::note::note::Note;
 use crate::note::note_trait::BuilderWrapper;
 use crate::note::sampled_note;
 use crate::note::sampled_note::SampledNote;
+use crate::track::track_effects::{no_op_effects, TrackEffects};
 
 #[allow(dead_code)]
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -40,8 +41,6 @@ pub(crate) struct PlaybackNote {
     #[builder(default = "0")]
     pub(crate) playback_sample_end_time: u64,
 
-    // TODO move to Note
-    // Effects loaded from track.effects
     #[builder(default = "Vec::new()")]
     pub(crate) envelopes: Vec<Envelope>,
 
@@ -53,6 +52,9 @@ pub(crate) struct PlaybackNote {
 
     #[builder(default = "Vec::new()")]
     pub(crate) delays: Vec<Delay>,
+
+    #[builder(default = "no_op_effects()")]
+    pub(crate) track_effects: TrackEffects,
 }
 
 #[allow(dead_code)]
@@ -124,10 +126,24 @@ impl PlaybackNote {
                             (self.playback_sample_end_time as f32 -
                                 self.playback_sample_start_time as f32));
                 }
+                for envelope in self.track_effects.envelopes.iter() {
+                    output_sample = envelope.apply_effect(
+                        output_sample, // sample_position);
+                        sample_count as f32 /
+                            (self.playback_sample_end_time as f32 -
+                                self.playback_sample_start_time as f32));
+                }
             }
             
             NoteType::Sample => { 
                 for envelope in self.envelopes.iter() {
+                    output_sample = envelope.apply_effect(
+                        output_sample,
+                        sample_count as f32 /
+                            (self.playback_sample_end_time as f32 -
+                                self.playback_sample_start_time as f32));
+                }
+                for envelope in self.track_effects.envelopes.iter() {
                     output_sample = envelope.apply_effect(
                         output_sample,
                         sample_count as f32 /
@@ -141,12 +157,23 @@ impl PlaybackNote {
             output_sample = lfo.apply_effect(output_sample, sample_count);
         }
 
+        for lfo in self.track_effects.lfos.iter() {
+            output_sample = lfo.apply_effect(output_sample, sample_count);
+        }
+
         for flanger in self.flangers.iter_mut() {
             output_sample = flanger.apply_effect(output_sample, sample_position);
         }
         
+        for flanger in self.track_effects.flangers.iter_mut() {
+            output_sample = flanger.apply_effect(output_sample, sample_position);
+        }
         
         for delay in self.delays.iter_mut() {
+            output_sample = delay.apply_effect(output_sample, sample_position);
+        }
+
+        for delay in self.track_effects.delays.iter_mut() {
             output_sample = delay.apply_effect(output_sample, sample_position);
         }
 

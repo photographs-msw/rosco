@@ -182,7 +182,6 @@ where
         }
     });
 
-    // TODO FIX THIS TO HONOR EACH Note.oscillator_tables if the note is type Note
     for playback_notes in rx.iter() {
         gen_notes_stream(playback_notes, OscillatorTables::new());
     }

@@ -47,17 +47,18 @@ impl<SequenceType: NextNotes + Iterator + SetCurPosition> TrackGrid<SequenceType
             for playback_note in track.sequence.next_notes() {
                 let mut playback_note_builder = PlaybackNoteBuilder::default();
                     playback_note_builder
-                        .envelopes(playback_note.envelopes.clone())
-                        .lfos(playback_note.lfos.clone())
-                        .flangers(playback_note.flangers.clone())
-                        .delays(playback_note.delays.clone())
                         .playback_start_time_ms(playback_note.playback_start_time_ms)
                         .playback_end_time_ms(playback_note.playback_end_time_ms)
                         .playback_sample_start_time((playback_note.playback_start_time_ms *
                             (SAMPLE_RATE / 1000.0)).floor() as u64)
                         .playback_end_time_ms(playback_note.playback_end_time_ms)
                         .playback_sample_end_time((playback_note.playback_end_time_ms *
-                            (SAMPLE_RATE / 1000.0)).floor() as u64);
+                            (SAMPLE_RATE / 1000.0)).floor() as u64)
+                        .envelopes(playback_note.envelopes.clone())
+                        .lfos(playback_note.lfos.clone())
+                        .flangers(playback_note.flangers.clone())
+                        .delays(playback_note.delays.clone())
+                        .track_effects(track.effects.clone());
                 
                 match playback_note.note_type {
                     NoteType::Oscillator => {
