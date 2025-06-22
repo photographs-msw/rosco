@@ -5,11 +5,14 @@ pub(crate) fn play() {
     println!("playing dsl 1");
 
     let input = r#"
+    # This is a comment
     let env1 = a 0.2,0.8 d 0.3,0.6 s 0.8,0.7 r 1.0,0.0
     let delay1 = delay mix 0.7 decay 0.5 interval_ms 50.0 duration_ms 30.0 num_repeats 8 num_predelay_samples 10 num_concurrent_delays 2 
     let flanger1 = flanger window_size 25 mix 0.5
 
+    # This is a comment
     FixedTimeNoteSequence dur Half tempo 40 num_steps 16
+    # This is a comment
     $env1
     $delay1
     $flanger1

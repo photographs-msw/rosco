@@ -386,7 +386,7 @@ impl Parser {
                 line_buffer.clear();
             } else {
                 line_buffer.push(ch);
-                if !ch.is_whitespace() {
+                if !ch.is_whitespace() && ch != '#' {
                     at_line_start = false;
                 }
             }
