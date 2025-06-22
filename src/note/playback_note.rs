@@ -137,9 +137,9 @@ impl PlaybackNote {
             }
         }
         
-        // for lfo in self.lfos.iter() {
-        //     output_sample = lfo.apply_effect(output_sample, sample_count);
-        // }
+        for lfo in self.lfos.iter() {
+            output_sample = lfo.apply_effect(output_sample, sample_count);
+        }
 
         for flanger in self.flangers.iter_mut() {
             output_sample = flanger.apply_effect(output_sample, sample_position);
