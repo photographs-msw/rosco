@@ -56,7 +56,7 @@ impl SampledNote {
 
     pub(crate) fn set_sample_buf(&mut self, samples: &[f32], buf_size: usize) {
         self.sample_buf = samples.try_into().unwrap();
-        self.buf_size = buf_size;
+        self.buf_size = samples.len();
         self.sample_index = 0;
     }
 
@@ -111,7 +111,6 @@ impl BuilderWrapper<SampledNote> for SampledNoteBuilder {
 impl SampledNoteBuilder {
 
     pub(crate) fn build(&mut self) -> Result<SampledNote, String> {
-        let buf_size = BUF_STORAGE_SIZE;
         let sample_index = 0;
         let volume = self.volume.unwrap_or(DEFAULT_VOLUME);
         let start_time_ms = self.start_time_ms.unwrap_or(INIT_START_TIME);
@@ -129,6 +128,7 @@ impl SampledNoteBuilder {
                 }
             }
         }
+        let buf_size = sample_buf.len();
         
         Ok(
             SampledNote {

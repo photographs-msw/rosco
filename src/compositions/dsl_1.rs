@@ -11,7 +11,7 @@ pub(crate) fn play() {
     let flanger1 = flanger window_size 25 mix 0.5
 
     # This is a comment
-    FixedTimeNoteSequence dur Half tempo 40 num_steps 16
+    FixedTimeNoteSequence dur Whole tempo 20 num_steps 16
     # This is a comment
     $env1
     $delay1
