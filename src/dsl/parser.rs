@@ -299,11 +299,42 @@ impl Parser {
     fn expand_macros(input: &str) -> Result<String, String> {
         let mut expanded = input.to_string();
         let mut macro_defs = HashMap::new();
-        
-        // First pass: collect all macro definitions
-        let lines: Vec<&str> = input.lines().collect();
+
+        let mut lines: Vec<String> = input.lines().map(|s| s.to_string()).collect();
         let mut i = 0;
+
+        // First pass: expand all apply statements to add lines to the input
+        let mut modifications = Vec::new();
+        while i < lines.len() {
+            let line_content = lines[i].trim();
+            if line_content.starts_with("apply") {
+                if let Some((apply_defs, _identifier)) = Self::parse_apply_def(line_content)? {
+                    let mut new_lines = Vec::new();
+                    for (key, values) in apply_defs {
+                        for value in values {
+                            let new_line = line_content.replace(&format!("{{{}}}", key), &value);
+                            new_lines.push(new_line);
+                        }
+                    }
+                    modifications.push((i, new_lines.clone()));
+                    i += new_lines.len();
+                }
+            }
+            i += 1;
+        }
         
+        // Apply modifications in reverse order to maintain indices
+        for (index, new_lines) in modifications.into_iter().rev() {
+            // Comment out the original apply line
+            lines[index] = format!("# {}", lines[index]);
+            // Insert new lines
+            for new_line in new_lines.into_iter().rev() {
+                lines.insert(index, new_line);
+            }
+        }
+
+        // Second pass: collect all macro definitions
+        let mut i = 0;
         while i < lines.len() {
             let line = lines[i].trim();
             if line.starts_with("let ") {
@@ -360,6 +391,29 @@ impl Parser {
         let value = parts[3..].join(" ");
         
         Ok(Some((name, value)))
+    }
+
+    #[allow(dead_code)]
+    fn parse_apply_def(line: &str) -> Result<Option<(HashMap<String, Vec<String>>, String)>, String> {
+        let mut parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() < 3 || parts[0] != "apply" {
+            return Ok(None);
+        }
+
+        let mut apply_defs = HashMap::new();
+        for token in parts.iter_mut() {
+            if token.contains(":") {
+                let key = token.split(":").next().unwrap().to_string();
+                let value =
+                    token.split(":").nth(1).unwrap().split(",").map(|s| s.to_string()).collect();
+                apply_defs.insert(key, value);
+            }
+        }
+        
+        // NOTE: identifiers can't have ':' in their name or this code breaks
+        let identifier = parts[parts.len() - 1].to_string();
+
+        Ok(Some((apply_defs, identifier)))
     }
 
     fn tokenize(input: &str) -> Vec<String> {
