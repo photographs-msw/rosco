@@ -54,6 +54,7 @@ impl SampledNote {
         self.sample_buf[index]
     }
 
+    // TODO remove unuused arg buf_size
     pub(crate) fn set_sample_buf(&mut self, samples: &[f32], buf_size: usize) {
         self.sample_buf = samples.try_into().unwrap();
         self.buf_size = samples.len();
