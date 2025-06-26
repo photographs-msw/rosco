@@ -296,6 +296,11 @@ impl Parser {
         
         let input_after_apply= Self::expand_apply_defs(input_after_macro.as_str()).unwrap_or_else(|_| Vec::new());
         
+        
+        // TEMP DEBUG
+        print!("AFTER APPLY: \n\n{}", input_after_apply.join("\n"));
+        
+        
         let tokens = Self::tokenize(&input_after_apply.join("\n"));
         
         Self {
