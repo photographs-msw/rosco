@@ -298,9 +298,6 @@ impl Parser {
         
         let tokens = Self::tokenize(&input_after_apply.join("\n"));
         
-        // TEMP DEBUG
-        println!("Tokens: {:?}", tokens.join(" "));
-        
         Self {
             tokens,
             current: 0,
@@ -364,7 +361,6 @@ impl Parser {
                     macro_defs.insert(name, value);
                 }
             } else if line.starts_with("FixedTimeNoteSequence") {
-                // Stop at first outer block
                 break;
             }
             i += 1;

@@ -150,18 +150,18 @@ fn get_frontier_min_end_time(playback_notes: &Vec<PlaybackNote>, note_time_ms: f
     // for a note that starts on or before note_time_ms and ends after it
     for playback_note in playback_notes.iter() {
         if float_leq(playback_note.note_start_time_ms(), note_time_ms) &&
-            playback_note.note_end_time_ms() > note_time_ms &&
-            playback_note.note_end_time_ms() < end_time_ms {
-            end_time_ms = playback_note.note_end_time_ms();
+            playback_note.playback_end_time_ms > note_time_ms &&
+            playback_note.playback_end_time_ms < end_time_ms {
+            end_time_ms = playback_note.playback_end_time_ms;
         }
     }
 
     // Second pass, is there a note that starts after note_time_ms earlier than the
     // earliest end time. Because if there is then that is the end time of this window
     for playback_note in playback_notes.iter() {
-        if playback_note.note_start_time_ms() > note_time_ms &&
-            playback_note.note_start_time_ms() < end_time_ms {
-            end_time_ms = playback_note.note_start_time_ms();
+        if playback_note.playback_start_time_ms > note_time_ms &&
+            playback_note.playback_start_time_ms < end_time_ms {
+            end_time_ms = playback_note.playback_start_time_ms;
         }
     }
 
