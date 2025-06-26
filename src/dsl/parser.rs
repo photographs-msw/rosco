@@ -1,5 +1,6 @@
 use std::str::FromStr;
 use std::collections::HashMap;
+use std::io::BufRead;
 use regex;
 
 use crate::audio_gen::oscillator::Waveform;
@@ -288,52 +289,72 @@ pub struct Parser {
 impl Parser {
     #[allow(dead_code)]
     pub fn new(input: &str) -> Self {
-        let expanded_input = Self::expand_macros(input).unwrap_or_else(|_| input.to_string());
-        let tokens = Self::tokenize(&expanded_input);
+        let input_tokens: Vec<String> = input.lines().map(|s| s.to_string()).collect();
+        
+        let input_after_macro = Self::expand_macros(input_tokens.join("\n").as_str())
+            .unwrap_or_else(|_| input.to_string());
+        
+        let input_after_apply= Self::expand_apply_defs(input_after_macro.as_str()).unwrap_or_else(|_| Vec::new());
+        
+        let tokens = Self::tokenize(&input_after_apply.join("\n"));
+        
+        // TEMP DEBUG
+        println!("Tokens: {:?}", tokens.join(" "));
+        
         Self {
             tokens,
             current: 0,
         }
     }
 
-    fn expand_macros(input: &str) -> Result<String, String> {
-        let mut expanded = input.to_string();
-        let mut macro_defs = HashMap::new();
-
+    fn expand_apply_defs(input: &str) -> Result<Vec<String>, String> {
+    
         let mut lines: Vec<String> = input.lines().map(|s| s.to_string()).collect();
         let mut i = 0;
-
-        // First pass: expand all apply statements to add lines to the input
-        let mut modifications = Vec::new();
+        
         while i < lines.len() {
             let line_content = lines[i].trim();
             if line_content.starts_with("apply") {
-                if let Some((apply_defs, _identifier)) = Self::parse_apply_def(line_content)? {
+                if let Some((apply_defs, _identifier)) =
+                        Self::parse_apply_def(line_content)? {
+                    // Build lines from the apply list of values and template
                     let mut new_lines = Vec::new();
                     for (key, values) in apply_defs {
                         for value in values {
-                            let new_line = line_content.replace(&format!("{{{}}}", key), &value);
+                            let line_content_tokens = line_content.split(" ").collect::<Vec<&str>>();
+                            let apply_expression = line_content_tokens[2..].join(" ");
+                            let new_line = apply_expression.replace(&format!("{{{}}}", key), &value);
                             new_lines.push(new_line);
                         }
                     }
-                    modifications.push((i, new_lines.clone()));
-                    i += new_lines.len();
+
+                    // Insert expanded lines in place at the point of the apply line after
+                    // commenting out the apply line to not process in later passes
+                    // Comment out the original apply line
+                    lines[i] = format!("# {}", lines[i]);
+                    let num_new_lines = new_lines.len();
+                    // Insert new lines
+                    for (j, new_line) in new_lines.into_iter().enumerate() {
+                        lines.insert(i + j + 1, new_line);
+                    }
+                    // Skip index past inserted lines
+                    i += num_new_lines;
                 }
             }
             i += 1;
         }
-        
-        // Apply modifications in reverse order to maintain indices
-        for (index, new_lines) in modifications.into_iter().rev() {
-            // Comment out the original apply line
-            lines[index] = format!("# {}", lines[index]);
-            // Insert new lines
-            for new_line in new_lines.into_iter().rev() {
-                lines.insert(index, new_line);
-            }
-        }
 
-        // Second pass: collect all macro definitions
+        Ok(lines)
+        
+    }
+
+    fn expand_macros(input: &str) -> Result<String, String> {
+        let mut expanded = input.to_string();
+        let mut macro_defs = HashMap::new();
+
+        let lines: Vec<String> = input.lines().map(|s| s.to_string().trim().to_string()).collect();
+
+        // First pass: collect all macro definitions
         let mut i = 0;
         while i < lines.len() {
             let line = lines[i].trim();
@@ -404,6 +425,9 @@ impl Parser {
         for token in parts.iter_mut() {
             if token.contains(":") {
                 let key = token.split(":").next().unwrap().to_string();
+                if key == "osc" || key == "samp" {
+                    continue;
+                }  
                 let value =
                     token.split(":").nth(1).unwrap().split(",").map(|s| s.to_string()).collect();
                 apply_defs.insert(key, value);
@@ -426,6 +450,11 @@ impl Parser {
         let mut line_buffer = String::new();
 
         while let Some(ch) = chars.next() {
+            if at_line_start && ch == '#' {
+                in_comment = true;
+                continue;
+            }
+
             // Buffer the line for blank line detection
             if ch == '\n' {
                 if !in_comment {
@@ -449,11 +478,6 @@ impl Parser {
                 if ch == '\n' {
                     in_comment = false;
                 }
-                continue;
-            }
-
-            if at_line_start && ch == '#' {
-                in_comment = true;
                 continue;
             }
 
@@ -515,13 +539,13 @@ impl Parser {
         let mut outer_blocks = Vec::new();
         
         // Parse macro definitions first
-        while self.current < self.tokens.len() && self.peek() == "let" {
+        while self.current < self.tokens.len() && self.peek() == "let" && !self.is_comment_start() {
             let (name, expression) = self.parse_assignment()?;
             macro_defs.insert(name, expression);
         }
         
         // Parse outer blocks
-        while self.current < self.tokens.len() {
+        while self.current < self.tokens.len() && !self.is_comment_start() {
             let block = self.parse_outer_block()?;
             outer_blocks.push(block);
         }
@@ -565,6 +589,8 @@ impl Parser {
     }
 
     fn parse_sequence_def(&mut self) -> Result<SequenceDef, String> {
+        self.skip_comment_lines();
+
         self.expect("FixedTimeNoteSequence")?;
         self.expect("dur")?;
         let dur = self.parse_duration_type()?;
@@ -586,6 +612,8 @@ impl Parser {
     }
 
     fn parse_envelope_def(&mut self) -> Result<EnvelopeDef, String> {
+        self.skip_comment_lines();
+
         self.expect("a")?;
         let attack = self.parse_envelope_pair()?;
         self.expect("d")?;
@@ -604,6 +632,8 @@ impl Parser {
     }
 
     fn parse_envelope_pair(&mut self) -> Result<(f32, f32), String> {
+        self.skip_comment_lines();
+
         let first = self.parse_f32()?;
         self.expect(",")?;
         let second = self.parse_f32()?;
@@ -623,6 +653,8 @@ impl Parser {
     }
 
     fn parse_delay_def(&mut self) -> Result<EffectDef, String> {
+        self.skip_comment_lines();
+
         self.expect("delay")?;
         self.expect("mix")?;
         let mix = self.parse_f32()?;
@@ -651,6 +683,8 @@ impl Parser {
     }
 
     fn parse_flanger_def(&mut self) -> Result<EffectDef, String> {
+        self.skip_comment_lines();
+
         self.expect("flanger")?;
         self.expect("window_size")?;
         let window_size = self.parse_usize()?;
@@ -664,6 +698,8 @@ impl Parser {
     }
 
     fn parse_lfo_def(&mut self) -> Result<EffectDef, String> {
+        self.skip_comment_lines();
+
         self.expect("lfo")?;
         self.expect("freq")?;
         let freq = self.parse_f32()?;
@@ -712,6 +748,8 @@ impl Parser {
     }
 
     fn parse_osc_note(&mut self) -> Result<NoteDeclaration, String> {
+        self.skip_comment_lines();
+
         self.expect("osc")?;
         self.expect(":")?;
         let waveforms = self.parse_waveforms()?;
@@ -731,6 +769,8 @@ impl Parser {
     }
 
     fn parse_samp_note(&mut self) -> Result<NoteDeclaration, String> {
+        self.skip_comment_lines();
+        
         self.expect("samp")?;
         self.expect(":")?;
         let file_path = self.parse_file_path()?;
@@ -790,6 +830,15 @@ impl Parser {
             Ok(file_path)
         }
     }
+    
+    fn skip_comment_lines(&mut self) {
+        while self.current < self.tokens.len() && self.peek() == "#" {
+            while self.current < self.tokens.len() && self.peek() != "\n" {
+                self.advance();
+            }
+            self.advance(); // consume newline
+        }
+    }
 
     fn is_effect_start(&self) -> bool {
         self.peek() == "delay" || self.peek() == "flanger" || self.peek() == "lfo"
@@ -797,6 +846,10 @@ impl Parser {
 
     fn is_note_declaration_start(&self) -> bool {
         self.peek() == "osc" || self.peek() == "samp"
+    }
+
+    fn is_comment_start(&self) -> bool {
+        self.peek() == "#"
     }
 
     fn expect(&mut self, expected: &str) -> Result<(), String> {
