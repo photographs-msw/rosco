@@ -43,12 +43,6 @@ pub(crate) fn gen_notes_stream(playback_notes: Vec<PlaybackNote>,
         .unwrap();
     let window_duration_ms = (window_end_time_ms - window_start_time_ms).floor() as u64;
     
-    // TEMP DEBUG
-    // TODO BUG HERE, last window_duration_ms value is very very large
-    println!("playback_start_time_ms {}", window_start_time_ms);
-    println!("playback_end_time_ms {}", window_end_time_ms);
-    println!("playback_note duration_ms {}", window_duration_ms);
-
     gen_notes_stream_impl::<f32>(&device, &config.into(), oscillator_tables, playback_notes,
                                  window_duration_ms);
 }
@@ -153,8 +147,6 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
     stream.play().unwrap();
     
     std::thread::sleep(time::Duration::from_millis(note_duration_ms));
-    
-    // std::thread::yield_now();
 }
 
 fn write_stream<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)

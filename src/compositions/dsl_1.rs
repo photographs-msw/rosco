@@ -1,5 +1,3 @@
-use crate::audio_gen::audio_gen::gen_notes_stream;
-use crate::audio_gen::oscillator::OscillatorTables;
 use crate::dsl::parser::parse_dsl;
 use crate::composition::comp_utils::play_track_grid;
 
@@ -23,24 +21,5 @@ osc:triangle:440.0:0.3:7
 osc:square:880.0:0.5:4
 "#;
 
-    let track_grid = parse_dsl(input).unwrap();
-
-    println!("track grid");
-
-    let (tx, rx) = std::sync::mpsc::channel();
-    std::thread::spawn(move || {
-        for playback_notes in track_grid {
-            if tx.send(playback_notes).is_err() {
-                // The receiver has hung up, so we can stop the thread.
-                break;
-            }
-        }
-        println!("tx exiting");
-    });
-    
-    for playback_notes in rx.iter() {
-        gen_notes_stream(playback_notes, OscillatorTables::new());
-    }
-    println!("rx complete");
-    
+    play_track_grid( parse_dsl(input).unwrap());
 }
