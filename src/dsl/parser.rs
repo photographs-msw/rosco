@@ -292,20 +292,159 @@ impl Parser {
         
         let input_after_macro = Self::expand_macros(input_tokens.join("\n").as_str())
             .unwrap_or_else(|_| input.to_string());
+
+        let input_after_generators = Self::expand_generators(input_after_macro.as_str())
+            .unwrap_or_else(|_| input_after_macro.to_string());
         
-        let input_after_apply= Self::expand_apply_defs(input_after_macro.as_str()).unwrap_or_else(|_| Vec::new());
-        
-        
+        let input_after_apply= Self::expand_apply_defs(input_after_generators.as_str()).unwrap_or_else(|_| Vec::new());
+
+
         // TEMP DEBUG
-        // print!("AFTER APPLY:\n{}", input_after_apply.join("\n"));
-        
-        
+        print!("AFTER APPLY:\n{}", input_after_apply.join("\n"));
+
+
         let tokens = Self::tokenize(&input_after_apply.join("\n"));
         
         Self {
             tokens,
             current: 0,
         }
+    }
+
+    fn expand_macros(input: &str) -> Result<String, String> {
+        let mut expanded = input.to_string();
+        let mut macro_defs = HashMap::new();
+
+        let lines: Vec<String> = input.lines().map(|s| s.to_string().trim().to_string()).collect();
+
+        // First pass: collect all macro definitions
+        let mut i = 0;
+        while i < lines.len() {
+            let line = lines[i].trim();
+            if line.starts_with("let ") {
+                // Parse macro definition
+                if let Some((name, value)) = Self::parse_macro_definition_line(line)? {
+                    macro_defs.insert(name, value);
+                }
+            } else if line.starts_with("FixedTimeNoteSequence") {
+                break;
+            }
+            i += 1;
+        }
+
+        // Multi-pass expansion: repeat until no changes
+        let mut changed = true;
+        while changed {
+            changed = false;
+            let mut new_expanded = expanded.clone();
+            for (name, value) in &macro_defs {
+                let pattern = format!("${}", name);
+                if new_expanded.contains(&pattern) {
+                    new_expanded = new_expanded.replace(&pattern, value);
+                    changed = true;
+                }
+            }
+            expanded = new_expanded;
+        }
+        // Check for any remaining $name that is not in macro_defs and panic with details
+        let re = regex::Regex::new(r"\$([a-zA-Z][a-zA-Z0-9\-_]*)").unwrap();
+        for (line_idx, line) in expanded.lines().enumerate() {
+            for cap in re.captures_iter(line) {
+                let macro_name = &cap[1];
+                if !macro_defs.contains_key(macro_name) {
+                    panic!(
+                        "Undefined macro '${}' encountered on line {}: \n  {}",
+                        macro_name,
+                        line_idx + 1,
+                        line.trim()
+                    );
+                }
+            }
+        }
+        Ok(expanded)
+    }
+
+    fn parse_macro_definition_line(line: &str) -> Result<Option<(String, String)>, String> {
+        let parts: Vec<&str> = line.split_whitespace().collect();
+        if parts.len() < 4 || parts[0] != "let" || parts[2] != "=" {
+            return Ok(None);
+        }
+
+        let name = parts[1].to_string();
+        let value = parts[3..].join(" ");
+
+        Ok(Some((name, value)))
+    }
+
+    // TODO FIX INNER LOOP BORROW ISSUE SO THAT WE CAN HAVE MORE THAN ONE SUBST PER LINE
+    fn expand_generators(input: &str) -> Result<String, String> {
+
+        let mut lines: Vec<String> = input.lines().map(|s| s.to_string()).collect();
+
+        let mut i = 0;
+        let lines_len = lines.len();
+        while i < lines_len {
+            let mut line_content = lines[i].trim();
+            let mut chars = line_content.chars().peekable();
+            let mut in_generator = false;
+            let mut j: usize= 0;
+            let mut lbound: usize= 0;
+            let mut rbound: usize = 0;
+            while let Some(ch) = chars.next() {
+                if ch == '\n' {
+                    break;
+                }
+                if in_generator && ch != ')' {
+                    j += 1;
+                    continue;
+                }
+                if ch == '(' {
+                    in_generator = true;
+                    lbound = j;
+                    j += 1;
+                    continue;
+
+                } else if ch == ')' {
+                    rbound = j;
+                    let generated =
+                        Self::call_generator_with_args(&line_content[lbound..rbound + 1])
+                            .unwrap_or("parse of generator failed".to_string());
+                    lines[i] = line_content.replace(&line_content[lbound..rbound + 1], &generated);
+                    in_generator = false;
+                    break;
+                }
+                j += 1;
+            }
+            i += 1;
+        }
+        return Ok(lines.join("\n"));
+    }
+
+    fn call_generator_with_args(generator_substring: &str) -> Result<String, String> {
+        let generator_and_args = generator_substring[1..generator_substring.len() - 1]
+            .split(" ").collect::<Vec<&str>>();
+        let generator_name = generator_and_args[0];
+        let args = generator_and_args[1].split(",").collect::<Vec<&str>>();
+        match generator_name {
+            "range" => Self::expand_range_generator(args),
+            _ => Err(format!("Unknown generator: {}", generator_name)),
+        }
+    }
+
+    fn expand_range_generator(args: Vec<&str>) -> Result<String, String> {
+        if args.len() != 3 {
+            return Err("range generator requires 3 arguments".to_string());
+        }
+        let start = args[0].parse::<i32>().map_err(|_| "range generator start must be an integer".to_string())?;
+        let end = args[1].parse::<i32>().map_err(|_| "range generator end must be an integer".to_string())?;
+        let step = args[2].parse::<i32>().map_err(|_| "range generator step must be an integer".to_string())?;
+        let mut result = String::new();
+        for i in (start..=end).step_by(step as usize) {
+            result.push_str(&i.to_string());
+            result.push(',');
+        }
+        result.pop();
+        Ok(result)
     }
 
     fn expand_apply_defs(input: &str) -> Result<Vec<String>, String> {
@@ -347,71 +486,6 @@ impl Parser {
 
         Ok(lines)
         
-    }
-
-    fn expand_macros(input: &str) -> Result<String, String> {
-        let mut expanded = input.to_string();
-        let mut macro_defs = HashMap::new();
-
-        let lines: Vec<String> = input.lines().map(|s| s.to_string().trim().to_string()).collect();
-
-        // First pass: collect all macro definitions
-        let mut i = 0;
-        while i < lines.len() {
-            let line = lines[i].trim();
-            if line.starts_with("let ") {
-                // Parse macro definition
-                if let Some((name, value)) = Self::parse_macro_definition_line(line)? {
-                    macro_defs.insert(name, value);
-                }
-            } else if line.starts_with("FixedTimeNoteSequence") {
-                break;
-            }
-            i += 1;
-        }
-        
-        // Multi-pass expansion: repeat until no changes
-        let mut changed = true;
-        while changed {
-            changed = false;
-            let mut new_expanded = expanded.clone();
-            for (name, value) in &macro_defs {
-                let pattern = format!("${}", name);
-                if new_expanded.contains(&pattern) {
-                    new_expanded = new_expanded.replace(&pattern, value);
-                    changed = true;
-                }
-            }
-            expanded = new_expanded;
-        }
-        // Check for any remaining $name that is not in macro_defs and panic with details
-        let re = regex::Regex::new(r"\$([a-zA-Z][a-zA-Z0-9\-_]*)").unwrap();
-        for (line_idx, line) in expanded.lines().enumerate() {
-            for cap in re.captures_iter(line) {
-                let macro_name = &cap[1];
-                if !macro_defs.contains_key(macro_name) {
-                    panic!(
-                        "Undefined macro '${}' encountered on line {}: \n  {}",
-                        macro_name,
-                        line_idx + 1,
-                        line.trim()
-                    );
-                }
-            }
-        }
-        Ok(expanded)
-    }
-
-    fn parse_macro_definition_line(line: &str) -> Result<Option<(String, String)>, String> {
-        let parts: Vec<&str> = line.split_whitespace().collect();
-        if parts.len() < 4 || parts[0] != "let" || parts[2] != "=" {
-            return Ok(None);
-        }
-        
-        let name = parts[1].to_string();
-        let value = parts[3..].join(" ");
-        
-        Ok(Some((name, value)))
     }
 
     #[allow(dead_code)]
