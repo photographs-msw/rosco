@@ -31,7 +31,7 @@ pub(crate) fn build_sampled_playback_note(sampled_note_pool: &mut NotePool<Sampl
     sampled_note.volume = volume;
     sampled_note.start_time_ms = start_time;
     sampled_note.end_time_ms = (sample_buf.len as f32 / common::constants::SAMPLE_RATE) * 1000.0;
-    sampled_note.set_sample_buf(&sample_buf.buf, sample_buf.len);
+    sampled_note.set_sample_buf(&sample_buf.buf);
 
     let mut playback_note = playback_note_pool.acquire().unwrap();
     playback_note.note_type = NoteType::Sample;

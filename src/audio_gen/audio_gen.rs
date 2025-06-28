@@ -1,4 +1,3 @@
-use std::cmp::min;
 use std::time;
 
 use cpal::traits::{DeviceTrait, HostTrait, StreamTrait};
