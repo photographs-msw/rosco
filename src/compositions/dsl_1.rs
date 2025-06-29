@@ -11,7 +11,7 @@ let delay1 = delay mix 0.5 decay 1.0 interval_ms 30.0 duration_ms 60.0 num_repea
 let flanger1 = flanger window_size 35 mix 0.75
 let samp1 = samp:/Users/markweiss/Downloads/punk_computer/003/piano_note_1_clipped.wav:0.0006:{step}
 let C5 = osc:sine,sine,sawtooth,sawtooth,sine,sine:5,C:0.1:{step}
-let G6 = osc:sine,sine,sawtooth,sawtooth,sine,sine:6,G:0.1:{step} 
+let G5 = osc:sine,sine,sawtooth,sawtooth,sine,sine:5,G:0.1:{step} 
 
 FixedTimeNoteSequence dur Quarter tempo 12 num_steps 16
 $env1
@@ -38,28 +38,7 @@ $flanger1
 $flanger1
 $flanger1
 
-
-apply step:(range 1,13,4) $samp1
-
-FixedTimeNoteSequence dur Quarter tempo 12 num_steps 16
-$env2
-$env1
-$flanger1
-$flanger1
-$flanger1
-$flanger1
-
-apply step:(range 3,15,4) $samp1
-
-FixedTimeNoteSequence dur Quarter tempo 24 num_steps 32
-$env1
-$env1
-$flanger1
-$flanger1
-$flanger1
-$delay1
-
-apply step:(range 0,30,8) $C5
+apply step:(range 0,12,4) $C5
 
 FixedTimeNoteSequence dur Quarter tempo 24 num_steps 32 
 $env1
@@ -67,7 +46,7 @@ $env1
 $delay1
 $delay1
 
-apply step:(range 0,30,8) $G6
+apply step:(range 3,31,4) $G5
 "#;
 
     play_track_grid( parse_dsl(input).unwrap());
