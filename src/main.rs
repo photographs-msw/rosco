@@ -44,11 +44,12 @@ async fn main() {
     println!("\nRunning OpenSound server...");
     server_example::run_server().await;
     
-    println!("\nRunning OpenSound client...");
-    client_example::run_client().await;
+    // Comment out client and integration for now to avoid port conflicts
+    // println!("\nRunning OpenSound client...");
+    // client_example::run_client().await;
     
-    println!("\nRunning OpenSound integration...");
-    let mut integration = create_integration();
-    integration.queue_oscillator_note(440.0, 0.5, 0.0, 1000.0, "sine").unwrap();
-    integration.play_queued_notes().unwrap();
+    // println!("\nRunning OpenSound integration...");
+    // let mut integration = create_integration();
+    // integration.queue_oscillator_note(440.0, 0.5, 0.0, 1000.0, "sine").unwrap();
+    // integration.play_queued_notes().unwrap();
 }

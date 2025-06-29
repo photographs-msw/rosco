@@ -11,8 +11,11 @@ pub fn parse_message(data: &[u8]) -> OpenSoundResult<OpenSoundMessage> {
     
     // Parse type tag string
     let type_tags = parse_string(&mut bytes)?;
+    
     if !type_tags.starts_with(',') {
-        return Err(OpenSoundError::ParseError("Type tag string must start with ','".to_string()));
+        return Err(OpenSoundError::ParseError(
+            format!("Type tag string must start with ',' but got '{}'", type_tags)
+        ));
     }
     
     // Parse arguments based on type tags
@@ -114,13 +117,24 @@ pub fn serialize_bundle(bundle: &OpenSoundBundle) -> OpenSoundResult<Vec<u8>> {
 // Helper functions
 
 fn parse_string(bytes: &mut Bytes) -> OpenSoundResult<String> {
+    if !bytes.has_remaining() {
+        return Err(OpenSoundError::ParseError("No data remaining for string".to_string()));
+    }
+    
     let mut string_bytes = Vec::new();
+    let mut found_null = false;
+    
     while bytes.has_remaining() {
         let byte = bytes.get_u8();
         if byte == 0 {
+            found_null = true;
             break;
         }
         string_bytes.push(byte);
+    }
+    
+    if !found_null {
+        return Err(OpenSoundError::ParseError("String not null-terminated".to_string()));
     }
     
     // Pad to 4-byte boundary
@@ -129,7 +143,9 @@ fn parse_string(bytes: &mut Bytes) -> OpenSoundResult<String> {
         if bytes.has_remaining() {
             let byte = bytes.get_u8();
             if byte != 0 {
-                return Err(OpenSoundError::ParseError("Invalid string padding".to_string()));
+                return Err(OpenSoundError::ParseError(
+                    format!("Invalid string padding: expected 0, got {}", byte)
+                ));
             }
         }
     }
@@ -208,9 +224,7 @@ fn write_argument(buffer: &mut BytesMut, arg: &OpenSoundArgument) -> OpenSoundRe
             }
         }
         OpenSoundArgument::True | OpenSoundArgument::False | 
-        OpenSoundArgument::Null | OpenSoundArgument::Impulse => {
-            // No-op for these types
-        }
+        OpenSoundArgument::Null | OpenSoundArgument::Impulse => {}
     }
     
     Ok(())

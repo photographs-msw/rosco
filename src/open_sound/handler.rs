@@ -87,6 +87,9 @@ impl MusicalNoteHandler {
             .build()
             .map_err(|e| OpenSoundError::AudioError(format!("Failed to build playback note: {:?}", e)))?;
 
+        println!("DEBUG: SHOULD BE PLAYING AUDIO Playback note: {:?}", playback_note);
+
+        gen_notes_stream(vec![playback_note.clone()], self.oscillator_tables.clone());
         Ok(playback_note)
     }
 
@@ -143,6 +146,7 @@ impl MusicalNoteHandler {
             .build()
             .map_err(|e| OpenSoundError::AudioError(format!("Failed to build playback note: {:?}", e)))?;
 
+        gen_notes_stream(vec![playback_note.clone()], self.oscillator_tables.clone());
         Ok(playback_note)
     }
 

@@ -147,11 +147,10 @@ impl OpenSoundServer {
                 Ok(n) => {
                     let data = &buffer[..n];
                     
-                    // TEMP DEBUG
-                    println!("TCP connection established with {}", addr);
-                    
                     match Self::process_message_data(data, &tx, &route_manager).await {
-                        Ok(_) => {}
+                        Ok(_) => {
+                            println!("Successfully processed message from {}", addr);
+                        }
                         Err(e) => {
                             eprintln!("Error processing message from {}: {}", addr, e);
                         }

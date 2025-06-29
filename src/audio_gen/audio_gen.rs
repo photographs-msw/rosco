@@ -42,6 +42,8 @@ pub(crate) fn gen_notes_stream(playback_notes: Vec<PlaybackNote>,
         .unwrap();
     let window_duration_ms = (window_end_time_ms - window_start_time_ms).floor() as u64;
     
+    println!("DEBUG: GEN NOTES STREAM");
+
     gen_notes_stream_impl::<f32>(&device, &config.into(), oscillator_tables, playback_notes,
                                  window_duration_ms);
 }
@@ -145,7 +147,11 @@ fn gen_notes_stream_impl<T>(device: &cpal::Device, config: &cpal::StreamConfig,
     ).unwrap();
     stream.play().unwrap();
     
+    println!("DEBUG: GEN NOTES STREAM AFTER PLAYBACK BLOCK BEFORE SLEEP");
+
     std::thread::sleep(time::Duration::from_millis(note_duration_ms));
+    
+    println!("DEBUG: GEN NOTES STREAM AFTER PLAYBACK BLOCK AFTER SLEEP");
 }
 
 fn write_stream<T>(output: &mut [T], channels: usize, next_sample: &mut dyn FnMut() -> f32)
