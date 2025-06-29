@@ -50,6 +50,7 @@ pub mod handler;
 pub mod server;
 pub mod client;
 pub mod integration;
+pub mod open_sound_utils;
 pub mod examples;
 
 // Re-export main types for convenience

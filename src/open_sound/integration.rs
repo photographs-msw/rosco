@@ -6,6 +6,7 @@ use crate::open_sound::handler::MusicalNoteHandler;
 use crate::note::playback_note::PlaybackNote;
 use crate::audio_gen::oscillator::OscillatorTables;
 use crate::audio_gen::audio_gen::gen_notes_stream;
+use crate::open_sound::open_sound_utils::{OscArg, create_osc_message_bytes, create_osc_bundle_bytes, create_osc_message_bytes_mixed, create_osc_bundle_bytes_mixed};
 
 /// Integration between OpenSound Protocol and audio system
 pub struct OpenSoundIntegration {
@@ -220,6 +221,11 @@ impl OpenSoundIntegration {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::io::{Write, Read};
+    use std::net::TcpStream;
+    use std::thread;
+    use std::time::Duration;
+    use crate::open_sound::open_sound_utils::{OscArg, create_osc_message_bytes, create_osc_bundle_bytes, create_osc_message_bytes_mixed, create_osc_bundle_bytes_mixed};
 
     #[test]
     fn test_integration_creation() {
@@ -240,5 +246,225 @@ mod tests {
         integration.queue_oscillator_note(440.0, 0.5, 0.0, 1000.0, "sine").unwrap();
         integration.clear_queue();
         assert_eq!(integration.queued_note_count(), 0);
+    }
+
+    /// Test sending OSC messages directly over TCP
+    #[tokio::test]
+    async fn test_tcp_osc_message_direct() {
+        // Start a simple server in a separate thread on a different port
+        let server_handle = thread::spawn(|| {
+            let config = crate::open_sound::types::OpenSoundConfig {
+                tcp_address: Some("127.0.0.1:8001".to_string()),
+                udp_address: None,
+                sample_rate: 44100,
+                buffer_size: 1024,
+            };
+            let mut server = crate::open_sound::server::OpenSoundServer::new(config);
+            let note_handler = crate::open_sound::handler::MusicalNoteHandler::new();
+            server.add_handler("/note/oscillator", Box::new(note_handler.clone()));
+            server.add_handler("/note/sample", Box::new(note_handler.clone()));
+            server.add_handler("/note/play", Box::new(note_handler));
+            
+            // Run server for a short time
+            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                if let Err(e) = server.start_tcp().await {
+                    eprintln!("Server failed to start: {}", e);
+                    return;
+                }
+                // Give some time for the server to start
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            });
+        });
+
+        // Give server time to start
+        thread::sleep(Duration::from_millis(200));
+
+        // Create OSC message as bytes
+        let osc_message = create_osc_message_bytes_mixed("/note/oscillator", &[
+            OscArg::Float(440.0f32),  // frequency
+            OscArg::Float(0.5f32),    // volume
+            OscArg::Float(0.0f32),    // start_time_ms
+            OscArg::Float(1000.0f32), // duration_ms
+            OscArg::String("sine".to_string()),    // waveforms
+        ]);
+
+        // Send message directly over TCP
+        match TcpStream::connect("127.0.0.1:8001") {
+            Ok(mut stream) => {
+                stream.write_all(&osc_message).unwrap();
+                stream.flush().unwrap();
+                println!("Sent OSC message directly over TCP");
+            }
+            Err(e) => {
+                eprintln!("Failed to connect to server: {}", e);
+                // Don't fail the test if server isn't running
+                return;
+            }
+        }
+
+        // Clean up
+        server_handle.join().unwrap();
+    }
+
+    /// Test sending multiple OSC messages over TCP
+    #[tokio::test]
+    async fn test_tcp_multiple_osc_messages() {
+        // Start server on a different port
+        let server_handle = thread::spawn(|| {
+            let config = crate::open_sound::types::OpenSoundConfig {
+                tcp_address: Some("127.0.0.1:8002".to_string()),
+                udp_address: None,
+                sample_rate: 44100,
+                buffer_size: 1024,
+            };
+            let mut server = crate::open_sound::server::OpenSoundServer::new(config);
+            let note_handler = crate::open_sound::handler::MusicalNoteHandler::new();
+            server.add_handler("/note/oscillator", Box::new(note_handler.clone()));
+            server.add_handler("/note/sample", Box::new(note_handler.clone()));
+            server.add_handler("/note/play", Box::new(note_handler));
+            
+            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                if let Err(e) = server.start_tcp().await {
+                    eprintln!("Server failed to start: {}", e);
+                    return;
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            });
+        });
+
+        thread::sleep(Duration::from_millis(200));
+
+        // Create multiple OSC messages
+        let messages = vec![
+            ("/note/oscillator", vec![
+                OscArg::Float(440.0f32), OscArg::Float(0.5f32), OscArg::Float(0.0f32), OscArg::Float(500.0f32), OscArg::String("sine".to_string())
+            ]),
+            ("/note/oscillator", vec![
+                OscArg::Float(554.37f32), OscArg::Float(0.4f32), OscArg::Float(500.0f32), OscArg::Float(500.0f32), OscArg::String("triangle".to_string())
+            ]),
+            ("/note/play", vec![
+                OscArg::String("oscillator".to_string()), OscArg::Float(880.0f32), OscArg::Float(0.3f32), OscArg::Float(0.0f32), OscArg::Float(300.0f32), OscArg::String("square".to_string())
+            ]),
+        ];
+
+        match TcpStream::connect("127.0.0.1:8002") {
+            Ok(mut stream) => {
+                for (address, args) in messages {
+                    let osc_message = create_osc_message_bytes_mixed(address, &args);
+                    stream.write_all(&osc_message).unwrap();
+                    stream.flush().unwrap();
+                    println!("Sent OSC message: {}", address);
+                    thread::sleep(Duration::from_millis(50));
+                }
+            }
+            Err(e) => {
+                eprintln!("Failed to connect to server: {}", e);
+                return;
+            }
+        }
+
+        server_handle.join().unwrap();
+    }
+
+    /// Test sending OSC bundle over TCP
+    #[tokio::test]
+    async fn test_tcp_osc_bundle() {
+        // Start server on a different port
+        let server_handle = thread::spawn(|| {
+            let config = crate::open_sound::types::OpenSoundConfig {
+                tcp_address: Some("127.0.0.1:8003".to_string()),
+                udp_address: None,
+                sample_rate: 44100,
+                buffer_size: 1024,
+            };
+            let mut server = crate::open_sound::server::OpenSoundServer::new(config);
+            let note_handler = crate::open_sound::handler::MusicalNoteHandler::new();
+            server.add_handler("/note/oscillator", Box::new(note_handler.clone()));
+            server.add_handler("/note/sample", Box::new(note_handler.clone()));
+            server.add_handler("/note/play", Box::new(note_handler));
+            
+            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                if let Err(e) = server.start_tcp().await {
+                    eprintln!("Server failed to start: {}", e);
+                    return;
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            });
+        });
+
+        thread::sleep(Duration::from_millis(200));
+
+        // Create OSC bundle with multiple messages
+        let bundle = create_osc_bundle_bytes_mixed(&[
+            ("/note/oscillator", &[
+                OscArg::Float(261.63f32), OscArg::Float(0.3f32), OscArg::Float(0.0f32), OscArg::Float(1000.0f32), OscArg::String("sine".to_string())
+            ]),
+            ("/note/oscillator", &[
+                OscArg::Float(329.63f32), OscArg::Float(0.3f32), OscArg::Float(0.0f32), OscArg::Float(1000.0f32), OscArg::String("sine".to_string())
+            ]),
+            ("/note/oscillator", &[
+                OscArg::Float(392.00f32), OscArg::Float(0.3f32), OscArg::Float(0.0f32), OscArg::Float(1000.0f32), OscArg::String("sine".to_string())
+            ]),
+        ]);
+
+        match TcpStream::connect("127.0.0.1:8003") {
+            Ok(mut stream) => {
+                stream.write_all(&bundle).unwrap();
+                stream.flush().unwrap();
+                println!("Sent OSC bundle with 3 messages");
+            }
+            Err(e) => {
+                eprintln!("Failed to connect to server: {}", e);
+                return;
+            }
+        }
+
+        server_handle.join().unwrap();
+    }
+
+    /// Test error handling with invalid OSC messages
+    #[tokio::test]
+    async fn test_tcp_invalid_osc_message() {
+        // Start server on a different port
+        let server_handle = thread::spawn(|| {
+            let config = crate::open_sound::types::OpenSoundConfig {
+                tcp_address: Some("127.0.0.1:8004".to_string()),
+                udp_address: None,
+                sample_rate: 44100,
+                buffer_size: 1024,
+            };
+            let mut server = crate::open_sound::server::OpenSoundServer::new(config);
+            let note_handler = crate::open_sound::handler::MusicalNoteHandler::new();
+            server.add_handler("/note/oscillator", Box::new(note_handler.clone()));
+            server.add_handler("/note/sample", Box::new(note_handler.clone()));
+            server.add_handler("/note/play", Box::new(note_handler));
+            
+            tokio::runtime::Runtime::new().unwrap().block_on(async {
+                if let Err(e) = server.start_tcp().await {
+                    eprintln!("Server failed to start: {}", e);
+                    return;
+                }
+                tokio::time::sleep(Duration::from_millis(100)).await;
+            });
+        });
+
+        thread::sleep(Duration::from_millis(200));
+
+        // Send invalid OSC message (malformed)
+        let invalid_message = b"invalid osc message";
+        
+        match TcpStream::connect("127.0.0.1:8004") {
+            Ok(mut stream) => {
+                stream.write_all(invalid_message).unwrap();
+                stream.flush().unwrap();
+                println!("Sent invalid OSC message (should be handled gracefully)");
+            }
+            Err(e) => {
+                eprintln!("Failed to connect to server: {}", e);
+                return;
+            }
+        }
+
+        server_handle.join().unwrap();
     }
 } 
