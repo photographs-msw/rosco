@@ -41,8 +41,8 @@ async fn main() {
     
     // Uncomment the following lines to run OpenSound examples:
     
-    println!("\nRunning OpenSound server...");
-    server_example::run_server().await;
+    // println!("\nRunning OpenSound server...");
+    // server_example::run_server().await;
     
     // Comment out client and integration for now to avoid port conflicts
     // println!("\nRunning OpenSound client...");
