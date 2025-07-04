@@ -54,11 +54,10 @@ pub mod open_sound_utils;
 pub mod examples;
 
 // Re-export main types for convenience
-pub use types::{OpenSoundMessage, OpenSoundBundle, OpenSoundArgument, OpenSoundConfig};
-pub use error::{OpenSoundError, OpenSoundResult};
-pub use handler::{RouteHandler, MusicalNoteHandler, RouteManager};
+pub use types::{OpenSoundConfig};
+pub use handler::{MusicalNoteHandler};
 pub use server::OpenSoundServer;
-pub use client::{OpenSoundClient, MessageBuilder};
+pub use client::{OpenSoundClient};
 pub use integration::OpenSoundIntegration;
 
 // Re-export examples for easy access

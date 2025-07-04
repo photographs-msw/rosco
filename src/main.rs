@@ -36,8 +36,8 @@ async fn main() {
     // In a real application, you might want to add command line arguments
     // to choose which example to run
     
-    // println!("\nRunning DSL composition...");
-    // dsl_1::play();
+    println!("\nRunning DSL composition...");
+    dsl_1::play();
     
     // Uncomment the following lines to run OpenSound examples:
     

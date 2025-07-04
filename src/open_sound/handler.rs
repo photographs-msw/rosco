@@ -1,9 +1,8 @@
-use std::collections::HashMap;
-use crate::open_sound::types::{OpenSoundMessage, OpenSoundArgument};
+use crate::open_sound::types::{OpenSoundMessage};
 use crate::open_sound::error::{OpenSoundError, OpenSoundResult};
 use crate::note::playback_note::{PlaybackNote, NoteType, PlaybackNoteBuilder};
-use crate::note::note::{Note, NoteBuilder};
-use crate::note::sampled_note::{SampledNote, SampledNoteBuilder};
+use crate::note::note::{NoteBuilder};
+use crate::note::sampled_note::{SampledNoteBuilder};
 use crate::audio_gen::oscillator::Waveform;
 use crate::audio_gen::audio_gen::gen_notes_stream;
 use crate::audio_gen::oscillator::OscillatorTables;
@@ -226,46 +225,3 @@ impl RouteHandler for MusicalNoteHandler {
         }
     }
 }
-
-/// Handler for managing multiple routes
-pub struct RouteManager {
-    handlers: HashMap<String, Box<dyn RouteHandler>>,
-}
-
-impl RouteManager {
-    pub fn new() -> Self {
-        Self {
-            handlers: HashMap::new(),
-        }
-    }
-
-    pub fn add_handler(&mut self, pattern: &str, handler: Box<dyn RouteHandler>) {
-        self.handlers.insert(pattern.to_string(), handler);
-    }
-
-    pub fn handle_message(&self, message: OpenSoundMessage) -> OpenSoundResult<()> {
-        // Try exact match first
-        if let Some(handler) = self.handlers.get(&message.address_pattern) {
-            return handler.handle(message);
-        }
-
-        // Try pattern matching (simple wildcard support)
-        for (pattern, handler) in &self.handlers {
-            if self.matches_pattern(pattern, &message.address_pattern) {
-                return handler.handle(message);
-            }
-        }
-
-        Err(OpenSoundError::InvalidAddressPattern(message.address_pattern))
-    }
-
-    fn matches_pattern(&self, pattern: &str, address: &str) -> bool {
-        // Simple wildcard matching - can be extended for more complex patterns
-        if pattern.ends_with("/*") {
-            let pattern_prefix = &pattern[..pattern.len() - 2];
-            address.starts_with(pattern_prefix)
-        } else {
-            pattern == address
-        }
-    }
-} 

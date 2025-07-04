@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+use std::collections::HashMap;
 use std::net::SocketAddr;
 use tokio::net::{TcpListener, TcpStream, UdpSocket};
 use tokio::io::{AsyncReadExt};
@@ -5,7 +7,7 @@ use tokio::sync::mpsc;
 use crate::open_sound::types::{OpenSoundMessage, OpenSoundConfig};
 use crate::open_sound::error::{OpenSoundError, OpenSoundResult};
 use crate::open_sound::message::{parse_message, parse_bundle};
-use crate::open_sound::handler::{RouteHandler, RouteManager};
+use crate::open_sound::handler::{RouteHandler};
 
 /// OpenSound Control server
 pub struct OpenSoundServer {
@@ -214,13 +216,59 @@ impl OpenSoundServer {
     }
 }
 
-impl Clone for RouteManager {
-    fn clone(&self) -> Self {
-        // Note: This is a simplified clone - in a real implementation,
-        // you might want to use Arc<Mutex<>> for thread-safe sharing
-        RouteManager::new()
+pub struct RouteManager {
+    handlers: Arc<Mutex<HashMap<String, Box<dyn RouteHandler>>>>,
+}
+
+impl RouteManager {
+    pub fn new() -> Self {
+        Self {
+            handlers: Arc::new(Mutex::new(HashMap::new())),
+        }
+    }
+
+    pub fn add_handler(&mut self, pattern: &str, handler: Box<dyn RouteHandler>) {
+        if let Ok(mut handlers) = self.handlers.lock() {
+            handlers.insert(pattern.to_string(), handler);
+        }
+    }
+
+    pub fn handle_message(&self, message: OpenSoundMessage) -> OpenSoundResult<()> {
+        if let Ok(handlers) = self.handlers.lock() {
+            // Try exact match first
+            if let Some(handler) = handlers.get(&message.address_pattern) {
+                return handler.handle(message);
+            }
+
+            // Try pattern matching
+            for (pattern, handler) in handlers.iter() {
+                if self.matches_pattern(pattern, &message.address_pattern) {
+                    return handler.handle(message);
+                }
+            }
+        }
+        Err(OpenSoundError::InvalidAddressPattern(message.address_pattern))
+    }
+
+    fn matches_pattern(&self, pattern: &str, address: &str) -> bool {
+        // Simple wildcard matching - can be extended for more complex patterns
+        if pattern.ends_with("/*") {
+            let pattern_prefix = &pattern[..pattern.len() - 2];
+            address.starts_with(pattern_prefix)
+        } else {
+            pattern == address
+        }
     }
 }
+
+impl Clone for RouteManager {
+    fn clone(&self) -> Self {
+        Self {
+            handlers: Arc::clone(&self.handlers),
+        }
+    }
+} 
+
 
 impl Default for OpenSoundServer {
     fn default() -> Self {
@@ -231,7 +279,6 @@ impl Default for OpenSoundServer {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::open_sound::types::OpenSoundArgument;
 
     #[tokio::test]
     async fn test_server_creation() {
